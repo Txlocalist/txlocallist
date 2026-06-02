@@ -33,10 +33,51 @@ export default async function ResultsPage({ searchParams }) {
   const params = await searchParams;
   const q   = params?.q   ?? "";
   const loc = params?.loc ?? "";
-  const availableTags = await prisma.tag.findMany({
-    orderBy: { name: "asc" },
-    select: { id: true, name: true, slug: true },
-  });
+  const [availableTags, activeBusinessCities, publishedEventCities] = await Promise.all([
+    prisma.tag.findMany({
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, slug: true },
+    }),
+    prisma.city.findMany({
+      where: {
+        businesses: {
+          some: {
+            status: "ACTIVE",
+            publishedAt: { not: null },
+          },
+        },
+      },
+      orderBy: { name: "asc" },
+      select: { name: true },
+    }),
+    prisma.event.findMany({
+      where: { status: "PUBLISHED" },
+      distinct: ["city"],
+      select: { city: true },
+    }),
+  ]);
+
+  const cityNameMap = new Map();
+
+  for (const city of activeBusinessCities) {
+    const name = city.name?.trim();
+    if (!name) continue;
+    cityNameMap.set(name.toLowerCase(), name);
+  }
+
+  for (const eventCity of publishedEventCities) {
+    const name = eventCity.city?.trim();
+    if (!name) continue;
+
+    const key = name.toLowerCase();
+    if (!cityNameMap.has(key)) {
+      cityNameMap.set(key, name);
+    }
+  }
+
+  const availableCities = Array.from(cityNameMap.values()).sort((a, b) =>
+    a.localeCompare(b)
+  );
 
   const user = await getCurrentUser().catch(() => null);
   const dashboardPath = user ? getDashboardPath(user.role) : null;
@@ -92,6 +133,7 @@ export default async function ResultsPage({ searchParams }) {
       savedIds={savedIds}
       initialFavoriteBusinesses={favoriteBusinesses}
       availableTags={availableTags}
+      availableCities={availableCities}
     />
   );
 }

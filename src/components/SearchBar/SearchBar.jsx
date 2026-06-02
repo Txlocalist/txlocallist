@@ -10,6 +10,7 @@ export default function SearchBar({
   initialLocation = "",
   defaultLocation = "Austin, TX",
   initialType = "businesses",
+  visibleTypes = ["businesses", "events"],
   variant = "hero",
   onSubmit,
 }) {
@@ -17,6 +18,27 @@ export default function SearchBar({
   const [query, setQuery] = useState(initialQuery);
   const [location, setLocation] = useState(initialLocation || defaultLocation);
   const [type, setType] = useState(initialType);
+  const filteredTypes = Array.isArray(visibleTypes) && visibleTypes.length > 0
+    ? visibleTypes.filter((value) => value === "businesses" || value === "events")
+    : [];
+  const availableTypes = filteredTypes.length > 0 ? filteredTypes : ["businesses", "events"];
+  const resolvedInitialType = availableTypes.includes(initialType)
+    ? initialType
+    : availableTypes[0];
+  const typeOptions = [
+    {
+      value: "businesses",
+      icon: "storefront",
+      label: "Local Businesses",
+      activeClass: styles.bizActive,
+    },
+    {
+      value: "events",
+      icon: "event",
+      label: "Local Events",
+      activeClass: styles.evtActive,
+    },
+  ].filter((option) => availableTypes.includes(option.value));
 
   useEffect(() => {
     setQuery(initialQuery);
@@ -27,8 +49,8 @@ export default function SearchBar({
   }, [defaultLocation, initialLocation]);
 
   useEffect(() => {
-    setType(initialType);
-  }, [initialType]);
+    setType(resolvedInitialType);
+  }, [resolvedInitialType]);
 
   function submit() {
     if (onSubmit) {
@@ -39,7 +61,7 @@ export default function SearchBar({
     const params = new URLSearchParams();
     if (query) params.set("q", query);
     if (location) params.set("loc", location);
-    params.set("tab", type);
+    params.set("tab", availableTypes.includes(type) ? type : resolvedInitialType);
     router.push(action + "?" + params.toString());
   }
 
@@ -85,25 +107,21 @@ export default function SearchBar({
 
       <div className={styles.actionsGroup}>
         <div className={styles.typeGroup} role="group" aria-label="Search type">
-          <button
-            type="button"
-            onClick={() => setType("businesses")}
-            aria-pressed={type === "businesses"}
-            className={[styles.typeBtn, type === "businesses" ? styles.bizActive : ""].join(" ")}
-          >
-            <span className={"material-icons " + styles.typeBtnIcon}>storefront</span>
-            Local Businesses
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setType("events")}
-            aria-pressed={type === "events"}
-            className={[styles.typeBtn, type === "events" ? styles.evtActive : ""].join(" ")}
-          >
-            <span className={"material-icons " + styles.typeBtnIcon}>event</span>
-            Local Events
-          </button>
+          {typeOptions.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => setType(option.value)}
+              aria-pressed={type === option.value}
+              className={[
+                styles.typeBtn,
+                type === option.value ? option.activeClass : "",
+              ].join(" ")}
+            >
+              <span className={"material-icons " + styles.typeBtnIcon}>{option.icon}</span>
+              {option.label}
+            </button>
+          ))}
         </div>
 
         <button type="submit" className={styles.searchBtn}>

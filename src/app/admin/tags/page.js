@@ -18,7 +18,7 @@ export default async function AdminTagsPage() {
       <div className={styles.pageHeader}>
         <div>
           <h1 className={styles.pageTitle}>Directory Tags</h1>
-          <p className={styles.pageSubtitle}>{tags.length} tags — used to categorize listings and events</p>
+          <p className={styles.pageSubtitle}>{tags.length} tags - used to categorize listings and events</p>
         </div>
       </div>
 
@@ -43,14 +43,14 @@ export default async function AdminTagsPage() {
               <div className={styles.tableCol} style={{ flex: 2 }}>
                 <p className={styles.businessMeta}>{tag.slug}</p>
               </div>
-              <div className={styles.tableCol} style={{ flex: 1 }}>{tag._count.businessTags}</div>
               <div className={styles.tableCol} style={{ flex: 1 }}>
-                {tag._count.businessTags === 0 && (
-                  <form action={deleteTagAction}>
-                    <input type="hidden" name="id" value={tag.id} />
-                    <button type="submit" className={styles.deleteButton}>Delete</button>
-                  </form>
-                )}
+                {tag._count.businessTags}
+              </div>
+              <div className={styles.tableCol} style={{ flex: 1 }}>
+                <form action={deleteTagAction}>
+                  <input type="hidden" name="id" value={tag.id} />
+                  <button type="submit" className={styles.deleteButton}>Delete</button>
+                </form>
               </div>
             </div>
           ))}

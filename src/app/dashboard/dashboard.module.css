@@ -1024,3 +1024,11 @@
   background-color: var(--retro-red);
   color: white;
 }
+
+.deleteButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  background-color: rgba(100, 100, 100, 0.08);
+  border-color: #999;
+  color: #666;
+}

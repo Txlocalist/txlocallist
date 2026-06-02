@@ -218,6 +218,7 @@ export default function ResultsExperience({
   savedIds = [],
   initialFavoriteBusinesses = [],
   availableTags = [],
+  availableCities = [],
 }) {
   const router    = useRouter();
   const urlParams = useSearchParams();
@@ -644,26 +645,28 @@ export default function ResultsExperience({
               </button>
               {showCities && (
                 <div className="cities-dropdown">
-                  {[
-                    "Austin", "Houston", "Dallas", "San Antonio", "Fort Worth",
-                    "El Paso", "Corpus Christi", "Lubbock", "Amarillo", "Waco",
-                    "San Marcos", "Marfa", "Laredo", "Plano", "Arlington",
-                  ].map((city) => (
-                    <button
-                      key={city}
-                      type="button"
-                      className="font-accent city-option"
-                      onClick={() => {
-                        setShowCities(false);
-                        setActiveTab("businesses");
-                        replaceResultsUrl({ query: "", location: city, type: "businesses" });
-                        runSearch("", city, "", "search");
-                      }}
-                    >
-                      <span className="material-icons city-option-pin">place</span>
-                      {city}
-                    </button>
-                  ))}
+                  {availableCities.length > 0 ? (
+                    availableCities.map((city) => (
+                      <button
+                        key={city}
+                        type="button"
+                        className="font-accent city-option"
+                        onClick={() => {
+                          setShowCities(false);
+                          setActiveTab("businesses");
+                          replaceResultsUrl({ query: "", location: city, type: "businesses" });
+                          runSearch("", city, "", "search");
+                        }}
+                      >
+                        <span className="material-icons city-option-pin">place</span>
+                        {city}
+                      </button>
+                    ))
+                  ) : (
+                    <div className="font-accent city-option" aria-disabled>
+                      No cities available
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -982,25 +985,27 @@ export default function ResultsExperience({
               </button>
             </div>
             <div className="mobile-city-grid">
-              {[
-                "Austin", "Houston", "Dallas", "San Antonio", "Fort Worth",
-                "El Paso", "Corpus Christi", "Lubbock", "Amarillo", "Waco",
-                "San Marcos", "Marfa", "Laredo", "Plano", "Arlington",
-              ].map((city) => (
-                <button
-                  key={city}
-                  type="button"
-                  className="font-accent mobile-city-btn"
-                  onClick={() => {
-                    setShowMobileCities(false);
-                    setActiveTab("businesses");
-                    replaceResultsUrl({ query: "", location: city, type: "businesses" });
-                    runSearch("", city, "", "search");
-                  }}
-                >
-                  {city}
-                </button>
-              ))}
+              {availableCities.length > 0 ? (
+                availableCities.map((city) => (
+                  <button
+                    key={city}
+                    type="button"
+                    className="font-accent mobile-city-btn"
+                    onClick={() => {
+                      setShowMobileCities(false);
+                      setActiveTab("businesses");
+                      replaceResultsUrl({ query: "", location: city, type: "businesses" });
+                      runSearch("", city, "", "search");
+                    }}
+                  >
+                    {city}
+                  </button>
+                ))
+              ) : (
+                <div className="font-accent city-option" aria-disabled>
+                  No cities available
+                </div>
+              )}
             </div>
           </div>
         </div>

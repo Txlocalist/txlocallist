@@ -56,6 +56,21 @@ export async function deleteTagAction(formData) {
   await requireAdmin();
   const id = formData.get("id")?.toString();
   if (!id) return;
-  await prisma.tag.delete({ where: { id } });
+  await prisma.$transaction(async (tx) => {
+    await tx.businessTag.deleteMany({
+      where: { tagId: id },
+    });
+
+    await tx.tag.update({
+      where: { id },
+      data: {
+        events: {
+          set: [],
+        },
+      },
+    });
+
+    await tx.tag.delete({ where: { id } });
+  });
   revalidatePath("/admin/tags");
 }
