@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./SearchBar.module.css";
 
@@ -12,33 +12,45 @@ export default function SearchBar({
   initialType = "businesses",
   visibleTypes = ["businesses", "events"],
   variant = "hero",
+  autoSubmitOnTypeChange = false,
   onSubmit,
 }) {
   const router = useRouter();
-  const [query, setQuery] = useState(initialQuery);
-  const [location, setLocation] = useState(initialLocation || defaultLocation);
-  const [type, setType] = useState(initialType);
-  const filteredTypes = Array.isArray(visibleTypes) && visibleTypes.length > 0
-    ? visibleTypes.filter((value) => value === "businesses" || value === "events")
-    : [];
-  const availableTypes = filteredTypes.length > 0 ? filteredTypes : ["businesses", "events"];
+  const filteredTypes = useMemo(
+    () =>
+      Array.isArray(visibleTypes) && visibleTypes.length > 0
+        ? visibleTypes.filter((value) => value === "businesses" || value === "events")
+        : [],
+    [visibleTypes]
+  );
+  const availableTypes = useMemo(
+    () => (filteredTypes.length > 0 ? filteredTypes : ["businesses", "events"]),
+    [filteredTypes]
+  );
   const resolvedInitialType = availableTypes.includes(initialType)
     ? initialType
     : availableTypes[0];
-  const typeOptions = [
-    {
-      value: "businesses",
-      icon: "storefront",
-      label: "Local Businesses",
-      activeClass: styles.bizActive,
-    },
-    {
-      value: "events",
-      icon: "event",
-      label: "Local Events",
-      activeClass: styles.evtActive,
-    },
-  ].filter((option) => availableTypes.includes(option.value));
+  const [query, setQuery] = useState(initialQuery);
+  const [location, setLocation] = useState(initialLocation || defaultLocation);
+  const [type, setType] = useState(resolvedInitialType);
+  const typeOptions = useMemo(
+    () =>
+      [
+        {
+          value: "businesses",
+          icon: "storefront",
+          label: "Local Businesses",
+          activeClass: styles.bizActive,
+        },
+        {
+          value: "events",
+          icon: "event",
+          label: "Local Events",
+          activeClass: styles.evtActive,
+        },
+      ].filter((option) => availableTypes.includes(option.value)),
+    [availableTypes]
+  );
 
   useEffect(() => {
     setQuery(initialQuery);
@@ -53,15 +65,17 @@ export default function SearchBar({
   }, [resolvedInitialType]);
 
   function submit() {
+    const nextType = availableTypes.includes(type) ? type : resolvedInitialType;
+
     if (onSubmit) {
-      onSubmit({ query, location, type });
+      onSubmit({ query, location, type: nextType });
       return;
     }
 
     const params = new URLSearchParams();
     if (query) params.set("q", query);
     if (location) params.set("loc", location);
-    params.set("tab", availableTypes.includes(type) ? type : resolvedInitialType);
+    params.set("tab", nextType);
     router.push(action + "?" + params.toString());
   }
 
@@ -72,6 +86,8 @@ export default function SearchBar({
 
   return (
     <form
+      action={action}
+      method="get"
       className={[styles.pill, variant === "hero" ? styles.hero : styles.inline].join(" ")}
       onSubmit={handleSubmit}
     >
@@ -105,22 +121,48 @@ export default function SearchBar({
 
       <div className={styles.divider} />
 
+      <input
+        type="hidden"
+        name="tab"
+        value={availableTypes.includes(type) ? type : resolvedInitialType}
+      />
+
       <div className={styles.actionsGroup}>
         <div className={styles.typeGroup} role="group" aria-label="Search type">
           {typeOptions.map((option) => (
-            <button
+            <label
               key={option.value}
-              type="button"
-              onClick={() => setType(option.value)}
               aria-pressed={type === option.value}
               className={[
                 styles.typeBtn,
                 type === option.value ? option.activeClass : "",
               ].join(" ")}
             >
+              <input
+                type="radio"
+                name="search_type_picker"
+                value={option.value}
+                checked={type === option.value}
+                onChange={() => {
+                  setType(option.value);
+                  if (autoSubmitOnTypeChange) {
+                    const nextType = availableTypes.includes(option.value) ? option.value : resolvedInitialType;
+                    if (onSubmit) {
+                      onSubmit({ query, location, type: nextType });
+                    } else {
+                      const params = new URLSearchParams();
+                      if (query) params.set("q", query);
+                      if (location) params.set("loc", location);
+                      params.set("tab", nextType);
+                      router.push(action + "?" + params.toString());
+                    }
+                  }
+                }}
+                className={styles.typeInput}
+              />
               <span className={"material-icons " + styles.typeBtnIcon}>{option.icon}</span>
               {option.label}
-            </button>
+            </label>
           ))}
         </div>
 

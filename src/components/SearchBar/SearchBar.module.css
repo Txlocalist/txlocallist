@@ -105,6 +105,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.35rem;
+  position: relative;
   min-width: 0;
   height: 2.6rem;
   padding: 0 1rem;
@@ -122,6 +123,14 @@
     background 140ms ease,
     color 140ms ease,
     transform 140ms ease;
+}
+
+.typeInput {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  margin: 0;
 }
 
 .typeBtn:hover {

@@ -260,6 +260,11 @@ export default function ResultsExperience({
   }
 
   useEffect(() => {
+    const urlTab = urlParams.get("tab") === "events" ? "events" : "businesses";
+    setActiveTab((current) => (current === urlTab ? current : urlTab));
+  }, [urlParams]);
+
+  useEffect(() => {
     if (initialQuery || initialLocation) runSearch(initialQuery, initialLocation, "", "search");
   }, []);
 
@@ -311,10 +316,6 @@ export default function ResultsExperience({
       const evtList = evtRes?.events ?? [];
       setBusinesses(bizList);
       setEvents(evtList);
-
-      // Auto-switch if the active tab has no results
-      if (activeTab === "businesses" && bizList.length === 0 && evtList.length > 0) setActiveTab("events");
-      else if (activeTab === "events" && evtList.length === 0 && bizList.length > 0) setActiveTab("businesses");
     } catch (_) {
       setBusinesses([]);
       setEvents([]);
@@ -472,12 +473,11 @@ export default function ResultsExperience({
 
   const activeFilterChips = [];
 
-  if (hasSearched && activeTab === "events") {
+  if (hasSearched) {
     activeFilterChips.push({
-      key: "events",
-      label: "Local Events",
-      tone: "events",
-      onRemove: removeEventsFilter,
+      key: "tab",
+      label: activeTab === "events" ? "Local Events" : "Local Businesses",
+      tone: activeTab === "events" ? "events" : "businesses",
     });
   }
 
@@ -653,8 +653,7 @@ export default function ResultsExperience({
                         className="font-accent city-option"
                         onClick={() => {
                           setShowCities(false);
-                          setActiveTab("businesses");
-                          replaceResultsUrl({ query: "", location: city, type: "businesses" });
+                          replaceResultsUrl({ query: "", location: city, type: activeTab });
                           runSearch("", city, "", "search");
                         }}
                       >
@@ -784,6 +783,7 @@ export default function ResultsExperience({
               defaultLocation={activeBrowseTab === "favorites" ? "" : "Austin, TX"}
               initialType={activeTab}
               variant="inline"
+              autoSubmitOnTypeChange
               onSubmit={handleSearchBarSubmit}
             />
           </div>
@@ -993,8 +993,7 @@ export default function ResultsExperience({
                     className="font-accent mobile-city-btn"
                     onClick={() => {
                       setShowMobileCities(false);
-                      setActiveTab("businesses");
-                      replaceResultsUrl({ query: "", location: city, type: "businesses" });
+                      replaceResultsUrl({ query: "", location: city, type: activeTab });
                       runSearch("", city, "", "search");
                     }}
                   >

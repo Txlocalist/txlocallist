@@ -1,21 +1,14 @@
-import { promises as fs } from "node:fs";
-import path from "node:path";
+import { getEventsTargetLandingHtml } from "./html";
 
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const sourcePath = path.join(
-    process.cwd(),
-    "Brandons HTML",
-    "tx-localist-events-landing (3).html"
-  );
-
   try {
-    const html = await fs.readFile(sourcePath);
-
+    const html = await getEventsTargetLandingHtml();
     return new Response(html, {
       headers: {
         "content-type": "text/html; charset=utf-8",
+        "cache-control": "no-store",
       },
     });
   } catch (error) {
