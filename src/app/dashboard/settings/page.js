@@ -15,10 +15,6 @@ export default async function SettingsPage() {
 
   const user = session.user;
 
-  if (user.role !== "OWNER" && user.role !== "ADMIN") {
-    redirect("/post-your-business");
-  }
-
   return (
     <DashboardLayout activeTab="settings">
       <div className={styles.pageHeader}>

@@ -1,8 +1,8 @@
 import { createUploadthing } from "uploadthing/next";
 
 import { getCurrentUser } from "@/lib/auth/session";
+import { getOwnerBillingState } from "@/lib/billing";
 import { getFeatures } from "@/lib/tiers";
-import { prisma } from "@/lib/prisma";
 
 const f = createUploadthing();
 
@@ -24,13 +24,8 @@ export const ourFileRouter = {
       const user = await getCurrentUser();
       if (!user) throw new Error("Unauthorized");
 
-      // Find the owner's active subscription to get their tier slug
-      const subscription = await prisma.subscription.findFirst({
-        where: { business: { ownerId: user.id }, status: "ACTIVE" },
-        include: { plan: { select: { slug: true } } },
-      }).catch(() => null);
-
-      const tierSlug = subscription?.plan?.slug ?? "free";
+      const billingState = await getOwnerBillingState(user.id).catch(() => null);
+      const tierSlug = billingState?.activePlan?.slug ?? "free";
       const features = getFeatures(tierSlug);
 
       return {

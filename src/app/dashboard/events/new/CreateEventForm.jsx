@@ -126,13 +126,16 @@ export function CreateEventForm({ businesses = [] }) {
         {/* Link to business */}
         {businesses.length > 0 && (
           <div className={styles.formGroup}>
-            <label className={styles.label} htmlFor="businessId">Link to Your Business Listing (optional)</label>
-            <select id="businessId" name="businessId" className={styles.select}>
-              <option value="">— None —</option>
+            <label className={styles.label} htmlFor="businessId">Link to Your Business Listing *</label>
+            <select id="businessId" name="businessId" className={styles.select} required>
+              <option value="">Select your business</option>
               {businesses.map((b) => (
                 <option key={b.id} value={b.id}>{b.name}</option>
               ))}
             </select>
+            {state?.fieldErrors?.businessId ? (
+              <p style={{ color: "var(--retro-red)", fontSize: "0.85rem" }}>{state.fieldErrors.businessId}</p>
+            ) : null}
           </div>
         )}
 
@@ -152,7 +155,7 @@ export function CreateEventForm({ businesses = [] }) {
 
       <div className={styles.formNavigation}>
         <button type="submit" className={styles.buttonPrimary} disabled={isPending}>
-          {isPending ? "Publishing..." : "Publish Event"}
+          {isPending ? "Submitting..." : "Submit Event For Review"}
         </button>
       </div>
     </form>

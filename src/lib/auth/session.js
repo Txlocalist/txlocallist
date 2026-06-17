@@ -112,7 +112,10 @@ export async function getCurrentSession() {
           select: {
             id: true,
             email: true,
+            name: true,
             role: true,
+            accountPlanId: true,
+            billingStatus: true,
             createdAt: true,
             lastLoginAt: true,
           },

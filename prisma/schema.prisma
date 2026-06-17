@@ -19,6 +19,8 @@ enum Role {
 
 enum BusinessStatus {
   DRAFT      // Not yet published
+  PENDING    // Submitted and waiting for admin approval
+  DENIED     // Reviewed and rejected by admin
   ACTIVE     // Live on the directory
   PAUSED     // Temporarily hidden by owner
   SUSPENDED  // Removed by admin
@@ -27,9 +29,13 @@ enum BusinessStatus {
 
 enum SubscriptionStatus {
   ACTIVE       // Currently paying
+  TRIALING     // Trial access before the first recurring charge
   PAST_DUE     // Payment failed, grace period
   CANCELED     // Ended, downgrading to free
   EXPIRED      // Trial ended without converting
+  INCOMPLETE   // Checkout completed but payment/auth is still unresolved
+  UNPAID       // Past due subscription that exhausted retries
+  PAUSED       // Subscription paused in Stripe
 }
 
 enum EmploymentType {
@@ -58,6 +64,14 @@ model User {
   role         Role      @default(USER)
   name         String?
   avatarUrl    String?
+  stripeCustomerId String? @unique
+  stripeSubscriptionId String? @unique
+  accountPlanId String?
+  accountPlan   Plan?    @relation("UserAccountPlan", fields: [accountPlanId], references: [id], onDelete: SetNull)
+  billingStatus SubscriptionStatus?
+  currentPeriodEnd DateTime?
+  cancelAtPeriodEnd Boolean @default(false)
+  canceledAt    DateTime?
 
   // Localist favorites + searches
   favorites    Favorite[]
@@ -76,6 +90,10 @@ model User {
 
   @@index([email])
   @@index([role])
+  @@index([stripeCustomerId])
+  @@index([stripeSubscriptionId])
+  @@index([accountPlanId])
+  @@index([billingStatus])
 }
 
 model Session {
@@ -150,6 +168,7 @@ model Plan {
   tier            Int      // 0=FREE, 1=TIER1, 2=TIER2, 3=TIER3 (for sorting)
   priceCents      Int      // Annual or monthly price in cents (0 for free)
   billingPeriod   String   @default("monthly") // "monthly" or "annual"
+  stripePriceId   String?  @unique
 
   // Feature flags (JSON for extensibility)
   features        String   @default("{}")  // JSON string of feature flags
@@ -160,6 +179,7 @@ model Plan {
   // Relations
   subscriptions   Subscription[]
   businesses      Business[] @relation("CurrentPlan")
+  accountUsers    User[]     @relation("UserAccountPlan")
 
   @@index([slug])
   @@index([tier])
@@ -441,7 +461,7 @@ model Event {
   startDate   DateTime?
   endDate     DateTime?
 
-  status      EventStatus @default(PUBLISHED)
+  status      EventStatus @default(PENDING)
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -453,6 +473,8 @@ model Event {
 }
 
 enum EventStatus {
+  PENDING
+  DENIED
   PUBLISHED
   DRAFT
   CANCELLED

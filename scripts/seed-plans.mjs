@@ -36,6 +36,7 @@ const PLANS = [
     tier: 0,
     priceCents: 0,
     billingPeriod: "monthly",
+    stripePriceId: null,
     features: {
       MAX_PHOTOS: 1,
       SHOW_CONTACT: false,
@@ -47,49 +48,18 @@ const PLANS = [
     },
   },
   {
-    name: "Starter",
+    name: "Paid",
     slug: "starter",
     tier: 1,
-    priceCents: 2999, // $29.99/month
+    priceCents: 2000, // $20.00/month
     billingPeriod: "monthly",
-    features: {
-      MAX_PHOTOS: 5,
-      SHOW_CONTACT: true,
-      SHOW_WEBSITE: true,
-      SHOW_SOCIALS: false,
-      JOB_POSTINGS: 1,
-      FEATURED: false,
-      PRIORITY_SEARCH: false,
-    },
-  },
-  {
-    name: "Pro",
-    slug: "pro",
-    tier: 2,
-    priceCents: 5999, // $59.99/month
-    billingPeriod: "monthly",
+    stripePriceId: process.env.STRIPE_PRICE_STARTER || null,
     features: {
       MAX_PHOTOS: 20,
       SHOW_CONTACT: true,
       SHOW_WEBSITE: true,
       SHOW_SOCIALS: true,
       JOB_POSTINGS: 3,
-      FEATURED: false,
-      PRIORITY_SEARCH: true,
-    },
-  },
-  {
-    name: "Premium",
-    slug: "premium",
-    tier: 3,
-    priceCents: 9999, // $99.99/month
-    billingPeriod: "monthly",
-    features: {
-      MAX_PHOTOS: 50,
-      SHOW_CONTACT: true,
-      SHOW_WEBSITE: true,
-      SHOW_SOCIALS: true,
-      JOB_POSTINGS: 10,
       FEATURED: true,
       PRIORITY_SEARCH: true,
     },
@@ -109,6 +79,7 @@ async function main() {
         update: {
           // Update if needed
           priceCents: planData.priceCents,
+          stripePriceId: planData.stripePriceId,
           features: JSON.stringify(planData.features),
         },
         create: {
@@ -117,6 +88,7 @@ async function main() {
           tier: planData.tier,
           priceCents: planData.priceCents,
           billingPeriod: planData.billingPeriod,
+          stripePriceId: planData.stripePriceId,
           features: JSON.stringify(planData.features),
         },
       });

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { DashboardLayout } from "../DashboardShell";
 import styles from "../dashboard.module.css";
+import { getOwnerBillingState } from "@/lib/billing";
 import { prisma } from "@/lib/prisma";
 import { getCurrentSession } from "@/lib/auth/session";
 import { isMissingPrismaTableError, phase3SchemaMessage } from "@/lib/prisma-errors";
@@ -19,15 +20,15 @@ export default async function BusinessesPage({ searchParams }) {
   }
 
   const user = session.user;
-
-  if (user.role !== "OWNER" && user.role !== "ADMIN") {
-    redirect("/post-your-business");
-  }
+  const billingState = await getOwnerBillingState(user.id).catch(() => null);
+  const canCreateListing = user.role === "ADMIN" || Boolean(billingState?.hasPaidAccess);
 
   // Next.js 16: searchParams is a Promise
   const params = await searchParams;
-  // Get status filter from query params (ACTIVE, DRAFT, PAUSED, ARCHIVED)
+  // Get status filter from query params (ACTIVE, DRAFT, PENDING, DENIED, PAUSED, ARCHIVED)
   const statusFilter = params?.status || null;
+  const created = params?.created === "1";
+  const submitted = params?.submitted === "1";
 
   // Fetch businesses
   const where = { ownerId: user.id };
@@ -64,6 +65,8 @@ export default async function BusinessesPage({ searchParams }) {
   const statusCounts = {
     ACTIVE: allBusinesses.filter((b) => b.status === "ACTIVE").length,
     DRAFT: allBusinesses.filter((b) => b.status === "DRAFT").length,
+    PENDING: allBusinesses.filter((b) => b.status === "PENDING").length,
+    DENIED: allBusinesses.filter((b) => b.status === "DENIED").length,
     PAUSED: allBusinesses.filter((b) => b.status === "PAUSED").length,
     ARCHIVED: allBusinesses.filter((b) => b.status === "ARCHIVED").length,
   };
@@ -72,25 +75,42 @@ export default async function BusinessesPage({ searchParams }) {
     { id: null, label: "All", count: allBusinesses.length },
     { id: "ACTIVE", label: "Active", count: statusCounts.ACTIVE },
     { id: "DRAFT", label: "Draft", count: statusCounts.DRAFT },
+    { id: "PENDING", label: "Pending", count: statusCounts.PENDING },
+    { id: "DENIED", label: "Denied", count: statusCounts.DENIED },
     { id: "PAUSED", label: "Paused", count: statusCounts.PAUSED },
     { id: "ARCHIVED", label: "Archived", count: statusCounts.ARCHIVED },
   ];
 
   return (
-    <DashboardLayout activeTab="businesses">
+    <DashboardLayout activeTab="businesses-live">
       <div className={styles.pageHeader}>
         <div>
-          <h1 className={styles.pageTitle}>My Listings</h1>
+          <h1 className={styles.pageTitle}>Live Businesses</h1>
           <p className={styles.pageSubtitle}>
-            Manage all your business listings
+            Manage all of the business listings connected to your account.
           </p>
         </div>
         <div className={styles.pageActions}>
-          <Link href="/dashboard/businesses/new" className={styles.createButton}>
-            + Create Listing
+          <Link
+            href={canCreateListing ? "/dashboard/businesses/new" : "/dashboard/billing"}
+            className={styles.createButton}
+          >
+            {canCreateListing ? "+ Create Business" : "Upgrade Account"}
           </Link>
         </div>
       </div>
+
+      {created && (
+        <div className={styles.successBanner}>
+          Your business was saved as a draft. Submit it for review when you are ready.
+        </div>
+      )}
+
+      {submitted && (
+        <div className={styles.successBanner}>
+          Your business was submitted for admin review and will go live after approval.
+        </div>
+      )}
 
       {schemaNotice && (
         <div className={styles.card}>
@@ -169,11 +189,11 @@ export default async function BusinessesPage({ searchParams }) {
                 </div>
                 <div className={styles.tableCol} style={{ flex: 1 }}>
                   <div className={styles.actionButtons}>
-                    {business.status === "DRAFT" && (
+                    {(business.status === "DRAFT" || business.status === "DENIED") && (
                       <form action={publishBusinessFormAction}>
                         <input type="hidden" name="businessId" value={business.id} />
                         <button type="submit" className={styles.publishButton}>
-                          Publish
+                          Submit For Review
                         </button>
                       </form>
                     )}
@@ -206,10 +226,15 @@ export default async function BusinessesPage({ searchParams }) {
           <p className={styles.emptyStateDescription}>
             {statusFilter
               ? "Try selecting a different status filter"
-              : "Create your first listing to get started"}
+              : canCreateListing
+                ? "Create your first listing to get started"
+                : "Upgrade your account in billing before creating your first listing."}
           </p>
-          <Link href="/dashboard/businesses/new" className={styles.emptyStateAction}>
-            Create Listing
+          <Link
+            href={canCreateListing ? "/dashboard/businesses/new" : "/dashboard/billing"}
+            className={styles.emptyStateAction}
+          >
+            {canCreateListing ? "Create Listing" : "Upgrade Account"}
           </Link>
         </div>
       )}

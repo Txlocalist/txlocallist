@@ -19,7 +19,13 @@ function formatSavedDate(dateValue) {
   }).format(new Date(dateValue));
 }
 
-export function FavoritesDashboard({ favorites }) {
+export function FavoritesDashboard({
+  favorites,
+  emptyTitle = "No saved businesses yet",
+  emptyDescription = "Tap the heart on any listing to build your own shortlist of saved businesses.",
+  emptyActionLabel = "Explore Businesses",
+  statsLabel = "Saved Businesses",
+}) {
   const [items, setItems] = useState(favorites);
   const [query, setQuery] = useState("");
   const [cityFilter, setCityFilter] = useState("all");
@@ -91,13 +97,11 @@ export function FavoritesDashboard({ favorites }) {
 
   if (items.length === 0) {
     return (
-      <div className={styles.emptyState}>
-        <h2 className={styles.emptyTitle}>No saved places yet</h2>
-        <p className={styles.emptyDescription}>
-          Tap the heart on any listing to build your own shortlist of local spots.
-        </p>
+        <div className={styles.emptyState}>
+        <h2 className={styles.emptyTitle}>{emptyTitle}</h2>
+        <p className={styles.emptyDescription}>{emptyDescription}</p>
         <Link href="/results" className={styles.emptyAction}>
-          Explore Businesses
+          {emptyActionLabel}
         </Link>
       </div>
     );
@@ -107,7 +111,7 @@ export function FavoritesDashboard({ favorites }) {
     <div className={styles.wrapper}>
       <section className={styles.statsGrid}>
         <div className={styles.statCard}>
-          <p className={styles.statLabel}>Saved Places</p>
+          <p className={styles.statLabel}>{statsLabel}</p>
           <p className={styles.statValue}>{items.length}</p>
         </div>
         <div className={styles.statCard}>
@@ -170,7 +174,7 @@ export function FavoritesDashboard({ favorites }) {
         <div className={styles.emptyState}>
           <h2 className={styles.emptyTitle}>No matches for those filters</h2>
           <p className={styles.emptyDescription}>
-            Try a different city or clear your search to see everything you've saved.
+            Try a different city or clear your search to see everything you&apos;ve saved.
           </p>
           <button
             type="button"

@@ -44,9 +44,9 @@ export default async function LoginPage() {
 
             <div className={styles.authDivider} />
 
-            <p className={styles.authFooter}>Looking to list your space?</p>
+            <p className={styles.authFooter}>Want to create a business listing later?</p>
             <Link href="/signup?intent=owner" className={styles.authFooterLink}>
-              Sign up for a business account
+              Create a user account
             </Link>
           </div>
         </aside>

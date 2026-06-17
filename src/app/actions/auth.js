@@ -51,7 +51,6 @@ export async function signUpAction(_prevState, formData) {
   const email = normalizeEmail(getTextValue(formData, "email"));
   const password = formData.get("password")?.toString() ?? "";
   const confirmPassword = formData.get("confirmPassword")?.toString() ?? "";
-  // intent=owner upgrades signup role to OWNER and routes to dashboard
   const intent = getTextValue(formData, "intent");
   const fieldErrors = validateCredentials({
     email,
@@ -87,7 +86,7 @@ export async function signUpAction(_prevState, formData) {
   const passwordHash = await hashPassword(password);
   let user;
 
-  const assignedRole = intent === "owner" ? "OWNER" : "USER";
+  const assignedRole = "USER";
 
   try {
     user = await prisma.user.create({
@@ -116,13 +115,12 @@ export async function signUpAction(_prevState, formData) {
   }
 
   // Fire welcome email (non-blocking — don't fail signup if email fails)
-  sendWelcomeEmail({ to: email, isOwner: intent === "owner" }).catch((err) =>
+  sendWelcomeEmail({ to: email, isOwner: false }).catch((err) =>
     console.error("[auth] welcome email failed:", err)
   );
 
-  // New owners go straight to create their first listing
   if (intent === "owner") {
-    redirect("/dashboard/businesses/new");
+    redirect("/dashboard/billing");
   }
 
   redirect(getDashboardPath(user.role));

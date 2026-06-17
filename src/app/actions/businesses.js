@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { requireUser } from "@/lib/auth/session";
+import { getOwnerBillingState } from "@/lib/billing";
 import { normalizeBusinessHoursInput } from "@/lib/business-hours";
-import { sendListingPublishedEmail } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
 import { isMissingPrismaTableError, phase3SchemaMessage } from "@/lib/prisma-errors";
 
@@ -96,9 +96,9 @@ function generateSlug(name, city) {
 export async function createBusinessAction(_prevState, formData) {
   const user = await requireUser();
 
-  // Only OWNER or ADMIN can create businesses
-  if (user.role !== "OWNER" && user.role !== "ADMIN") {
-    return buildErrorState("Only business owners can create listings.");
+  const billingState = await getOwnerBillingState(user.id);
+  if (!billingState?.hasPaidAccess) {
+    return buildErrorState("Upgrade to the paid plan before creating a listing.");
   }
 
   // Extract form fields
@@ -213,10 +213,8 @@ export async function createBusinessAction(_prevState, formData) {
     }
   }
 
-  // Get free plan
-  const freePlan = await prisma.plan.findUnique({ where: { slug: "free" } });
-  if (!freePlan) {
-    return buildErrorState("System error: Free plan not found. Please contact support.");
+  if (!billingState.activePlanId) {
+    return buildErrorState("System error: Paid plan not found. Please contact support.");
   }
 
   // Generate unique slug
@@ -252,7 +250,7 @@ export async function createBusinessAction(_prevState, formData) {
       isHiring,
       hiringRoles: JSON.stringify(hiringRoles),
       ownerId: user.id,
-      planId: freePlan.id,
+      planId: billingState.activePlanId,
       status: "DRAFT",
       // Attach categories
       categories:
@@ -292,10 +290,15 @@ export async function createBusinessAction(_prevState, formData) {
 }
 
 /**
- * Publish a business listing (changes status from DRAFT → ACTIVE).
+ * Submit a business listing for admin review.
  */
 export async function publishBusinessAction(businessId) {
   const user = await requireUser();
+  const billingState = await getOwnerBillingState(user.id);
+
+  if (!billingState?.hasPaidAccess) {
+    return { success: false, message: "Upgrade to the paid plan before submitting a listing." };
+  }
 
   const business = await prisma.business.findUnique({
     where: { id: businessId },
@@ -313,18 +316,22 @@ export async function publishBusinessAction(businessId) {
   }
 
   if (business.ownerId !== user.id && user.role !== "ADMIN") {
-    return { success: false, message: "You don't have permission to publish this business." };
+    return { success: false, message: "You don't have permission to submit this business." };
   }
 
   if (business.status === "ACTIVE") {
-    return { success: false, message: "Business is already published." };
+    return { success: false, message: "Business is already approved and live." };
+  }
+
+  if (business.status === "PENDING") {
+    return { success: false, message: "Business is already waiting for admin review." };
   }
 
   await prisma.business.update({
     where: { id: businessId },
     data: {
-      status: "ACTIVE",
-      publishedAt: new Date(),
+      status: "PENDING",
+      publishedAt: null,
     },
   });
 
@@ -332,16 +339,7 @@ export async function publishBusinessAction(businessId) {
   revalidatePath("/search");
   revalidatePath("/dashboard/businesses");
 
-  // Notify the owner their listing is live (non-blocking)
-  if (business.owner?.email) {
-    sendListingPublishedEmail({
-      to: business.owner.email,
-      businessName: business.name,
-      businessSlug: business.slug,
-    }).catch((err) => console.error("[businesses] publish email failed:", err));
-  }
-
-  return { success: true, message: "Business published successfully!" };
+  return { success: true, message: "Business submitted for review." };
 }
 
 /**
@@ -418,9 +416,9 @@ export async function createBusinessFromFormAction(data) {
   const isHiring = Boolean(data.isHiring);
   const hiringRoles = normalizeHiringRoles(data.hiringRoles);
 
-  // Only OWNER or ADMIN can create businesses
-  if (user.role !== "OWNER" && user.role !== "ADMIN") {
-    return { success: false, message: "Only business owners can create listings." };
+  const billingState = await getOwnerBillingState(user.id);
+  if (!billingState?.hasPaidAccess) {
+    return { success: false, message: "Upgrade to the paid plan before creating a listing." };
   }
 
   // Validation
@@ -503,10 +501,8 @@ export async function createBusinessFromFormAction(data) {
         : null;
   const inferredZipCode = data.address?.match(/\b\d{5}(?:-\d{4})?\b/)?.[0] ?? "";
 
-  // Get free plan
-  const freePlan = await prisma.plan.findUnique({ where: { slug: "free" } });
-  if (!freePlan) {
-    return { success: false, message: "System error: Free plan not found. Please contact support." };
+  if (!billingState.activePlanId) {
+    return { success: false, message: "System error: Paid plan not found. Please contact support." };
   }
 
   // Generate unique slug
@@ -542,7 +538,7 @@ export async function createBusinessFromFormAction(data) {
           lat,
           lng,
           ownerId: user.id,
-          planId: freePlan.id,
+          planId: billingState.activePlanId,
           status: "DRAFT",
           categories:
             categoryIds.length > 0
@@ -787,7 +783,7 @@ export async function publishBusinessFormAction(formData) {
   const businessId = formData.get("businessId")?.toString();
   if (!businessId) return;
   await publishBusinessAction(businessId);
-  redirect("/dashboard/businesses");
+  redirect("/dashboard/businesses?submitted=1");
 }
 
 /**

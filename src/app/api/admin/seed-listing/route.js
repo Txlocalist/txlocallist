@@ -3,7 +3,7 @@
  * Opens in browser: http://localhost:3000/api/admin/seed-listing
  *
  * Finds any business with "italian" in the name (or the first business
- * if none found), upgrades it to the Pro plan, and populates it with
+ * if none found), upgrades it to the paid plan, and populates it with
  * full test data so every feature on the business listing page is visible.
  *
  * Redirects to the business page on success.
@@ -61,10 +61,10 @@ export async function GET() {
       return NextResponse.json({ error: "No businesses found in the database at all." }, { status: 404 });
     }
 
-    // ── 2. Get pro plan ────────────────────────────────────────────────────
-    const proPlan = await prisma.plan.findUnique({ where: { slug: "pro" } });
-    if (!proPlan) {
-      return NextResponse.json({ error: "Pro plan not found — run: npm run db:seed-plans" }, { status: 500 });
+    // ── 2. Get paid plan ───────────────────────────────────────────────────
+    const paidPlan = await prisma.plan.findUnique({ where: { slug: "starter" } });
+    if (!paidPlan) {
+      return NextResponse.json({ error: "Paid plan not found — run: npm run db:seed-plans" }, { status: 500 });
     }
 
     // ── 3. Build new slug (keep stable) ───────────────────────────────────
@@ -89,7 +89,7 @@ export async function GET() {
         website:     "https://trattorianonna.com",
         status:      "ACTIVE",
         publishedAt: new Date(),
-        planId:      proPlan.id,
+        planId:      paidPlan.id,
       },
     });
 

@@ -97,12 +97,12 @@ export default async function FavoritesPage() {
     }));
 
   return (
-    <DashboardLayout activeTab="favorites">
+    <DashboardLayout activeTab="businesses-saved">
       <div className={styles.pageHeader}>
         <div>
-          <h1 className={styles.pageTitle}>Favorites</h1>
+          <h1 className={styles.pageTitle}>Saved Businesses</h1>
           <p className={styles.pageSubtitle}>
-            Keep your best Texas finds in one easy place.
+            Keep your saved business listings in one easy place.
           </p>
         </div>
       </div>
@@ -117,7 +117,13 @@ export default async function FavoritesPage() {
           </div>
         </div>
       ) : (
-        <FavoritesDashboard favorites={favoriteItems} />
+        <FavoritesDashboard
+          favorites={favoriteItems}
+          emptyTitle="No saved businesses yet"
+          emptyDescription="Tap the heart on any listing to build your own shortlist of saved businesses."
+          emptyActionLabel="Explore Businesses"
+          statsLabel="Saved Businesses"
+        />
       )}
     </DashboardLayout>
   );

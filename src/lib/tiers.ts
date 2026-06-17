@@ -18,22 +18,16 @@ export interface TierFeatures {
 export const TIER_NAMES = {
   FREE: "free",
   STARTER: "starter",
-  PRO: "pro",
-  PREMIUM: "premium",
 } as const;
 
 export const TIER_LABELS: Record<string, string> = {
   free: "Free",
-  starter: "Starter",
-  pro: "Pro",
-  premium: "Premium",
+  starter: "Paid",
 };
 
 export const TIER_PRICES: Record<string, number> = {
   free: 0, // in cents
-  starter: 2999,
-  pro: 5999,
-  premium: 9999,
+  starter: 2000,
 };
 
 /**
@@ -60,33 +54,11 @@ export function getFeatures(tierSlug?: string | null): TierFeatures {
   switch ((tierSlug ?? "free").toLowerCase()) {
     case TIER_NAMES.STARTER:
       return {
-        MAX_PHOTOS: 5,
-        SHOW_CONTACT: true,
-        SHOW_WEBSITE: true,
-        SHOW_SOCIALS: false,
-        JOB_POSTINGS: 1,
-        FEATURED: false,
-        PRIORITY_SEARCH: false,
-      };
-
-    case TIER_NAMES.PRO:
-      return {
         MAX_PHOTOS: 20,
         SHOW_CONTACT: true,
         SHOW_WEBSITE: true,
         SHOW_SOCIALS: true,
         JOB_POSTINGS: 3,
-        FEATURED: false,
-        PRIORITY_SEARCH: true,
-      };
-
-    case TIER_NAMES.PREMIUM:
-      return {
-        MAX_PHOTOS: 50,
-        SHOW_CONTACT: true,
-        SHOW_WEBSITE: true,
-        SHOW_SOCIALS: true,
-        JOB_POSTINGS: 10,
         FEATURED: true,
         PRIORITY_SEARCH: true,
       };

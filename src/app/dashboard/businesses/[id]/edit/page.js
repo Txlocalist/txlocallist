@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { DashboardLayout } from "../../../DashboardShell";
 import { EditBusinessForm } from "./EditBusinessForm";
 import styles from "../../../dashboard.module.css";
+import { getOwnerBillingState } from "@/lib/billing";
 import { prisma } from "@/lib/prisma";
 import { getCurrentSession } from "@/lib/auth/session";
 import { isMissingPrismaTableError, phase3SchemaMessage } from "@/lib/prisma-errors";
@@ -17,9 +18,10 @@ export default async function EditBusinessPage({ params }) {
   }
 
   const user = session.user;
+  const billingState = await getOwnerBillingState(user.id).catch(() => null);
 
-  if (user.role !== "OWNER" && user.role !== "ADMIN") {
-    redirect("/post-your-business");
+  if (user.role !== "ADMIN" && !billingState?.hasPaidAccess) {
+    redirect("/dashboard/billing");
   }
 
   // Next.js 16: params is a Promise — must be awaited
@@ -63,7 +65,7 @@ export default async function EditBusinessPage({ params }) {
 
   if (schemaNotice) {
     return (
-      <DashboardLayout activeTab="businesses">
+      <DashboardLayout activeTab="businesses-live">
         <div className={styles.pageHeader}>
           <div>
             <h1 className={styles.pageTitle}>Edit Listing</h1>
@@ -103,7 +105,7 @@ export default async function EditBusinessPage({ params }) {
     }
 
     return (
-      <DashboardLayout activeTab="businesses">
+      <DashboardLayout activeTab="businesses-live">
         <div className={styles.pageHeader}>
           <div>
             <h1 className={styles.pageTitle}>Edit Listing</h1>
@@ -124,7 +126,7 @@ export default async function EditBusinessPage({ params }) {
   }
 
   return (
-    <DashboardLayout activeTab="businesses">
+    <DashboardLayout activeTab="businesses-live">
       <div className={styles.pageHeader}>
         <div>
           <h1 className={styles.pageTitle}>Edit Listing</h1>

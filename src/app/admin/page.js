@@ -92,9 +92,8 @@ export default async function AdminOverviewPage() {
       {/* Quick links */}
       <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginBottom: "2rem" }}>
         {[
-          { href: "/admin/businesses", label: "Moderate Listings", icon: "storefront" },
+          { href: "/admin/posts",      label: "Review Posts",      icon: "inventory_2" },
           { href: "/admin/users",      label: "Manage Users",      icon: "group" },
-          { href: "/admin/events",     label: "Review Events",     icon: "event" },
           { href: "/admin/tags",       label: "Manage Tags",       icon: "label" },
           { href: "/admin/settings",   label: "Create Admin",      icon: "admin_panel_settings" },
         ].map((l) => (
@@ -140,7 +139,7 @@ export default async function AdminOverviewPage() {
         <>
           <div className={styles.pageHeader} style={{ marginTop: "2rem" }}>
             <h2 className={styles.pageTitle} style={{ fontSize: "1.25rem" }}>Recent Listings</h2>
-            <Link href="/admin/businesses" className={styles.actionButton}>View All</Link>
+            <Link href="/admin/posts?type=businesses" className={styles.actionButton}>View All</Link>
           </div>
           <div className={styles.businessesTable}>
             <div className={styles.tableHeader}>

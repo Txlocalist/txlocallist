@@ -4,6 +4,7 @@ import Link from "next/link";
 import logo from "@/app/assets/Tx-Localist-01.png";
 import { logoutAction } from "@/app/actions/auth";
 import { getCurrentSession } from "@/lib/auth/session";
+import { getOwnerBillingState } from "@/lib/billing";
 
 import styles from "./DashboardShell.module.css";
 
@@ -13,26 +14,81 @@ import styles from "./DashboardShell.module.css";
 export async function DashboardLayout({ children, activeTab = "overview" }) {
   const session = await getCurrentSession().catch(() => null);
   const user = session?.user ?? null;
-  const isOwnerView = user?.role === "OWNER" || user?.role === "ADMIN";
-
-  const tabs = isOwnerView
-    ? [
-        { id: "overview", label: "Overview", href: "/dashboard", icon: "dashboard" },
-        { id: "favorites", label: "Favorites", href: "/dashboard/favorites", icon: "favorite" },
-        { id: "businesses", label: "My Listings", href: "/dashboard/businesses", icon: "storefront" },
-        { id: "applications", label: "Applications", href: "/dashboard/applications", icon: "description" },
-        { id: "events", label: "Events", href: "/dashboard/events", icon: "event" },
+  const billingState = user?.id ? await getOwnerBillingState(user.id).catch(() => null) : null;
+  const hasCreatorAccess = user?.role === "ADMIN" || Boolean(billingState?.hasPaidAccess);
+  const navSections = [
+    {
+      title: "Posts",
+      icon: "campaign",
+      items: [
+        { id: "events-live", label: "Live Events", href: "/dashboard/events", icon: "event" },
+        {
+          id: "events-create",
+          label: "Create Events",
+          href: "/dashboard/events/new",
+          icon: "add_circle",
+        },
+        {
+          id: "events-saved",
+          label: "Saved Events",
+          href: "/dashboard/events/saved",
+          icon: "bookmark",
+        },
+      ],
+    },
+    {
+      title: "Businesses",
+      icon: "storefront",
+      items: [
+        {
+          id: "businesses-live",
+          label: "Live Businesses",
+          href: "/dashboard/businesses",
+          icon: "storefront",
+        },
+        {
+          id: "businesses-create",
+          label: "Create Business",
+          href: "/dashboard/businesses/new",
+          icon: "add_business",
+        },
+        {
+          id: "businesses-saved",
+          label: "Saved Businesses",
+          href: "/dashboard/businesses/saved",
+          icon: "favorite",
+        },
+      ],
+    },
+    {
+      title: "Account",
+      icon: "manage_accounts",
+      items: [
         { id: "billing", label: "Billing", href: "/dashboard/billing", icon: "payments" },
         { id: "settings", label: "Settings", href: "/dashboard/settings", icon: "settings" },
-      ]
-    : [{ id: "favorites", label: "Favorites", href: "/dashboard/favorites", icon: "favorite" }];
+      ],
+    },
+  ];
+
+  const openSections = new Set();
+  if (activeTab?.startsWith("events-")) {
+    openSections.add("Posts");
+  }
+  if (activeTab?.startsWith("businesses-")) {
+    openSections.add("Businesses");
+  }
+  if (activeTab === "billing" || activeTab === "settings") {
+    openSections.add("Account");
+  }
 
   const sectionTitles = {
-    overview: "LocalDirectory",
-    favorites: "Saved Places",
-    businesses: "My Listings",
-    applications: "Applications",
-    events: "Events",
+    overview: "Dashboard",
+    "events-live": "Live Events",
+    "events-create": hasCreatorAccess ? "Create Events" : "Upgrade Account",
+    "events-saved": "Saved Events",
+    "businesses-live": "Live Businesses",
+    "businesses-create": hasCreatorAccess ? "Create Business" : "Upgrade Account",
+    "businesses-saved": "Saved Businesses",
     billing: "Billing",
     settings: "Settings",
   };
@@ -63,35 +119,51 @@ export async function DashboardLayout({ children, activeTab = "overview" }) {
             </Link>
           </div>
 
-          <Link
-            href={isOwnerView ? "/dashboard/businesses/new" : "/results"}
-            className={styles.sidebarCta}
-          >
-            {isOwnerView ? "Add New Listing" : "Explore Local Spots"}
-          </Link>
-
           <nav className={styles.sidebarNav}>
-            {tabs.map((tab) => (
-              <Link
-                key={tab.id}
-                href={tab.href}
-                className={`${styles.navLink} ${activeTab === tab.id ? styles.navLinkActive : ""}`}
+            {navSections.map((section) => (
+              <details
+                key={section.title}
+                className={styles.navSection}
+                open={openSections.has(section.title)}
               >
-                <span className={`material-icons ${styles.navLinkIcon}`} aria-hidden="true">
-                  {tab.icon}
-                </span>
-                <span>{tab.label}</span>
-              </Link>
+                <summary className={styles.navSectionSummary}>
+                  <span className={styles.navSectionLead}>
+                    <span className={styles.navSectionIconWrap}>
+                      <span className={`material-icons ${styles.navSectionIcon}`} aria-hidden="true">
+                        {section.icon}
+                      </span>
+                    </span>
+                    <span className={styles.navSectionTitle}>{section.title}</span>
+                  </span>
+                  <span className={`material-icons ${styles.navSectionChevron}`} aria-hidden="true">
+                    expand_more
+                  </span>
+                </summary>
+                <div className={styles.navSectionItems}>
+                  {section.items.map((item) => (
+                    <Link
+                      key={item.id}
+                      href={item.href}
+                      className={`${styles.navLink} ${activeTab === item.id ? styles.navLinkActive : ""}`}
+                    >
+                      <span className={`material-icons ${styles.navLinkIcon}`} aria-hidden="true">
+                        {item.icon}
+                      </span>
+                      <span>{item.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              </details>
             ))}
           </nav>
 
           <div className={styles.sidebarFooter}>
             <div className={styles.helpCard}>
-              <p className={styles.helpEyebrow}>{isOwnerView ? "Upgrade to Pro" : "Build Your Local List"}</p>
+              <p className={styles.helpEyebrow}>{hasCreatorAccess ? "Creator Access" : "Billing Access"}</p>
               <p className={styles.helpText}>
-                {isOwnerView
-                  ? "Get 2x more visibility across the region."
-                  : "Save places you love and come back to them any time."}
+                {hasCreatorAccess
+                  ? "Your paid account is active. Create listings and post events from the dashboard."
+                  : "Sign in as a normal user, save favorites, and upgrade to the $20 plan when you're ready to post."}
               </p>
             </div>
           </div>
@@ -114,7 +186,7 @@ export async function DashboardLayout({ children, activeTab = "overview" }) {
                 <div className={styles.profileAvatar}>{userInitial}</div>
                 <div className={styles.profileText}>
                   <span className={styles.profileEmail}>{userLabel}</span>
-                  <span className={styles.profileRole}>{user?.role || "OWNER"}</span>
+                  <span className={styles.profileRole}>{user?.role || "USER"}</span>
                 </div>
               </div>
 

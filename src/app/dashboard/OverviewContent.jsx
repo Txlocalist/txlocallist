@@ -6,6 +6,7 @@ import ambassadorImage from "@/app/assets/Ambasodor.png";
 import styles from "./overview.module.css";
 
 export function OverviewContent({
+  canCreateListing,
   greetingName,
   recentBusinesses,
   schemaNotice,
@@ -98,7 +99,9 @@ export function OverviewContent({
             </div>
           ) : (
             <div className={styles.inlineEmptyPanel}>
-              No listings yet. Create your first one to start showing up in local discovery.
+              {canCreateListing
+                ? "No listings yet. Create your first one to start showing up in local discovery."
+                : "No listings yet. Upgrade your account in billing before creating your first listing."}
             </div>
           )}
         </div>

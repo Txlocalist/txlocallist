@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { DashboardLayout } from "../DashboardShell";
 import styles from "../dashboard.module.css";
+import { getOwnerBillingState } from "@/lib/billing";
 import { prisma } from "@/lib/prisma";
 import { getCurrentSession } from "@/lib/auth/session";
 import { isMissingPrismaTableError, phase3SchemaMessage } from "@/lib/prisma-errors";
@@ -15,7 +16,10 @@ export default async function ApplicationsPage() {
   }
 
   const user = session.user;
-  if (user.role !== "OWNER" && user.role !== "ADMIN") {
+  const billingState = await getOwnerBillingState(user.id).catch(() => null);
+  const canAccessCreatorTools = user.role === "ADMIN" || Boolean(billingState?.hasPaidAccess);
+
+  if (!canAccessCreatorTools) {
     redirect("/dashboard");
   }
 

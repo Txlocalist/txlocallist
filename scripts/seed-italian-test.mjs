@@ -57,13 +57,13 @@ async function main() {
   }
   console.log(`✅  Found: "${biz.name}" (id: ${biz.id}) — city: ${biz.city?.name}`);
 
-  // ── 2. Find the "pro" plan ─────────────────────────────────────────────────
-  const proPlan = await prisma.plan.findUnique({ where: { slug: "pro" } });
-  if (!proPlan) {
-    console.error("❌  Could not find 'pro' plan — run seed-plans.mjs first.");
+  // ── 2. Find the paid plan ────────────────────────────────────────────────
+  const paidPlan = await prisma.plan.findUnique({ where: { slug: "starter" } });
+  if (!paidPlan) {
+    console.error("❌  Could not find the paid plan — run seed-plans.mjs first.");
     process.exit(1);
   }
-  console.log(`✅  Using plan: ${proPlan.slug} (tier ${proPlan.tier})`);
+  console.log(`✅  Using plan: ${paidPlan.slug} (tier ${paidPlan.tier})`);
 
   // ── 3. Update core business fields ────────────────────────────────────────
   await prisma.business.update({
@@ -79,7 +79,7 @@ async function main() {
       website:     "https://trattorianonna.com",
       status:      "ACTIVE",
       publishedAt: new Date(),
-      planId:      proPlan.id,
+      planId:      paidPlan.id,
     },
   });
   console.log("✅  Updated business fields");

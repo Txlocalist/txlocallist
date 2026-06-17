@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { Navbar, Footer, Button } from "@/components";
+import { Navbar, Footer } from "@/components";
 import { getCurrentUser } from "@/lib/auth/session";
 import styles from "./post.module.css";
 
@@ -14,17 +13,17 @@ const STEPS = [
   {
     number: "01",
     title: "Create Your Account",
-    description: "Sign up free in under 2 minutes. No credit card required to get started.",
+    description: "Create a normal user account so you can browse, save favorites, and manage billing in one place.",
   },
   {
     number: "02",
-    title: "Build Your Listing",
-    description: "Add your business name, description, contact info, photos, and categories.",
+    title: "Start The Paid Plan",
+    description: "Unlock listing access with one simple $20 monthly subscription through Stripe.",
   },
   {
     number: "03",
-    title: "Choose a Plan",
-    description: "Start free or pick a paid tier for full contact visibility and photos.",
+    title: "Build Your Listing",
+    description: "Add your business name, description, contact info, photos, and categories.",
   },
   {
     number: "04",
@@ -39,17 +38,11 @@ const BENEFITS = [
   { icon: "📸", title: "Photo Gallery", description: "Showcase your space, products, or team with photos." },
   { icon: "💼", title: "Job Postings", description: "Post open positions and find local talent fast." },
   { icon: "🔗", title: "Website & Socials", description: "Link your website and social profiles to your listing." },
-  { icon: "⭐", title: "Featured Placement", description: "Premium listings appear first in search results." },
+  { icon: "⭐", title: "Featured Placement", description: "Paid listings earn stronger placement in local search." },
 ];
 
 export default async function PostYourBusinessPage() {
   const user = await getCurrentUser();
-
-  // If already an owner, send straight to dashboard
-  if (user?.role === "OWNER" || user?.role === "ADMIN") {
-    redirect("/dashboard/businesses/new");
-  }
-
   return (
     <>
       <Navbar />
@@ -67,17 +60,17 @@ export default async function PostYourBusinessPage() {
           </p>
           <div className={styles.heroActions}>
             <Link
-              href={user ? "/dashboard/businesses/new" : "/signup?intent=owner"}
+              href={user ? "/dashboard/billing" : "/signup?intent=owner"}
               className={styles.heroCta}
             >
-              {user ? "Create a Listing →" : "Get Started Free →"}
+              {user ? "Upgrade To Post →" : "Create Account →"}
             </Link>
             <Link href="/pricing" className={styles.heroSecondary}>
               View Plans & Pricing
             </Link>
           </div>
           <p className={styles.heroNote}>
-            Free listing available • No credit card required to start
+            $20/month paid plan required before listing creation
           </p>
         </div>
       </section>
@@ -128,19 +121,9 @@ export default async function PostYourBusinessPage() {
               <p className={styles.teaseDesc}>Name in the directory. Great for getting started.</p>
             </div>
             <div className={`${styles.teaseCard} ${styles.teaseCardHighlight}`}>
-              <p className={styles.teasePlan}>Starter</p>
-              <p className={styles.teasePrice}>$29.99<span>/mo</span></p>
-              <p className={styles.teaseDesc}>Full contact info, website link, and 5 photos.</p>
-            </div>
-            <div className={styles.teaseCard}>
-              <p className={styles.teasePlan}>Pro</p>
-              <p className={styles.teasePrice}>$59.99<span>/mo</span></p>
-              <p className={styles.teaseDesc}>Priority search, social links, and job postings.</p>
-            </div>
-            <div className={styles.teaseCard}>
-              <p className={styles.teasePlan}>Premium</p>
-              <p className={styles.teasePrice}>$99.99<span>/mo</span></p>
-              <p className={styles.teaseDesc}>Featured placement, 50 photos, and everything included.</p>
+              <p className={styles.teasePlan}>Paid</p>
+              <p className={styles.teasePrice}>$20<span>/mo</span></p>
+              <p className={styles.teaseDesc}>Contact info, socials, featured placement, more photos, and job postings.</p>
             </div>
           </div>
           <Link href="/pricing" className={styles.teaseLink}>
@@ -157,10 +140,10 @@ export default async function PostYourBusinessPage() {
             Join hundreds of Texas businesses already on TX Localist.
           </p>
           <Link
-            href={user ? "/dashboard/businesses/new" : "/signup?intent=owner"}
+            href={user ? "/dashboard/billing" : "/signup?intent=owner"}
             className={styles.heroCta}
           >
-            {user ? "Create a Listing →" : "Create Your Free Account →"}
+            {user ? "Upgrade To Post →" : "Create Your Account →"}
           </Link>
         </div>
       </section>

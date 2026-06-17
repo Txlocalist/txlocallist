@@ -170,18 +170,21 @@ export function CreateBusinessForm({ cities, tags }) {
 
       const businessId = result.data.id;
 
-      // Publish if user selected
+      // Submit for review if user selected
       if (formData.publish) {
         const publishResult = await publishBusinessAction(businessId);
         if (!publishResult.success) {
-          setError(publishResult.message || "Failed to publish listing");
+          setError(publishResult.message || "Failed to submit listing for review");
           setLoading(false);
           return;
         }
+
+        router.push("/dashboard/businesses?submitted=1");
+        return;
       }
 
       // Redirect to businesses list
-      router.push("/dashboard/businesses");
+      router.push("/dashboard/businesses?created=1");
     } catch (err) {
       setError(err.message || "An error occurred");
       setLoading(false);
@@ -471,24 +474,24 @@ export function CreateBusinessForm({ cities, tags }) {
           <h2 className={formStyles.stepTitle}>Photos</h2>
           <p className={formStyles.stepDescription}>
             Add photos to make your listing stand out. Your first photo becomes the cover image.
-            Free listings include 1 photo — upgrade your plan to add more.
+            Paid accounts can upload up to 20 photos per listing.
           </p>
           <PhotoUploader
             photos={formData.photos}
             onChange={(photos) =>
               setFormData((prev) => ({ ...prev, photos }))
             }
-            maxPhotos={1}
+            maxPhotos={20}
           />
         </div>
       )}
 
-      {/* Step 5: Review & Publish */}
+      {/* Step 5: Review & Submit */}
       {step === 5 && (
         <div className={formStyles.step}>
-          <h2 className={formStyles.stepTitle}>Review & Publish</h2>
+          <h2 className={formStyles.stepTitle}>Review & Submit</h2>
           <p className={formStyles.stepDescription}>
-            Review your listing before publishing
+            Review your listing before saving or sending it to admin review
           </p>
 
           <div className={formStyles.reviewCard}>
@@ -553,10 +556,10 @@ export function CreateBusinessForm({ cities, tags }) {
                 checked={formData.publish}
                 onChange={handleChange}
               />
-              <span>Publish immediately (make listing visible)</span>
+              <span>Submit this listing for admin review</span>
             </label>
             <p className={formStyles.checkboxHint}>
-              Uncheck to save as draft and publish later
+              Leave this unchecked to save a draft and submit it later from your dashboard.
             </p>
           </div>
         </div>

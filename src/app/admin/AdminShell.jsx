@@ -21,18 +21,16 @@ export async function AdminShell({ children, activeTab = "overview" }) {
 
   const tabs = [
     { id: "overview", label: "Overview", href: "/admin", icon: "dashboard" },
-    { id: "businesses", label: "Businesses", href: "/admin/businesses", icon: "storefront" },
+    { id: "posts", label: "Posts", href: "/admin/posts", icon: "inventory_2" },
     { id: "users", label: "Users", href: "/admin/users", icon: "group" },
-    { id: "events", label: "Events", href: "/admin/events", icon: "event" },
     { id: "tags", label: "Tags", href: "/admin/tags", icon: "label" },
     { id: "settings", label: "Admin Tools", href: "/admin/settings", icon: "admin_panel_settings" },
   ];
 
   const sectionTitles = {
     overview: "Admin Overview",
-    businesses: "Manage Businesses",
+    posts: "Review Posts",
     users: "Manage Users",
-    events: "Manage Events",
     tags: "Manage Tags",
     settings: "Admin Tools",
   };

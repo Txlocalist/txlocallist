@@ -3,6 +3,7 @@ import Link from "next/link";
 import { DashboardLayout } from "./DashboardShell";
 import { OverviewContent } from "./OverviewContent";
 import styles from "./overview.module.css";
+import { getOwnerBillingState } from "@/lib/billing";
 import { prisma } from "@/lib/prisma";
 import { getCurrentSession } from "@/lib/auth/session";
 import { isMissingPrismaTableError, phase3SchemaMessage } from "@/lib/prisma-errors";
@@ -29,12 +30,11 @@ export default async function DashboardPage() {
 
   const user = session.user;
 
-  if (user.role === "USER") {
-    redirect("/dashboard/favorites");
-  }
+  const billingState = await getOwnerBillingState(user.id).catch(() => null);
+  const canCreateListing = user.role === "ADMIN" || Boolean(billingState?.hasPaidAccess);
 
-  if (user.role !== "OWNER" && user.role !== "ADMIN") {
-    redirect("/login");
+  if (!canCreateListing) {
+    redirect("/dashboard/favorites");
   }
 
   let businesses = [];
@@ -75,11 +75,14 @@ export default async function DashboardPage() {
   const subtitle =
     businesses.length > 0
       ? `Your profile is shining bright. You currently have ${stats.active} active listing${stats.active === 1 ? "" : "s"}, ${stats.draft} draft${stats.draft === 1 ? "" : "s"}, and ${stats.paidPlans} paid plan${stats.paidPlans === 1 ? "" : "s"} in motion.`
-      : "Your dashboard is ready. Start with your first listing and build a stronger local presence across the directory.";
+      : canCreateListing
+        ? "Your dashboard is ready. Start with your first listing and build a stronger local presence across the directory."
+        : "Your dashboard is ready. Upgrade your account in billing first, then create your first listing.";
 
   return (
     <DashboardLayout activeTab="overview">
       <OverviewContent
+        canCreateListing={canCreateListing}
         greetingName={greetingName}
         recentBusinesses={recentBusinesses}
         schemaNotice={schemaNotice}

@@ -14,9 +14,9 @@ const PLANS = [
     slug: "free",
     name: "Free",
     price: 0,
-    description: "Get your name in the directory at no cost.",
-    cta: "Get Started Free",
-    ctaHref: "/signup?intent=owner",
+    description: "Create a normal user account to browse businesses, events, and favorites.",
+    cta: "Create Account",
+    ctaHref: "/signup",
     highlight: false,
     features: [
       { label: "Business name listed", included: true },
@@ -33,34 +33,13 @@ const PLANS = [
   },
   {
     slug: "starter",
-    name: "Starter",
-    price: 29.99,
-    description: "Everything you need to get discovered and contacted.",
-    cta: "Start Starter",
+    name: "Paid",
+    price: 20,
+    description: "Unlock business creation and business-linked event posting with one simple paid tier.",
+    cta: "Create Account To Upgrade",
     ctaHref: "/signup?intent=owner&plan=starter",
-    highlight: false,
-    features: [
-      { label: "Business name listed", included: true },
-      { label: "Appears in search results", included: true },
-      { label: "City & category tags", included: true },
-      { label: "Contact info visible", included: true },
-      { label: "Website link", included: true },
-      { label: "Social links", included: false },
-      { label: "Photos", value: "5 photos", included: true },
-      { label: "Job postings", value: "1 active", included: true },
-      { label: "Priority search placement", included: false },
-      { label: "Featured placement", included: false },
-    ],
-  },
-  {
-    slug: "pro",
-    name: "Pro",
-    price: 59.99,
-    description: "More visibility, social presence, and hiring power.",
-    cta: "Start Pro",
-    ctaHref: "/signup?intent=owner&plan=pro",
     highlight: true,
-    badge: "Most Popular",
+    badge: "Best Value",
     features: [
       { label: "Business name listed", included: true },
       { label: "Appears in search results", included: true },
@@ -70,27 +49,6 @@ const PLANS = [
       { label: "Social links", included: true },
       { label: "Photos", value: "20 photos", included: true },
       { label: "Job postings", value: "3 active", included: true },
-      { label: "Priority search placement", included: true },
-      { label: "Featured placement", included: false },
-    ],
-  },
-  {
-    slug: "premium",
-    name: "Premium",
-    price: 99.99,
-    description: "Maximum visibility. Be featured. Dominate local search.",
-    cta: "Start Premium",
-    ctaHref: "/signup?intent=owner&plan=premium",
-    highlight: false,
-    features: [
-      { label: "Business name listed", included: true },
-      { label: "Appears in search results", included: true },
-      { label: "City & category tags", included: true },
-      { label: "Contact info visible", included: true },
-      { label: "Website link", included: true },
-      { label: "Social links", included: true },
-      { label: "Photos", value: "50 photos", included: true },
-      { label: "Job postings", value: "10 active", included: true },
       { label: "Priority search placement", included: true },
       { label: "Featured placement", included: true },
     ],
@@ -108,21 +66,21 @@ const FAQ = [
   },
   {
     q: "Can I upgrade or downgrade?",
-    a: "Yes. Changes take effect at the start of your next billing cycle.",
+    a: "Right now there is just one paid tier. If pricing changes later, plan changes will take effect at the start of the next billing cycle.",
   },
   {
     q: "What payment methods do you accept?",
     a: "We accept all major credit and debit cards via Stripe. Your payment details are never stored on our servers.",
   },
   {
-    q: "Is the free listing permanent?",
-    a: "Yes. Your free listing stays live as long as you have an account. Upgrade whenever you're ready.",
+    q: "Is there a free posting tier?",
+    a: "No. The free account lets you sign in and manage billing before you start the paid plan.",
   },
 ];
 
 export default async function PricingPage() {
   const user = await getCurrentUser();
-  const isOwner = user?.role === "OWNER" || user?.role === "ADMIN";
+  const isLoggedIn = Boolean(user);
 
   return (
     <>
@@ -162,10 +120,10 @@ export default async function PricingPage() {
                 <p className={styles.planDescription}>{plan.description}</p>
 
                 <Link
-                  href={isOwner ? "/dashboard/billing" : plan.ctaHref}
+                  href={isLoggedIn ? "/dashboard/billing" : plan.ctaHref}
                   className={`${styles.planCta} ${plan.highlight ? styles.planCtaHighlight : ""}`}
                 >
-                  {isOwner ? "Manage Plan" : plan.cta}
+                  {isLoggedIn ? "Manage Billing" : plan.cta}
                 </Link>
 
                 <ul className={styles.featureList}>
@@ -213,10 +171,10 @@ export default async function PricingPage() {
           <h2 className={styles.ctaTitle}>Ready to get listed?</h2>
           <p className={styles.ctaSubtitle}>Join Texas businesses already on TX Localist.</p>
           <Link
-            href={isOwner ? "/dashboard/businesses/new" : "/signup?intent=owner"}
+            href={isLoggedIn ? "/dashboard/billing" : "/signup"}
             className={styles.ctaButton}
           >
-            {isOwner ? "Create a Listing →" : "Start for Free →"}
+            {isLoggedIn ? "Manage Billing →" : "Create Account →"}
           </Link>
         </div>
       </section>

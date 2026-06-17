@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { requireUser } from "@/lib/auth/session";
+import { getOwnerBillingState } from "@/lib/billing";
 import { prisma } from "@/lib/prisma";
 
 function getTextValue(formData, key) {
@@ -22,6 +23,11 @@ function slugifyTag(name) {
  */
 export async function createEventAction(prevState, formData) {
   const user = await requireUser();
+  const billingState = await getOwnerBillingState(user.id).catch(() => null);
+
+  if (user.role !== "ADMIN" && !billingState?.hasPaidAccess) {
+    return { error: "Upgrade to the paid plan before posting events.", fieldErrors: {} };
+  }
 
   const title        = getTextValue(formData, "title");
   const description  = getTextValue(formData, "description");
@@ -44,9 +50,24 @@ export async function createEventAction(prevState, formData) {
   if (!address)     fieldErrors.address     = "Street address is required.";
   if (!city)        fieldErrors.city        = "City is required.";
   if (!zipCode)     fieldErrors.zipCode     = "ZIP code is required.";
+  if (!businessId && user.role !== "ADMIN") fieldErrors.businessId = "Choose one of your businesses.";
 
   if (Object.keys(fieldErrors).length > 0) {
     return { error: "Please fix the errors below.", fieldErrors };
+  }
+
+  if (businessId) {
+    const business = await prisma.business.findUnique({
+      where: { id: businessId },
+      select: { id: true, ownerId: true },
+    });
+
+    if (!business || (business.ownerId !== user.id && user.role !== "ADMIN")) {
+      return {
+        error: "Choose a valid business before publishing the event.",
+        fieldErrors: { businessId: "This business is not available for your account." },
+      };
+    }
   }
 
   // Parse tags (comma-separated names) — optional
@@ -81,7 +102,7 @@ export async function createEventAction(prevState, formData) {
         businessId: businessId || null,
         startDate: startDateRaw ? new Date(startDateRaw) : null,
         endDate:   endDateRaw   ? new Date(endDateRaw)   : null,
-        status: "PUBLISHED",
+        status: "PENDING",
         ...(tagConnects.length > 0 ? { tags: { connect: tagConnects } } : {}),
       },
     });
