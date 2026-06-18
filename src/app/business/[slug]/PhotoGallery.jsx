@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+
+import { getBlobImageUrl } from "@/lib/blob";
+
 import styles from "./PhotoGallery.module.css";
 
 export default function PhotoGallery({ photos, businessName }) {
@@ -35,23 +38,33 @@ export default function PhotoGallery({ photos, businessName }) {
 
   function openLightbox(i) {
     setLightboxIndex(i);
-    document.body.style.overflow = "hidden";
   }
 
-  function closeLightbox() {
+  const closeLightbox = useCallback(() => {
     setLightboxIndex(null);
-    document.body.style.overflow = "";
-  }
+  }, []);
 
-  function prevPhoto(e) {
-    e?.stopPropagation();
+  const prevPhoto = useCallback((event) => {
+    event?.stopPropagation();
     setLightboxIndex((i) => (i - 1 + photos.length) % photos.length);
-  }
+  }, [photos.length]);
 
-  function nextPhoto(e) {
-    e?.stopPropagation();
+  const nextPhoto = useCallback((event) => {
+    event?.stopPropagation();
     setLightboxIndex((i) => (i + 1) % photos.length);
-  }
+  }, [photos.length]);
+
+  useEffect(() => {
+    if (lightboxIndex === null) {
+      document.body.style.overflow = "";
+      return;
+    }
+
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [lightboxIndex]);
 
   // Keyboard nav in lightbox
   useEffect(() => {
@@ -63,7 +76,7 @@ export default function PhotoGallery({ photos, businessName }) {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [lightboxIndex]);
+  }, [closeLightbox, lightboxIndex, nextPhoto, prevPhoto]);
 
   return (
     <>
@@ -88,7 +101,7 @@ export default function PhotoGallery({ photos, businessName }) {
               aria-label={`View photo ${i + 1}`}
             >
               <img
-                src={photo.url}
+                src={getBlobImageUrl(photo.url)}
                 alt={photo.alt || businessName}
                 className={styles.galleryImg}
               />
@@ -127,7 +140,7 @@ export default function PhotoGallery({ photos, businessName }) {
 
             {/* Photo */}
             <img
-              src={photos[lightboxIndex].url}
+              src={getBlobImageUrl(photos[lightboxIndex].url)}
               alt={photos[lightboxIndex].alt || businessName}
               className={styles.lightboxImg}
             />

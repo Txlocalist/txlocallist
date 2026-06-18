@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/session";
+import { getBlobImageUrl } from "@/lib/blob";
 import { getBusinessHoursDisplayRows } from "@/lib/business-hours";
 import { isMissingPrismaTableError } from "@/lib/prisma-errors";
 import { Navbar, Footer, SaveButton } from "@/components";
@@ -137,7 +138,7 @@ export default async function BusinessDetailPage({ params }) {
           <div className={styles.heroImageWrap}>
             {heroPhoto ? (
               <img
-                src={heroPhoto.url}
+                src={getBlobImageUrl(heroPhoto.url)}
                 alt={heroPhoto.alt || business.name}
                 className={styles.heroImg}
               />

@@ -1,4 +1,6 @@
 import Link from "next/link";
+
+import { getBlobImageUrl } from "@/lib/blob";
 import { prisma } from "@/lib/prisma";
 import { isMissingPrismaTableError } from "@/lib/prisma-errors";
 import styles from "./events.module.css";
@@ -58,7 +60,7 @@ export async function EventsSection({ city = "" }) {
             {event.imageUrl && (
               <div
                 className={styles.cardImage}
-                style={{ backgroundImage: `url("${event.imageUrl}")` }}
+                style={{ backgroundImage: `url("${getBlobImageUrl(event.imageUrl)}")` }}
               />
             )}
             <div className={styles.cardBody}>

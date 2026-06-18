@@ -228,6 +228,13 @@
   margin-left: 2rem;
 }
 
+.uploadHint {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.45;
+}
+
 /* Buttons */
 .formNavigation {
   display: flex;

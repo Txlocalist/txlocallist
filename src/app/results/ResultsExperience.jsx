@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import logoImage from "@/app/assets/Tx-Localist-01.png";
 import SearchBar from "@/components/SearchBar";
+import { getBlobImageUrl } from "@/lib/blob";
 
 import {
   ArrowRightIcon,
@@ -31,7 +32,7 @@ function BusinessCard({ biz, saved, count, onSave }) {
     <article className="gem-card card-stack-effect">
       {biz.image?.url && biz.image.url !== "/placeholder.jpg" && (
         <div className="gem-image-wrapper">
-          <img src={biz.image.url} alt={biz.name}
+          <img src={getBlobImageUrl(biz.image.url)} alt={biz.name}
             style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         </div>
       )}
@@ -61,7 +62,7 @@ function EventCard({ event }) {
     <article className="gem-card card-stack-effect">
       {event.imageUrl && (
         <div className="gem-image-wrapper">
-          <img src={event.imageUrl} alt={event.title}
+          <img src={getBlobImageUrl(event.imageUrl)} alt={event.title}
             style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         </div>
       )}
@@ -89,7 +90,7 @@ function BusinessRow({ biz, saved, count, onSave }) {
     <article className="list-item">
       <div className="list-item-thumb">
         {biz.image?.url && biz.image.url !== "/placeholder.jpg"
-          ? <img src={biz.image.url} alt={biz.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          ? <img src={getBlobImageUrl(biz.image.url)} alt={biz.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           : <span className="material-icons list-item-thumb-icon">storefront</span>
         }
       </div>
@@ -124,7 +125,7 @@ function EventRow({ event }) {
     <article className="list-item">
       <div className="list-item-thumb list-item-thumb-event">
         {event.imageUrl
-          ? <img src={event.imageUrl} alt={event.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          ? <img src={getBlobImageUrl(event.imageUrl)} alt={event.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           : <span className="material-icons list-item-thumb-icon">event</span>
         }
       </div>

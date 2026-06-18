@@ -83,38 +83,56 @@
   border-color: var(--retro-teal, #4A9D9C);
 }
 
-/* UploadThing appearance overrides (via className props) */
-.dropzoneContainer {
+.uploadPanel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  align-items: flex-start;
   background: var(--bg-muted, #faf7f2);
-  border: none;
   padding: 2rem 1rem;
+  cursor: pointer;
+  border-radius: var(--radius-md, 0.5rem);
 }
 
-.dropzoneIcon {
+.fileInput {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.uploadEyebrow {
   color: var(--retro-teal, #4A9D9C);
+  font-size: 0.72rem;
+  font-family: var(--font-accent, cursive);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
-.dropzoneLabel {
+.uploadTitle {
   color: var(--foreground, #2D241E);
   font-family: var(--font-accent, cursive);
-  font-size: 0.9rem;
+  font-size: 1rem;
 }
 
-.dropzoneAllowed {
+.uploadMeta {
   color: var(--muted, #6A4A31);
-  font-size: 0.75rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
 }
 
-.dropzoneButton {
+.uploadButton {
   background: var(--retro-teal, #4A9D9C);
   color: #fff;
   font-family: var(--font-accent, cursive);
   border-radius: var(--radius-pill, 9999px);
+  padding: 0.7rem 1.2rem;
   transform: rotate(-1deg);
   transition: transform 0.15s ease;
 }
 
-.dropzoneButton:hover {
+.uploadButton:hover {
   transform: rotate(0deg);
 }
 

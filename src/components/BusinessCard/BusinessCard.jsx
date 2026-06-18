@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { getBlobImageUrl } from "@/lib/blob";
+
 import styles from "./BusinessCard.module.css";
 
 const BADGE_TONES = {
@@ -37,9 +39,7 @@ export default function BusinessCard({ business, badgeTone = "yellow", href }) {
   return (
     <article className={styles.businessCard}>
       <div className={styles.businessImageContainer}>
-        {/* Using <img> here instead of next/image to allow arbitrary remote URLs
-            until Phase 5 introduces a managed image host with remotePatterns. */}
-        <img alt={imageAlt ?? name} className={styles.businessImage} src={imageUrl} />
+        <img alt={imageAlt ?? name} className={styles.businessImage} src={getBlobImageUrl(imageUrl)} />
       </div>
 
       {city && <div className={`${styles.businessBadge} ${toneClass}`}>{city}</div>}

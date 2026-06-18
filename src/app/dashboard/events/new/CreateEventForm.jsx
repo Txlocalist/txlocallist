@@ -1,13 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import { useActionState } from "react";
+
 import { createEventAction } from "@/app/actions/events";
+import { PhotoUploader } from "@/components/PhotoUploader";
+
 import styles from "./form.module.css";
 
 const INITIAL_STATE = { error: null, fieldErrors: {} };
 
 export function CreateEventForm({ businesses = [] }) {
   const [state, formAction, isPending] = useActionState(createEventAction, INITIAL_STATE);
+  const [photos, setPhotos] = useState([]);
 
   return (
     <form action={formAction} className={styles.form}>
@@ -45,12 +50,12 @@ export function CreateEventForm({ businesses = [] }) {
 
         {/* Cover Image */}
         <div className={styles.formGroup}>
-          <label className={styles.label} htmlFor="imageUrl">Cover Image URL</label>
-          <input
-            id="imageUrl" name="imageUrl" type="url"
-            className={styles.input}
-            placeholder="https://example.com/image.jpg"
-          />
+          <label className={styles.label}>Cover Image</label>
+          <input type="hidden" name="imageUrl" value={photos[0]?.url || ""} />
+          <PhotoUploader photos={photos} onChange={setPhotos} maxPhotos={1} />
+          <p className={styles.uploadHint}>
+            Event images upload to the same private Vercel Blob storage used for business photos.
+          </p>
         </div>
 
         {/* Dates */}

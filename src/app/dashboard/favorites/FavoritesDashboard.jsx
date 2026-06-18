@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import { getBlobImageUrl } from "@/lib/blob";
+
 import styles from "./favorites.module.css";
 
 const SORT_OPTIONS = [
@@ -194,7 +196,7 @@ export function FavoritesDashboard({
             <article key={item.businessId} className={styles.card}>
               <Link href={`/business/${item.businessSlug}`} className={styles.mediaLink}>
                 {item.photoUrl ? (
-                  <img src={item.photoUrl} alt={item.photoAlt} className={styles.media} />
+                  <img src={getBlobImageUrl(item.photoUrl)} alt={item.photoAlt} className={styles.media} />
                 ) : (
                   <div className={styles.mediaPlaceholder}>
                     <span className="material-icons" aria-hidden="true">

@@ -1,6 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
+    localPatterns: [
+      {
+        pathname: "/api/blob-image",
+      },
+    ],
     remotePatterns: [
       {
         protocol: "https",
@@ -9,15 +14,6 @@ const nextConfig = {
       {
         protocol: "https",
         hostname: "picsum.photos",
-      },
-      // UploadThing CDN (ufs = UploadThing File Server)
-      {
-        protocol: "https",
-        hostname: "utfs.io",
-      },
-      {
-        protocol: "https",
-        hostname: "*.ufs.sh",
       },
     ],
   },

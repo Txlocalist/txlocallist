@@ -1,6 +1,7 @@
 import { get } from "@vercel/blob";
 
 import { getCurrentSession } from "@/lib/auth/session";
+import { isPrivateBlobUrl } from "@/lib/blob";
 import { prisma } from "@/lib/prisma";
 
 function sanitizeFileName(fileName) {
@@ -44,7 +45,7 @@ export async function GET(_request, { params }) {
     return new Response("Forbidden", { status: 403 });
   }
 
-  const isPrivateBlob = application.resumeUrl.includes(".private.blob.vercel-storage.com");
+  const isPrivateBlob = isPrivateBlobUrl(application.resumeUrl);
   const access = isPrivateBlob ? "private" : "public";
   const blob = await get(application.resumeUrl, { access });
 

@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { UploadDropzone } from "@/lib/uploadthing";
+
+import { getBlobImageUrl } from "@/lib/blob";
+
 import styles from "./PhotoUploader.module.css";
 
 /**
- * PhotoUploader — drag-and-drop photo uploader for business listings.
+ * PhotoUploader - image uploader for business listings backed by Vercel Blob.
  *
  * Props:
  *   photos     {Array<{url, name}>}  current list of uploaded photos
@@ -17,22 +19,63 @@ export function PhotoUploader({ photos = [], onChange, maxPhotos = 1 }) {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
 
-  const canAddMore = photos.length < maxPhotos;
+  const remainingSlots = Math.max(0, maxPhotos - photos.length);
+  const canAddMore = remainingSlots > 0;
 
   function handleRemove(url) {
-    onChange(photos.filter((p) => p.url !== url));
+    onChange(photos.filter((photo) => photo.url !== url));
+  }
+
+  async function handleFileChange(event) {
+    const selectedFiles = Array.from(event.target.files || []);
+    event.target.value = "";
+
+    if (selectedFiles.length === 0) {
+      return;
+    }
+
+    const filesToUpload = selectedFiles.slice(0, remainingSlots);
+
+    setUploading(true);
+    setUploadError(null);
+
+    try {
+      const formData = new FormData();
+      filesToUpload.forEach((file) => formData.append("files", file));
+
+      const response = await fetch("/api/business-photos/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.message || "Upload failed. Please try again.");
+      }
+
+      const newPhotos = (payload.files || []).map((file) => ({
+        url: file.url,
+        name: file.name,
+      }));
+
+      onChange([...photos, ...newPhotos].slice(0, maxPhotos));
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : "Upload failed. Please try again.");
+    } finally {
+      setUploading(false);
+    }
   }
 
   return (
     <div className={styles.root}>
-      {/* Uploaded photo grid */}
       {photos.length > 0 && (
         <div className={styles.grid}>
-          {photos.map((photo, i) => (
+          {photos.map((photo, index) => (
             <div key={photo.url} className={styles.thumb}>
               <Image
-                src={photo.url}
-                alt={photo.name || `Photo ${i + 1}`}
+                src={getBlobImageUrl(photo.url)}
+                alt={photo.name || `Photo ${index + 1}`}
                 fill
                 sizes="160px"
                 className={styles.thumbImg}
@@ -43,63 +86,46 @@ export function PhotoUploader({ photos = [], onChange, maxPhotos = 1 }) {
                 onClick={() => handleRemove(photo.url)}
                 aria-label="Remove photo"
               >
-                ×
+                x
               </button>
-              {i === 0 && (
-                <span className={styles.coverBadge}>Cover</span>
-              )}
+              {index === 0 ? <span className={styles.coverBadge}>Cover</span> : null}
             </div>
           ))}
         </div>
       )}
 
-      {/* Tier limit message */}
       <p className={styles.hint}>
         {photos.length} / {maxPhotos} photo{maxPhotos !== 1 ? "s" : ""} uploaded.
-        {!canAddMore && " Upgrade your plan to add more."}
+        {!canAddMore ? " Upgrade your plan to add more." : ""}
       </p>
 
-      {/* Dropzone — only shown when under the limit */}
-      {canAddMore && (
+      {canAddMore ? (
         <div className={styles.dropzoneWrap}>
-          <UploadDropzone
-            endpoint="businessPhoto"
-            config={{ mode: "auto" }}
-            onUploadBegin={() => {
-              setUploading(true);
-              setUploadError(null);
-            }}
-            onClientUploadComplete={(res) => {
-              setUploading(false);
-              if (!res) return;
-              const newPhotos = res.map((f) => ({
-                url: f.url ?? f.ufsUrl,
-                name: f.name,
-              }));
-              // Respect the per-tier cap
-              onChange([...photos, ...newPhotos].slice(0, maxPhotos));
-            }}
-            onUploadError={(err) => {
-              setUploading(false);
-              setUploadError(err.message || "Upload failed. Please try again.");
-            }}
-            appearance={{
-              container: styles.dropzoneContainer,
-              uploadIcon: styles.dropzoneIcon,
-              label: styles.dropzoneLabel,
-              allowedContent: styles.dropzoneAllowed,
-              button: styles.dropzoneButton,
-            }}
-          />
+          <label className={styles.uploadPanel}>
+            <input
+              type="file"
+              accept="image/*"
+              multiple={remainingSlots > 1}
+              className={styles.fileInput}
+              onChange={handleFileChange}
+              disabled={uploading}
+            />
+            <span className={styles.uploadEyebrow}>Private Vercel Blob Upload</span>
+            <span className={styles.uploadTitle}>
+              {uploading ? "Uploading photos..." : "Choose photos to upload"}
+            </span>
+            <span className={styles.uploadMeta}>
+              JPG, PNG, WEBP, and GIF supported. Up to 8MB per image.
+            </span>
+            <span className={styles.uploadButton}>
+              {uploading ? "Uploading..." : remainingSlots > 1 ? "Select Photos" : "Select Photo"}
+            </span>
+          </label>
         </div>
-      )}
+      ) : null}
 
-      {uploading && (
-        <p className={styles.uploadingMsg}>Uploading…</p>
-      )}
-      {uploadError && (
-        <p className={styles.errorMsg}>{uploadError}</p>
-      )}
+      {uploading ? <p className={styles.uploadingMsg}>Uploading...</p> : null}
+      {uploadError ? <p className={styles.errorMsg}>{uploadError}</p> : null}
     </div>
   );
 }
