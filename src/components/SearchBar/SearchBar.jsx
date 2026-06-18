@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./SearchBar.module.css";
 
@@ -13,7 +13,9 @@ export default function SearchBar({
   visibleTypes = ["businesses", "events"],
   variant = "hero",
   autoSubmitOnTypeChange = false,
+  typeChangeHrefMap,
   onSubmit,
+  onTypeChange,
 }) {
   const router = useRouter();
   const filteredTypes = useMemo(
@@ -33,6 +35,7 @@ export default function SearchBar({
   const [query, setQuery] = useState(initialQuery);
   const [location, setLocation] = useState(initialLocation || defaultLocation);
   const [type, setType] = useState(resolvedInitialType);
+  const justChangedType = useRef(false);
   const typeOptions = useMemo(
     () =>
       [
@@ -64,6 +67,40 @@ export default function SearchBar({
     setType(resolvedInitialType);
   }, [resolvedInitialType]);
 
+  useEffect(() => {
+    function handlePageShow() {
+      setType(resolvedInitialType);
+    }
+
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
+  }, [resolvedInitialType]);
+
+  function buildDestination(nextType) {
+    const params = new URLSearchParams();
+    if (query) params.set("q", query);
+    if (location) params.set("loc", location);
+    params.set("tab", nextType);
+
+    const destination =
+      nextType === "events" && action === "/results" ? "/events/results" : action;
+
+    return destination + "?" + params.toString();
+  }
+
+  function buildTypeChangeDestination(nextType) {
+    const mappedDestination =
+      typeChangeHrefMap && typeof typeChangeHrefMap[nextType] === "string"
+        ? typeChangeHrefMap[nextType]
+        : null;
+
+    if (!mappedDestination) {
+      return buildDestination(nextType);
+    }
+
+    return mappedDestination;
+  }
+
   function submit() {
     const nextType = availableTypes.includes(type) ? type : resolvedInitialType;
 
@@ -72,16 +109,47 @@ export default function SearchBar({
       return;
     }
 
-    const params = new URLSearchParams();
-    if (query) params.set("q", query);
-    if (location) params.set("loc", location);
-    params.set("tab", nextType);
-    router.push(action + "?" + params.toString());
+    router.push(buildDestination(nextType));
   }
 
   function handleSubmit(event) {
     event.preventDefault();
     submit();
+  }
+
+  function selectType(nextValue) {
+    const nextType = availableTypes.includes(nextValue)
+      ? nextValue
+      : resolvedInitialType;
+
+    justChangedType.current = true;
+    setType(nextType);
+
+    if (onTypeChange) {
+      onTypeChange({ query, location, type: nextType });
+      return;
+    }
+
+    if (autoSubmitOnTypeChange) {
+      if (onSubmit) {
+        onSubmit({ query, location, type: nextType });
+      } else {
+        router.push(buildTypeChangeDestination(nextType));
+      }
+    }
+  }
+
+  function handleTypeClick(nextValue) {
+    window.setTimeout(() => {
+      if (justChangedType.current) {
+        justChangedType.current = false;
+        return;
+      }
+
+      if (autoSubmitOnTypeChange) {
+        selectType(nextValue);
+      }
+    }, 0);
   }
 
   return (
@@ -129,41 +197,57 @@ export default function SearchBar({
 
       <div className={styles.actionsGroup}>
         <div className={styles.typeGroup} role="group" aria-label="Search type">
-          {typeOptions.map((option) => (
-            <label
-              key={option.value}
-              aria-pressed={type === option.value}
-              className={[
-                styles.typeBtn,
-                type === option.value ? option.activeClass : "",
-              ].join(" ")}
-            >
-              <input
-                type="radio"
-                name="search_type_picker"
-                value={option.value}
-                checked={type === option.value}
-                onChange={() => {
-                  setType(option.value);
-                  if (autoSubmitOnTypeChange) {
-                    const nextType = availableTypes.includes(option.value) ? option.value : resolvedInitialType;
-                    if (onSubmit) {
-                      onSubmit({ query, location, type: nextType });
-                    } else {
-                      const params = new URLSearchParams();
-                      if (query) params.set("q", query);
-                      if (location) params.set("loc", location);
-                      params.set("tab", nextType);
-                      router.push(action + "?" + params.toString());
-                    }
-                  }
-                }}
-                className={styles.typeInput}
-              />
-              <span className={"material-icons " + styles.typeBtnIcon}>{option.icon}</span>
-              {option.label}
-            </label>
-          ))}
+          {typeOptions.map((option) => {
+            const className = [
+              styles.typeBtn,
+              type === option.value ? option.activeClass : "",
+            ].join(" ");
+            const hasMappedNavigation =
+              autoSubmitOnTypeChange &&
+              !onSubmit &&
+              !onTypeChange &&
+              typeChangeHrefMap &&
+              typeof typeChangeHrefMap[option.value] === "string";
+
+            if (hasMappedNavigation) {
+              return (
+                <a
+                  key={option.value}
+                  href={buildTypeChangeDestination(option.value)}
+                  aria-current={type === option.value ? "page" : undefined}
+                  className={className}
+                  onClick={() => setType(option.value)}
+                >
+                  <span className={"material-icons " + styles.typeBtnIcon}>
+                    {option.icon}
+                  </span>
+                  {option.label}
+                </a>
+              );
+            }
+
+            return (
+              <label
+                key={option.value}
+                aria-pressed={type === option.value}
+                className={className}
+              >
+                <input
+                  type="radio"
+                  name="search_type_picker"
+                  value={option.value}
+                  checked={type === option.value}
+                  onClick={() => handleTypeClick(option.value)}
+                  onChange={() => selectType(option.value)}
+                  className={styles.typeInput}
+                />
+                <span className={"material-icons " + styles.typeBtnIcon}>
+                  {option.icon}
+                </span>
+                {option.label}
+              </label>
+            );
+          })}
         </div>
 
         <button type="submit" className={styles.searchBtn}>

@@ -38,7 +38,7 @@ export default function CategoryPills({ type = "businesses", initialLocation = "
     params.set("q", q);
     if (initialLocation) params.set("loc", initialLocation);
     params.set("tab", type);
-    router.push("/results?" + params.toString());
+    router.push((type === "events" ? "/events/results" : "/results") + "?" + params.toString());
   }
 
   return (

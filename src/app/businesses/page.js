@@ -1,5 +1,5 @@
 import LandingPageTemplate from "../LandingPageTemplate";
-import styles from "../home.module.css";
+import { redirect } from "next/navigation";
 
 export const metadata = {
   title: "Texas Localist | Local Businesses",
@@ -7,20 +7,21 @@ export const metadata = {
     "Find local Texas businesses without the noise. Search verified spots across the state.",
 };
 
-export default function BusinessesPage() {
+export default async function BusinessesPage({ searchParams }) {
+  const resolvedSearchParams = await searchParams;
+
+  if (Object.keys(resolvedSearchParams || {}).length > 0) {
+    redirect("/businesses");
+  }
+
   return (
     <LandingPageTemplate
-      heading={
-        <>
-          Find Texas
-          <br />
-          <span className={styles.heroPrimary}>Businesses .</span>{" "}
-          <span className={styles.heroUnderline}>Fast.</span>
-        </>
-      }
-      tagline="Search verified local businesses across Texas. No ads. No clutter. Just the spots worth finding."
       initialType="businesses"
       visibleTypes={["businesses"]}
+      businessHeadingIntro="Find Texas"
+      businessAccent="Businesses."
+      businessUnderline="Fast."
+      businessTagline="Search verified local businesses across Texas. No ads. No clutter. Just the spots worth finding."
     />
   );
 }

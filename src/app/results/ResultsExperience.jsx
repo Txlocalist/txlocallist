@@ -618,8 +618,10 @@ export default function ResultsExperience({
       {/* ── Sidebar ── */}
       <aside className="sidebar">
         <div className="sidebar-content">
-          <Image src={logoImage} alt="Texas Localist" width={220} height={140}
-            sizes="220px" className="logo-image" priority />
+          <Link href="/" aria-label="Texas Localist home">
+            <Image src={logoImage} alt="Texas Localist" width={220} height={140}
+              sizes="220px" className="logo-image" priority />
+          </Link>
           <nav className="sidebar-nav">
             {/* Events */}
             <Link href="/events" className="font-accent nav-link">
@@ -774,8 +776,10 @@ export default function ResultsExperience({
         <header className="search-header">
           <div className="search-bar-container">
             <div className="mobile-logo-wrap">
-              <Image src={logoImage} alt="Texas Localist" width={260} height={160}
-                sizes="(max-width: 768px) 220px, 260px" className="mobile-logo-image" priority />
+              <Link href="/" aria-label="Texas Localist home">
+                <Image src={logoImage} alt="Texas Localist" width={260} height={160}
+                  sizes="(max-width: 768px) 220px, 260px" className="mobile-logo-image" priority />
+              </Link>
             </div>
             <SearchBar
               action="/results"

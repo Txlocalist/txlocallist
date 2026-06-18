@@ -1,10 +1,22 @@
 .nav {
-  padding: 1.5rem;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  max-width: 80rem;
+  justify-content: space-between;
+  gap: 24px;
+  width: min(calc(100% - 56px), 1160px);
   margin: 0 auto;
+  padding: 32px 0 24px;
+  transition:
+    color var(--dur-lg) var(--ease-snap),
+    padding var(--dur-lg) var(--ease-snap);
+}
+
+:global(html[data-home-mode="events"] body) {
+  background: #050605;
+}
+
+:global(html[data-home-mode="events"] [data-primary-nav]) {
+  display: none;
 }
 
 .navBrand {
@@ -13,34 +25,67 @@
   gap: 0.5rem;
 }
 
-.navBrandImg {
-  height: auto;
-  width: 13rem;
+.logo {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 168px;
+  line-height: 0.72;
+  transform: rotate(-3deg);
   transform-origin: center;
+  filter: drop-shadow(0 5px 0 rgba(0, 0, 0, 0.45));
   transition: transform var(--dur-sm) var(--ease-snap);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
-.navBrandImg:hover {
-  transform: scale(1.05);
+.logo:hover {
+  transform: rotate(-3deg) scale(1.04);
 }
 
-@media (min-width: 768px) {
-  .navBrandImg {
-    height: 6rem;
-  }
+.logoState {
+  display: block;
+  margin-left: 42px;
+  color: #fff8df;
+  font-family: var(--font-accent), cursive;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-shadow: 2px 2px 0 var(--retro-red);
+  text-transform: uppercase;
+}
+
+.logoWord {
+  display: block;
+  color: #fff8df;
+  font-family: var(--font-display), cursive;
+  font-size: 45px;
+  letter-spacing: 0;
+  -webkit-text-stroke: 1.1px var(--retro-red);
+  text-shadow:
+    3px 3px 0 var(--retro-orange),
+    6px 6px 0 #1d7270;
+}
+
+.logoUrl {
+  display: block;
+  margin-top: 4px;
+  margin-left: 56px;
+  color: #fff8df;
+  font-family: var(--font-accent), cursive;
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .navLinks {
   display: none;
-  gap: 1.35rem;
+  flex: 1 1 auto;
+  justify-content: center;
+  gap: clamp(18px, 3.1vw, 42px);
   font-family: var(--font-accent), cursive;
-  font-size: 0.78rem;
-  letter-spacing: 0.08em;
+  font-size: 12px;
+  letter-spacing: 0.12em;
   align-items: center;
+  text-transform: uppercase;
 }
 
 @media (min-width: 768px) {
@@ -60,19 +105,25 @@
 }
 
 .navLoginButton {
-  background-color: var(--retro-teal);
-  color: white;
-  padding: 0.5rem 1.5rem;
+  background: linear-gradient(180deg, #56bab6 0%, #2d8984 100%);
+  color: #fff8df;
+  padding: 15px 26px;
   border-radius: var(--radius-pill);
   transform: rotate(-2deg);
-  box-shadow: var(--shadow-stack-md);
+  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.48), inset 0 1px 0 rgba(255, 255, 255, 0.32);
   transition: transform var(--dur-sm) var(--ease-snap);
   border: none;
   cursor: pointer;
   font-family: var(--font-accent), cursive;
-  font-weight: 600;
-  display: inline-block;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   text-decoration: none;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .navLoginButton:hover {
@@ -81,19 +132,25 @@
 
 /* Shown when user is logged in — warm amber instead of teal */
 .navDashboardButton {
-  background-color: var(--retro-orange);
+  background: linear-gradient(180deg, #ff8d24 0%, var(--retro-orange) 100%);
   color: #fff;
-  padding: 0.5rem 1.5rem;
+  padding: 15px 26px;
   border-radius: var(--radius-pill);
   transform: rotate(-2deg);
-  box-shadow: var(--shadow-stack-md);
+  box-shadow: 0 5px 0 var(--retro-brown), inset 0 1px 0 rgba(255, 255, 255, 0.24);
   transition: transform var(--dur-sm) var(--ease-snap);
   border: none;
   cursor: pointer;
   font-family: var(--font-accent), cursive;
-  font-weight: 600;
-  display: inline-block;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   text-decoration: none;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .navDashboardButton:hover {
@@ -116,5 +173,30 @@
 @media (min-width: 768px) {
   .menuButton {
     display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .nav {
+    width: min(calc(100% - 36px), 1160px);
+    padding-top: 22px;
+  }
+
+  .logo {
+    width: 128px;
+  }
+
+  .logoState {
+    margin-left: 31px;
+    font-size: 10px;
+  }
+
+  .logoWord {
+    font-size: 36px;
+  }
+
+  .logoUrl {
+    margin-left: 44px;
+    font-size: 6px;
   }
 }

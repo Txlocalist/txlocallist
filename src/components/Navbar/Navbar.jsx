@@ -1,44 +1,37 @@
-import Image from "next/image";
 import Link from "next/link";
 
 import { getCurrentUser } from "@/lib/auth/session";
-import logo from "@/app/assets/Tx-Localist-01.png";
 import styles from "./Navbar.module.css";
 
 const DEFAULT_LINKS = [
   { href: "/results", label: "EXPLORE" },
-  { href: "/how-it-works",       label: "HOW IT WORKS" },
-  { href: "/about",              label: "ABOUT" },
-  { href: "/pricing",            label: "PRICING" },
+  { href: "/how-it-works", label: "HOW IT WORKS" },
+  { href: "/about", label: "ABOUT" },
+  { href: "/pricing", label: "PRICING" },
   { href: "/post-your-business", label: "ADD LISTING" },
 ];
 
 /**
- * Top navigation — server component, auth-aware.
+ * Top navigation - server component, auth-aware.
  *
  * Props:
- *   - links:      array of { href, label } overrides (defaults to DEFAULT_LINKS)
+ *   - links: array of { href, label } overrides
  *   - onMenuOpen: optional handler for the mobile menu button
  */
 export default async function Navbar({ links = DEFAULT_LINKS, onMenuOpen }) {
   const user = await getCurrentUser().catch(() => null);
 
-  const pillHref  = user ? "/dashboard" : "/login";
-  const pillLabel = user ? "DASHBOARD"  : "LOGIN";
+  const pillHref = user ? "/dashboard" : "/login";
+  const pillLabel = user ? "DASHBOARD" : "LOGIN";
   const pillClass = user ? styles.navDashboardButton : styles.navLoginButton;
 
   return (
-    <nav className={styles.nav} aria-label="Primary">
+    <nav className={styles.nav} aria-label="Primary" data-primary-nav>
       <div className={styles.navBrand}>
-        <Link href="/" aria-label="Texas Localist — Home" className={styles.navBrandImg}>
-          <Image
-            alt="Texas Localist Logo"
-            src={logo}
-            width={96}
-            height={96}
-            priority
-            style={{ width: "100%", height: "100%", objectFit: "contain" }}
-          />
+        <Link href="/" aria-label="Texas Localist Home" className={styles.logo}>
+          <span className={styles.logoState}>Texas</span>
+          <span className={styles.logoWord}>Localist</span>
+          <span className={styles.logoUrl}>TXLocalist.com</span>
         </Link>
       </div>
 
@@ -48,11 +41,7 @@ export default async function Navbar({ links = DEFAULT_LINKS, onMenuOpen }) {
             {link.label}
           </Link>
         ))}
-        <Link
-          href={pillHref}
-          className={pillClass}
-          aria-label={pillLabel}
-        >
+        <Link href={pillHref} className={pillClass} aria-label={pillLabel}>
           {pillLabel}
         </Link>
       </div>
