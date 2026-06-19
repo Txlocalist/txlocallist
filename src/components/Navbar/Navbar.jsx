@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { getCurrentUser } from "@/lib/auth/session";
+import NavbarMobileMenu from "./NavbarMobileMenu";
 import styles from "./Navbar.module.css";
 
 const DEFAULT_LINKS = [
@@ -16,9 +17,8 @@ const DEFAULT_LINKS = [
  *
  * Props:
  *   - links: array of { href, label } overrides
- *   - onMenuOpen: optional handler for the mobile menu button
  */
-export default async function Navbar({ links = DEFAULT_LINKS, onMenuOpen }) {
+export default async function Navbar({ links = DEFAULT_LINKS }) {
   const user = await getCurrentUser().catch(() => null);
 
   const pillHref = user ? "/dashboard" : "/login";
@@ -46,16 +46,7 @@ export default async function Navbar({ links = DEFAULT_LINKS, onMenuOpen }) {
         </Link>
       </div>
 
-      <button
-        type="button"
-        className={styles.menuButton}
-        aria-label="Open navigation menu"
-        onClick={onMenuOpen}
-      >
-        <span className="material-icons" aria-hidden="true">
-          menu
-        </span>
-      </button>
+      <NavbarMobileMenu links={links} pillHref={pillHref} pillLabel={pillLabel} />
     </nav>
   );
 }
