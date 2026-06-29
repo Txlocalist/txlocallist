@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TX Localist Events — Compact Calendar UI</title>
+  <style>
+    :root{
+      --bg:#0d0a08;
+      --bg2:#17120e;
+      --bg3:#211811;
+      --paper:#f5e7c6;
+      --paper-2:#ead8b2;
+      --ink:#2f241d;
+      --line:#433228;
+      --line-soft:rgba(245,231,198,.18);
+      --text:#f8edd4;
+      --muted:#c3b18f;
+      --muted-dark:#866d56;
+      --teal:#37b3b1;
+      --teal-2:#2d8e8c;
+      --orange:#f18824;
+      --orange-2:#ff9f2e;
+      --yellow:#f4ca46;
+      --red:#df5a41;
+      --green:#7ab273;
+      --shadow:0 12px 30px rgba(0,0,0,.35);
+      --radius:24px;
+      --sidebar-w:300px;
+      --planner-w:392px;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0}
+    body{
+      font-family:Arial,Helvetica,sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(55,179,177,.12), transparent 25%),
+        radial-gradient(circle at top right, rgba(241,136,36,.16), transparent 20%),
+        linear-gradient(180deg,#090705 0%, #100c09 30%, #0c0907 100%);
+      min-height:100vh;
+      overflow-x:hidden;
+    }
+    body::before{
+      content:""; position:fixed; inset:0; pointer-events:none; opacity:.06;
+      background:repeating-linear-gradient(90deg, rgba(255,255,255,.65) 0 1px, transparent 1px 92px);
+      mix-blend-mode:screen;
+    }
+    a{text-decoration:none;color:inherit}
+    button,input,select{font:inherit}
+    button{cursor:pointer}
+    .app{display:grid;grid-template-columns:var(--sidebar-w) minmax(0,1fr); min-height:100vh; position:relative; z-index:1}
+
+    /* Sidebar */
+    .sidebar{
+      position:sticky; top:0; height:100vh; overflow:auto; padding:26px 22px 24px;
+      display:flex; flex-direction:column;
+      background:
+        radial-gradient(circle at top, rgba(55,179,177,.08), transparent 30%),
+        linear-gradient(180deg, #14100d 0%, #100c09 100%);
+      border-right:4px solid #2b211b;
+      box-shadow:inset -1px 0 0 rgba(245,231,198,.08);
+    }
+    .sidebar::-webkit-scrollbar{width:10px}
+    .sidebar::-webkit-scrollbar-thumb{background:#2b211b;border-radius:10px}
+    .brand{display:block; text-align:center; margin-bottom:24px; padding-top:4px}
+    .brand .tx{display:block;font-size:14px;font-weight:900;letter-spacing:.12em;color:#bf7f71;text-transform:uppercase}
+    .brand .name{
+      display:block; font-family:Georgia,serif; font-style:italic; font-weight:900; font-size:52px; line-height:.82;
+      letter-spacing:-.08em; color:var(--paper);
+      text-shadow: 1px 1px 0 #8f4a39, 3px 3px 0 var(--orange), 5px 5px 0 rgba(55,179,177,.8);
+    }
+    .brand .site{display:block;margin-top:6px;font-size:10px;font-weight:900;letter-spacing:.14em;color:var(--yellow)}
+    .nav-stack{display:flex;flex-direction:column;gap:10px;flex:0 0 auto}
+    .nav-item,
+    .sub-item{
+      width:100%; display:flex; align-items:center; gap:14px; border:0; color:var(--text); background:transparent;
+      padding:14px 8px; border-radius:14px; text-align:left; font-size:18px; font-weight:900; letter-spacing:.02em; text-transform:uppercase;
+    }
+    .nav-item .grow{flex:1}
+    .nav-item:hover,
+    .sub-item:hover{background:rgba(245,231,198,.05)}
+    .nav-item.active{outline:2px solid var(--teal); background:rgba(55,179,177,.08)}
+    .icon-bubble{
+      width:34px;height:34px;border-radius:999px;display:grid;place-items:center;flex:0 0 auto;
+      background:#241b16;border:2px solid #4f3b2f; box-shadow:0 3px 0 rgba(0,0,0,.35); font-size:16px;
+    }
+    .caret{color:var(--muted); transition:transform .2s ease}
+    .nav-item.expanded .caret{transform:rotate(180deg)}
+    .subnav{display:none; padding:2px 0 8px 48px; gap:8px; flex-direction:column}
+    .subnav.open{display:flex}
+    .sub-item{padding:10px 12px; font-size:14px; color:var(--muted); text-transform:none; font-weight:800; border-radius:12px}
+    .sub-item.active-sub{background:rgba(241,136,36,.12); color:var(--paper); outline:1px solid rgba(241,136,36,.38)}
+    .login-btn{
+      margin:14px 6px 6px; border:0; height:54px; border-radius:12px; color:white; font-size:20px; font-weight:900; text-transform:uppercase; letter-spacing:.04em;
+      background:linear-gradient(90deg, var(--teal), #1fa3cc); box-shadow:6px 6px 0 #2b211b;
+    }
+    .side-divider{height:1px;background:rgba(245,231,198,.18);margin:18px 6px;flex:0 0 auto}
+    .browse-item{
+      width:100%; border:0; background:transparent; appearance:none; -webkit-appearance:none;
+      display:flex; align-items:center; gap:14px; padding:12px 6px; color:var(--muted);
+      font-size:18px; font-weight:900; text-transform:uppercase; text-align:left; border-radius:14px;
+    }
+    .browse-item:hover{background:rgba(245,231,198,.05);color:var(--paper)}
+    .browse-bubble{
+      width:52px;height:52px;border-radius:999px;display:grid;place-items:center;flex:0 0 auto;
+      box-shadow:0 4px 0 rgba(0,0,0,.35); border:3px solid #3d2f26; font-weight:900;
+    }
+    .bubble-new{background:#ff9350;color:#fff}
+    .bubble-save{background:#00bbc8;color:#fff}
+    .bubble-fav{background:#ff655d;color:#fff}
+    .side-footer{
+      margin-top:auto; padding:18px 6px 0; font-size:12px; line-height:1.35;
+      color:var(--muted-dark); text-transform:uppercase; font-weight:900; flex:0 0 auto;
+    }
+
+    /* Mobile sidebar */
+    .mobile-top{display:none; position:sticky; top:0; z-index:30; background:rgba(10,8,6,.94); backdrop-filter:blur(10px); border-bottom:1px solid rgba(245,231,198,.12); padding:12px 14px; align-items:center; justify-content:space-between}
+    .mobile-brand{font-family:Georgia,serif;font-style:italic;font-size:28px;font-weight:900;letter-spacing:-.06em;color:var(--paper);text-shadow:1px 1px 0 #8f4a39,3px 3px 0 var(--orange)}
+    .menu-btn{border:2px solid var(--line-soft); background:rgba(245,231,198,.06); color:var(--paper); width:46px;height:46px;border-radius:12px; font-size:18px; font-weight:900}
+    .sidebar-overlay{display:none}
+
+    /* Main */
+    .main{padding:28px 28px 36px; min-width:0}
+    .container{max-width:1480px; margin:0 auto}
+    .search-bar{
+      display:grid; grid-template-columns:minmax(240px,1.25fr) 180px 180px 120px; gap:0; align-items:center;
+      background:var(--paper); border:4px solid #2b211b; border-radius:999px; padding:6px; color:var(--ink); box-shadow:0 6px 0 rgba(0,0,0,.35);
+    }
+    .field{display:flex;align-items:center;gap:10px;padding:0 16px;height:52px;border-right:1px solid rgba(47,36,29,.12);font-weight:800}
+    .field:last-child{border-right:0}
+    .field input,.field select{width:100%;border:0;background:transparent;outline:0;color:var(--ink);font-weight:800;min-width:0}
+    .search-btn{
+      border:0;height:52px;border-radius:999px;background:linear-gradient(180deg,var(--orange-2),var(--orange));color:#fff;text-transform:uppercase;font-weight:900;letter-spacing:.06em; box-shadow:0 3px 0 rgba(47,36,29,.45)
+    }
+    .top-actions{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin:26px 0 18px}
+    .eyebrow{font-size:13px;font-weight:900;letter-spacing:.18em;text-transform:uppercase;color:var(--teal)}
+    .headline{margin:6px 0 6px; font-family:Georgia,serif;font-style:italic;font-weight:900; font-size:58px; line-height:.92; letter-spacing:-.07em}
+    .headline .highlight{color:var(--yellow)}
+    .subcopy{margin:0;color:var(--muted);font-weight:800;max-width:700px;line-height:1.45}
+    .view-tools{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+    .summary-pill{padding:10px 14px;border-radius:999px;background:rgba(245,231,198,.08);border:1px solid var(--line-soft);font-weight:900;color:var(--paper-2)}
+    .view-switch{display:flex;align-items:center;padding:4px;border-radius:999px;border:2px solid var(--line-soft);background:rgba(245,231,198,.05)}
+    .view-switch button{border:0;background:transparent;color:var(--muted);padding:11px 14px;border-radius:999px;font-size:12px;text-transform:uppercase;font-weight:900;letter-spacing:.08em}
+    .view-switch button.active{background:var(--teal);color:#fff;box-shadow:0 3px 0 rgba(0,0,0,.3)}
+    .mobile-filter-btn{display:none;border:2px solid var(--line-soft);background:rgba(245,231,198,.06);color:var(--paper);padding:12px 14px;border-radius:14px;font-weight:900;text-transform:uppercase}
+    .active-filters{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 22px}
+    .chip{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:rgba(245,231,198,.08);border:1px solid var(--line-soft);font-size:12px;font-weight:900;color:var(--paper-2);text-transform:uppercase}
+    .chip button{border:0;background:transparent;color:var(--teal);font-weight:900}
+
+    .dashboard{display:grid;grid-template-columns:minmax(0,1fr) minmax(360px,var(--planner-w));gap:18px;align-items:start}
+    .left-column{min-width:0}
+    .cards-grid{display:grid;gap:16px}
+    .event-card{display:grid;grid-template-columns:94px 176px minmax(0,1fr);gap:14px;padding:14px;border-radius:26px;border:1px solid rgba(245,231,198,.16);background:linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.016));box-shadow:0 14px 30px rgba(0,0,0,.3);position:relative;overflow:hidden}.event-card::before,.event-card::after{content:"";position:absolute;top:50%;width:18px;height:18px;border-radius:50%;background:#0b0806;border:1px solid rgba(245,231,198,.08);transform:translateY(-50%)}.event-card::before{left:84px}.event-card::after{left:261px}
+    .ticket{border-radius:18px;display:flex;flex-direction:column;justify-content:space-between;align-items:center;min-height:158px;padding:16px 10px 12px;font-weight:900;text-transform:uppercase;border:1px solid rgba(47,36,29,.22);box-shadow:inset 0 0 0 2px rgba(255,255,255,.16), inset 0 0 0 6px rgba(0,0,0,.06), 0 5px 0 rgba(0,0,0,.26);position:relative;overflow:hidden}.ticket::before,.ticket::after{content:"";position:absolute;right:-9px;width:18px;height:18px;border-radius:50%;background:#120d0a;border:1px solid rgba(47,36,29,.22)}.ticket::before{top:18px}.ticket::after{bottom:18px}
+    .ticket.orange{background:linear-gradient(180deg,var(--orange-2),var(--orange));color:var(--ink)}
+    .ticket.teal{background:linear-gradient(180deg,#71d1cb,var(--teal));color:#fff}
+    .ticket.yellow{background:linear-gradient(180deg,#ffe071,var(--yellow));color:var(--ink)}
+    .ticket.red{background:linear-gradient(180deg,#ef7756,var(--red));color:#fff}
+    .ticket .month{font-size:16px;letter-spacing:.08em}
+    .ticket .date{font-size:40px;line-height:1}
+    .ticket .time{font-size:11px;margin-top:10px;padding-top:8px;border-top:1px solid rgba(0,0,0,.2);width:72%;text-align:center}
+    .thumb{border-radius:16px;border:2px solid rgba(245,231,198,.14);min-height:150px;background-size:cover;background-position:center;position:relative;overflow:hidden}
+    .img-music{background-image:linear-gradient(180deg,rgba(0,0,0,.1),rgba(0,0,0,.45)), radial-gradient(circle at 50% 30%, rgba(255,208,86,.95), transparent 15%), linear-gradient(135deg,#462211 0%, #21110c 40%, #0f1f26 100%)}
+    .img-music::after{content:"LIVE\A TONIGHT";white-space:pre;position:absolute;bottom:16px;left:16px;font-size:28px;line-height:.92;font-weight:900;color:#fff3d6;text-shadow:0 3px 0 rgba(0,0,0,.45)}
+    .img-market{background-image:linear-gradient(180deg,rgba(0,0,0,.15),rgba(0,0,0,.35)), repeating-linear-gradient(90deg,#ef8d2c 0 12px,#281a12 12px 24px)}
+    .img-market::after{content:"NIGHT\A MARKET";white-space:pre;position:absolute;inset:18px auto auto 18px;font-size:27px;line-height:.92;font-weight:900;color:var(--yellow);text-shadow:0 3px 0 rgba(0,0,0,.5)}
+    .img-jazz{background-image:linear-gradient(180deg,rgba(0,0,0,.12),rgba(0,0,0,.38)), linear-gradient(135deg,#6d3618 0%, #1a1513 58%, #d6a13b 100%)}
+    .img-jazz::after{content:"JAZZ";position:absolute;right:16px;bottom:16px;font-size:34px;font-weight:900;color:rgba(255,243,214,.95);font-style:italic}
+    .img-outdoor{background-image:linear-gradient(180deg,rgba(0,0,0,.1),rgba(0,0,0,.32)), linear-gradient(180deg,#5fb4c0 0%, #224d56 45%, #182217 100%)}
+    .img-outdoor::after{content:"OUTDOOR STAGE";position:absolute;left:16px;bottom:16px;font-size:22px;font-weight:900;color:#fff3d6}
+    .card-body{min-width:0;display:flex;flex-direction:column}
+    .card-tag{align-self:flex-start;padding:7px 10px;border-radius:999px;background:rgba(245,231,198,.08);border:1px solid var(--line-soft);font-size:11px;font-weight:900;text-transform:uppercase;color:var(--paper-2)}
+    .card-title{margin:10px 0 8px;font-family:Georgia,serif;font-weight:900;font-style:italic;font-size:34px;line-height:.98;letter-spacing:-.04em}
+    .card-title small{display:block;font-size:16px;color:var(--yellow);font-style:normal;letter-spacing:.08em;text-transform:uppercase;margin-top:6px}
+    .card-meta,.card-copy{color:var(--muted);font-weight:800;line-height:1.45}
+    .card-copy{margin:10px 0 12px}
+    .meta-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto;margin-bottom:10px}
+    .mini-tag{padding:7px 10px;border-radius:999px;background:rgba(55,179,177,.12);color:#b9eeeb;border:1px solid rgba(55,179,177,.25);font-size:11px;font-weight:900;text-transform:uppercase}
+    .actions{display:flex;gap:10px;flex-wrap:wrap}
+    .tiny-btn{padding:11px 14px;border-radius:999px;border:1px solid var(--line-soft);background:rgba(245,231,198,.06);color:var(--paper);font-size:12px;font-weight:900;text-transform:uppercase}
+    .tiny-btn.saved{background:rgba(223,90,65,.16);border-color:rgba(223,90,65,.4)}
+    .list-view{display:none;gap:18px}
+    .day-group{padding:18px;border-radius:20px;border:2px solid rgba(245,231,198,.12);background:rgba(255,255,255,.025)}
+    .day-group h3{margin:0 0 14px;font-family:Georgia,serif;font-style:italic;font-size:30px}
+    .list-row{display:grid;grid-template-columns:92px minmax(0,1fr) 108px;gap:14px;align-items:center;padding:12px 0;border-top:1px solid rgba(245,231,198,.09)}
+    .list-row:first-of-type{border-top:0;padding-top:0}
+    .list-time{font-size:13px;font-weight:900;text-transform:uppercase;color:var(--yellow)}
+    .list-detail strong{display:block;font-size:20px;margin-bottom:4px}
+    .list-detail span{display:block;color:var(--muted);font-weight:800}
+    .list-type{justify-self:end;padding:8px 10px;border-radius:999px;background:rgba(55,179,177,.12);font-size:11px;font-weight:900;text-transform:uppercase}
+
+    /* Planner */
+    .planner{position:sticky; top:18px; display:flex; flex-direction:column; gap:14px}
+    .panel{border-radius:22px;border:1px solid rgba(245,231,198,.14);background:linear-gradient(180deg, rgba(255,255,255,.034), rgba(255,255,255,.012));padding:16px;box-shadow:0 10px 24px rgba(0,0,0,.28)}
+    .panel h3{margin:0;font-family:Georgia,serif;font-style:italic;font-size:36px;line-height:.95;letter-spacing:-.05em}
+    .panel h3 span{color:var(--yellow)}
+    .panel p{margin:10px 0 0;color:var(--muted);font-weight:800;line-height:1.45}
+    .best-day{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center}
+    .best-stamp{width:72px;height:72px;border-radius:20px;background:linear-gradient(180deg,var(--orange-2),var(--orange));display:grid;place-items:center;color:#fff;font-weight:900;box-shadow:0 4px 0 rgba(0,0,0,.28)}
+    .calendar-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+    .month-controls{display:flex;align-items:center;gap:6px;min-width:0}
+    .month-controls:first-child{display:grid;grid-template-columns:34px minmax(0,1fr) 34px;align-items:center;flex:1 1 auto;min-width:190px}
+    .month-controls:last-child{justify-content:flex-end;flex:0 0 auto}
+    .month-btn,.today-btn,.month-modal-btn{border:1px solid rgba(245,231,198,.14);background:rgba(245,231,198,.055);color:var(--paper);padding:8px 10px;border-radius:12px;font-weight:900;text-transform:uppercase;font-size:10px;letter-spacing:.06em;white-space:nowrap}
+    .month-btn{width:34px;height:34px;padding:0;display:grid;place-items:center;font-size:13px;background:rgba(245,231,198,.045)}
+    .today-btn{background:rgba(55,179,177,.14);color:#d7ffff;border-color:rgba(55,179,177,.34)}
+    .month-title{font-size:18px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;color:var(--paper-2);white-space:nowrap;text-align:center}
+    .legend{display:flex;flex-wrap:wrap;gap:8px 12px;margin:0 0 12px;padding:10px 12px;border-radius:16px;background:rgba(245,231,198,.035);border:1px solid rgba(245,231,198,.075)}
+    .legend span{display:inline-flex;align-items:center;gap:5px;color:var(--muted);font-size:9px;font-weight:900;text-transform:uppercase;white-space:nowrap}
+    .dot{width:8px;height:8px;border-radius:999px;display:inline-block;flex:0 0 auto}
+    .music{background:var(--teal)} .market{background:var(--orange)} .night{background:var(--red)} .outdoor{background:var(--green)} .family{background:var(--yellow)}
+    .calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px;align-items:stretch}
+    .dow{font-size:9px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:0 0 2px;text-align:center}
+    .day-cell{min-width:0;min-height:56px;border-radius:14px;border:1px solid rgba(245,231,198,.08);background:rgba(255,255,255,.025);padding:7px 7px 6px;display:flex;flex-direction:column;align-items:stretch;justify-content:space-between;gap:4px;transition:transform .14s ease, background .14s ease, border-color .14s ease, box-shadow .14s ease;position:relative;overflow:hidden;color:inherit;text-align:left}
+    .day-cell:hover{transform:translateY(-1px);background:rgba(245,231,198,.055);border-color:rgba(245,231,198,.2)}
+    .day-cell.dim{opacity:.27}
+    .day-cell.today{border-color:rgba(244,202,70,.5);box-shadow:inset 0 0 0 1px rgba(244,202,70,.18)}
+    .day-cell.selected{border-color:rgba(55,179,177,.95);box-shadow:0 0 0 2px rgba(55,179,177,.45);background:linear-gradient(180deg, rgba(55,179,177,.16), rgba(55,179,177,.08))}
+    .day-cell.hot{border-color:rgba(241,136,36,.35)}
+    .day-top{display:flex;align-items:center;justify-content:space-between;gap:3px;min-width:0}
+    .day-number{font-size:15px;font-weight:900;color:var(--paper);line-height:1}
+    .count-badge{min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:rgba(241,136,36,.22);color:#ffdfa7;border:1px solid rgba(241,136,36,.34);font-size:9px;font-weight:900;display:inline-grid;place-items:center;line-height:1;flex:0 0 auto}
+    .dots{display:flex;gap:3px;flex-wrap:wrap;min-height:8px;align-items:center}
+    .dots .dot{width:6px;height:6px}
+    .cell-preview{display:none}
+    .day-cell:not(.has-events) .dots{display:none}
+    .day-cell.has-events::after{content:"";position:absolute;left:6px;right:6px;bottom:5px;height:2px;border-radius:999px;background:rgba(245,231,198,.08)}
+    .agenda-head{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-bottom:14px}
+    .agenda-date{font-family:Georgia,serif;font-style:italic;font-weight:900;font-size:32px;line-height:.96}
+    .agenda-meta{font-size:12px;font-weight:900;text-transform:uppercase;color:var(--muted)}
+    .agenda-group{margin-top:14px}
+    .agenda-group h4{margin:0 0 10px;font-size:12px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:var(--teal)}
+    .agenda-item{display:grid;grid-template-columns:58px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 0;border-top:1px solid rgba(245,231,198,.09)}
+    .agenda-item:first-of-type{border-top:0;padding-top:0}
+    .agenda-time{font-size:12px;font-weight:900;color:var(--yellow);text-transform:uppercase}
+    .agenda-detail strong{display:block;font-size:15px;margin-bottom:3px}
+    .agenda-detail span{display:block;color:var(--muted);font-size:13px;font-weight:800}
+    .agenda-save{border:1px solid var(--line-soft);background:rgba(245,231,198,.06);color:var(--paper);border-radius:999px;padding:10px 12px;font-size:11px;font-weight:900;text-transform:uppercase}
+    .agenda-save.saved{background:rgba(223,90,65,.16)}
+    .week-strip{display:none;gap:10px;overflow:auto;padding-bottom:4px;margin-bottom:14px}
+    .week-strip::-webkit-scrollbar{display:none}
+    .week-day{min-width:88px;padding:12px;border-radius:16px;border:1px solid var(--line-soft);background:rgba(245,231,198,.06);text-align:left}
+    .week-day.selected{outline:2px solid var(--teal);background:rgba(55,179,177,.10)}
+    .week-day .w{font-size:11px;font-weight:900;text-transform:uppercase;color:var(--muted)}
+    .week-day .n{font-size:24px;font-weight:900;line-height:1.1;margin:3px 0}
+    .week-day .c{font-size:10px;font-weight:900;color:var(--yellow);text-transform:uppercase}
+    .empty{padding:28px;border-radius:24px;border:2px dashed rgba(245,231,198,.18);text-align:center;color:var(--muted)}
+    .empty h3{margin:0 0 8px;font-family:Georgia,serif;font-size:34px;font-style:italic;color:var(--paper)}
+
+    /* Mobile bottom nav */
+    .bottom-nav{display:none;position:fixed;left:0;right:0;bottom:0;z-index:40;background:rgba(18,14,10,.97);border-top:1px solid rgba(245,231,198,.12);padding:8px 8px calc(8px + env(safe-area-inset-bottom));grid-template-columns:repeat(5,1fr);gap:6px}
+    .bottom-nav button{border:0;background:transparent;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:5px;font-size:11px;font-weight:900;text-transform:uppercase}
+    .bottom-nav .ico{font-size:18px;color:var(--paper)}
+
+    /* Modal / drawers */
+    .drawer,.month-modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-end;justify-content:center;z-index:60;padding:16px}
+    .drawer.open,.month-modal.open{display:flex}
+    .drawer-sheet,.month-sheet{width:min(720px,100%);background:linear-gradient(180deg,#18120e,#120d0a);border:2px solid rgba(245,231,198,.16);border-radius:24px;padding:18px;box-shadow:var(--shadow);max-height:85vh;overflow:auto}
+    .drawer-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+    .drawer-head h4{margin:0;font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+    .drawer-close{border:0;width:42px;height:42px;border-radius:12px;background:rgba(245,231,198,.08);color:var(--paper);font-size:22px}
+    .month-sheet{width:min(920px,100%)}
+    .month-sheet .calendar-grid{grid-template-columns:repeat(7,minmax(70px,1fr));gap:8px}
+    .month-sheet .calendar-grid .day-cell{min-height:76px;border-radius:14px;padding:8px}
+    .month-sheet .cell-preview{display:-webkit-box;font-size:9.5px;font-weight:900;line-height:1.15;color:var(--muted);-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .month-sheet .dots .dot{width:7px;height:7px}
+
+    /* View mode control */
+    body.view-cards .cards-grid{display:grid}
+    body.view-cards .list-view{display:none}
+    body.view-cards .planner{display:flex}
+    body.view-list .cards-grid{display:none}
+    body.view-list .list-view{display:grid}
+    body.view-list .planner{display:flex}
+    body.view-calendar .cards-grid{display:none}
+    body.view-calendar .list-view{display:none}
+    body.view-calendar .left-column{display:none}
+    body.view-calendar .dashboard{grid-template-columns:1fr}
+    body.view-calendar .planner{position:static;max-width:900px;margin:0 auto}
+    body.view-calendar .planner .panel.welcome{display:none}
+
+    /* Responsive */
+    @media (max-width:1400px){
+      :root{--planner-w:460px}
+      .calendar-grid{gap:5px;grid-template-columns:repeat(7,minmax(0,1fr))}
+      .day-cell{min-height:44px;padding:5px;border-radius:11px}
+      .day-number{font-size:13px}
+      .legend{grid-template-columns:repeat(3,auto)}
+    }
+    @media (max-width:1200px){
+      .dashboard{grid-template-columns:minmax(0,1fr) 390px}
+      .headline{font-size:50px}
+      .event-card{grid-template-columns:92px 140px minmax(0,1fr)}
+      .card-title{font-size:30px}
+    }
+
+    @media (max-width:1100px){
+      .dashboard{grid-template-columns:1fr}
+      .planner{position:static}
+    }
+
+    @media (max-width:980px){
+      .app{grid-template-columns:1fr}
+      .sidebar{position:fixed;left:0;top:0;bottom:0;width:min(320px,86vw);height:auto;transform:translateX(-102%);transition:transform .25s ease;z-index:55}
+      .sidebar.open{transform:translateX(0)}
+      .sidebar-overlay{display:block;position:fixed;inset:0;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:.2s ease;z-index:50}
+      .sidebar-overlay.show{opacity:1;pointer-events:auto}
+      .mobile-top{display:flex}
+      .main{padding:18px 18px 100px}
+      .search-bar{grid-template-columns:1fr 1fr; border-radius:28px}
+      .field:nth-child(1){grid-column:1/-1;border-right:0;border-bottom:1px solid rgba(47,36,29,.12)}
+      .field:nth-child(2){border-right:1px solid rgba(47,36,29,.12)}
+      .field:nth-child(3){border-right:0}
+      .search-btn{grid-column:1/-1}
+      .top-actions{flex-direction:column;align-items:flex-start}
+      .mobile-filter-btn{display:inline-flex}
+      .dashboard{grid-template-columns:1fr}
+      .planner{position:static}
+      .week-strip{display:flex}
+      .calendar-grid.desktop-grid{display:none}
+      .month-modal-btn{display:inline-flex}
+      .bottom-nav{display:grid}
+      body.view-calendar .left-column{display:none}
+    }
+    @media (max-width:720px){
+      .headline{font-size:40px}
+      .event-card{grid-template-columns:1fr;gap:12px}
+      .ticket{min-height:auto;flex-direction:row;gap:12px;justify-content:flex-start;padding:14px 16px}
+      .ticket .month{font-size:15px}
+      .ticket .date{font-size:34px}
+      .ticket .time{margin-top:0;padding-top:0;border-top:0;border-left:1px solid rgba(0,0,0,.18);padding-left:12px;width:auto}
+      .thumb{min-height:180px}
+      .card-title{font-size:28px}
+      .list-row{grid-template-columns:1fr;gap:6px}
+      .list-type{justify-self:start}
+      .agenda-item{grid-template-columns:1fr auto}
+      .agenda-time{grid-column:1/-1}
+      .search-bar{grid-template-columns:1fr}
+      .field{border-right:0 !important; border-bottom:1px solid rgba(47,36,29,.12)}
+      .field:last-of-type{border-bottom:0}
+    }
+  </style>
+</head>
+<body class="view-cards">
+  <div class="mobile-top">
+    <button class="menu-btn" id="openSidebar">☰</button>
+    <div class="mobile-brand">Texas Localist</div>
+    <button class="menu-btn" id="openFilters">⚙</button>
+  </div>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <a href="#" class="brand">
+        <span class="tx">Texas</span>
+        <span class="name">Localist</span>
+        <span class="site">TXLOCALIST.COM</span>
+      </a>
+
+      <div class="nav-stack">
+        <button class="nav-item active"><span class="icon-bubble">▣</span><span class="grow">Events</span></button>
+
+        <button class="nav-item expanded" data-accordion="citiesNav"><span class="icon-bubble">🏙</span><span class="grow">Cities</span><span class="caret">⌄</span></button>
+        <div class="subnav open" id="citiesNav">
+          <button class="sub-item active-sub" data-city="Austin, TX">Austin</button>
+          <button class="sub-item" data-city="Dallas, TX">Dallas</button>
+          <button class="sub-item" data-city="Houston, TX">Houston</button>
+          <button class="sub-item" data-city="Marfa, TX">Marfa</button>
+        </div>
+
+        <button class="nav-item" data-accordion="catsNav"><span class="icon-bubble">◈</span><span class="grow">Categories</span><span class="caret">⌄</span></button>
+        <div class="subnav" id="catsNav">
+          <button class="sub-item" data-filter="Live Music">Live Music</button>
+          <button class="sub-item" data-filter="Markets">Markets</button>
+          <button class="sub-item" data-filter="Food & Drink">Food & Drink</button>
+          <button class="sub-item" data-filter="Outdoor">Outdoor</button>
+          <button class="sub-item" data-filter="Family">Family</button>
+        </div>
+
+        <button class="nav-item"><span class="icon-bubble">⊕</span><span class="grow">Add Listing</span></button>
+        <button class="login-btn">Login</button>
+      </div>
+
+      <div class="side-divider"></div>
+
+      <button class="browse-item" data-quick="New"><span class="browse-bubble bubble-new">NEW</span> <span>New</span></button>
+      <button class="browse-item" data-quick="Most Saved"><span class="browse-bubble bubble-save">🔥</span> <span>Most Saved</span></button>
+      <button class="browse-item" data-quick="Saved"><span class="browse-bubble bubble-fav">♥</span> <span>My Favorites</span></button>
+
+      <div class="side-footer">© 2026 Texas Localist.<br/>Handcrafted in the Lone Star State.</div>
+    </aside>
+
+    <main class="main">
+      <div class="container">
+        <form class="search-bar" id="searchForm">
+          <label class="field">⌕ <input id="queryInput" type="text" placeholder="Search artists, venues, festivals or towns…" /></label>
+          <label class="field">⌖ <input id="cityInput" type="text" value="Austin, TX" /></label>
+          <label class="field">🗓 <select id="datePreset"><option value="This Weekend">This Weekend</option><option value="Tonight">Tonight</option><option value="Next 7 Days">Next 7 Days</option><option value="All">All Dates</option></select></label>
+          <button class="search-btn" type="submit">Search</button>
+        </form>
+
+        <div class="top-actions">
+          <div>
+            <div class="eyebrow">Events & Live Music</div>
+            <h1 class="headline">Find what’s <span class="highlight">happening.</span></h1>
+            <p class="subcopy">Browse local shows, markets, food events and nights out — then jump into a calendar that actually helps you see what’s going on by day.</p>
+          </div>
+          <div class="view-tools">
+            <div class="summary-pill"><span id="resultCount">0</span> events on <span id="selectedShort">May 17</span> · <span id="cityLabel">Austin</span></div>
+            <div class="view-switch">
+              <button class="active" data-view="cards">Cards</button>
+              <button data-view="list">List</button>
+              <button data-view="calendar">Calendar</button>
+            </div>
+            <button class="mobile-filter-btn" id="openDrawer">Filters</button>
+          </div>
+        </div>
+
+        <div class="active-filters" id="activeFilters"></div>
+
+        <section class="dashboard">
+          <div class="left-column">
+            <div class="cards-grid" id="cardsGrid"></div>
+            <div class="list-view" id="listView"></div>
+          </div>
+
+          <aside class="planner">
+            <section class="panel">
+              <div class="calendar-head">
+                <div class="month-controls">
+                  <button class="month-btn" data-month="prev">←</button>
+                  <div class="month-title" id="monthTitle">May 2026</div>
+                  <button class="month-btn" data-month="next">→</button>
+                </div>
+                <div class="month-controls">
+                  <button class="today-btn" id="goToday">Today</button>
+                  <button class="month-modal-btn" id="openMonthModal">View Month</button>
+                </div>
+              </div>
+
+              <div class="legend">
+                <span><i class="dot music"></i> Music</span>
+                <span><i class="dot market"></i> Markets / Food</span>
+                <span><i class="dot night"></i> Nightlife</span>
+                <span><i class="dot outdoor"></i> Outdoor</span>
+                <span><i class="dot family"></i> Family</span>
+              </div>
+
+              <div class="calendar-grid desktop-grid" id="calendarGrid"></div>
+            </section>
+
+            <section class="panel">
+              <div class="agenda-head">
+                <div>
+                  <div class="agenda-date" id="agendaDate">Saturday, May 17</div>
+                  <div class="agenda-meta" id="agendaMeta">12 events near Austin</div>
+                </div>
+                <button class="today-btn">View Full Day</button>
+              </div>
+              <div id="agendaContent"></div>
+            </section>
+          </aside>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="drawer" id="filterDrawer">
+    <div class="drawer-sheet">
+      <div class="drawer-head">
+        <h4>Browse Filters</h4>
+        <button class="drawer-close" id="closeDrawer">×</button>
+      </div>
+      <div class="nav-stack">
+        <button class="nav-item" data-drawer-filter="Tonight"><span class="icon-bubble">☾</span><span class="grow">Tonight</span></button>
+        <button class="nav-item" data-drawer-filter="This Weekend"><span class="icon-bubble">▣</span><span class="grow">This Weekend</span></button>
+        <button class="nav-item" data-drawer-filter="Live Music"><span class="icon-bubble">♫</span><span class="grow">Live Music</span></button>
+        <button class="nav-item" data-drawer-filter="Food & Drink"><span class="icon-bubble">🍔</span><span class="grow">Food & Drink</span></button>
+        <button class="nav-item" data-drawer-filter="Markets"><span class="icon-bubble">✦</span><span class="grow">Markets</span></button>
+        <button class="nav-item" data-drawer-filter="Outdoor"><span class="icon-bubble">☀</span><span class="grow">Outdoor</span></button>
+        <button class="nav-item" data-drawer-filter="Family"><span class="icon-bubble">★</span><span class="grow">Family</span></button>
+        <button class="nav-item" data-drawer-filter="Saved"><span class="icon-bubble">♥</span><span class="grow">Saved</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="month-modal" id="monthModal">
+    <div class="month-sheet">
+      <div class="drawer-head">
+        <h4 id="monthModalTitle">May 2026</h4>
+        <button class="drawer-close" id="closeMonthModal">×</button>
+      </div>
+      <div class="legend">
+        <span><i class="dot music"></i> Music</span>
+        <span><i class="dot market"></i> Markets / Food</span>
+        <span><i class="dot night"></i> Nightlife</span>
+        <span><i class="dot outdoor"></i> Outdoor</span>
+        <span><i class="dot family"></i> Family</span>
+      </div>
+      <div class="calendar-grid" id="monthModalGrid"></div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <button data-bottom="events"><span class="ico">▣</span><span>Events</span></button>
+    <button data-bottom="calendar"><span class="ico">🗓</span><span>Calendar</span></button>
+    <button data-bottom="filters"><span class="ico">⚙</span><span>Filters</span></button>
+    <button data-bottom="saved"><span class="ico">♥</span><span>Saved</span></button>
+    <button data-bottom="login"><span class="ico">→</span><span>Login</span></button>
+  </nav>
+
+  <script>
+    const $ = (s,p=document)=>p.querySelector(s);
+    const $$ = (s,p=document)=>Array.from(p.querySelectorAll(s));
+    const state = {
+      view:'cards',
+      month:new Date(2026,4,1),
+      selectedDate:'2026-05-17',
+      query:'',
+      city:'Austin, TX',
+      filters:new Set(['This Weekend'])
+    };
+
+    const events = [
+      {id:1,date:'2026-05-16',time:'6:00 PM',title:'Sunset Sessions',sub:'Lakeside Live',venue:'Auditorium Shores',city:'Austin, TX',type:'Live Music',category:'Music',tags:['Outdoor','All Ages','Free'],ticket:'teal',image:'img-music',saved:true,saves:122,desc:'A waterfront live music showcase with local openers and a golden-hour crowd.'},
+      {id:2,date:'2026-05-16',time:'8:30 PM',title:'Hill Country Honky Tonk',sub:'Two-Step Night',venue:'The White Horse',city:'Austin, TX',type:'Live Music',category:'Nightlife',tags:['Country','21+','Dance'],ticket:'orange',image:'img-music',saved:false,saves:188,desc:'A boot-stomping local favorite with a packed dance floor and no-frills Texas charm.'},
+      {id:3,date:'2026-05-17',time:'9:00 AM',title:'Eastside Night Market',sub:'Early Vendor Preview',venue:'Canopy',city:'Austin, TX',type:'Markets',category:'Market',tags:['Family','Local Vendors','Free'],ticket:'yellow',image:'img-market',saved:false,saves:91,desc:'Browse handmade goods, coffee pop-ups, and early bites from neighborhood vendors.'},
+      {id:4,date:'2026-05-17',time:'2:00 PM',title:'Taco & Vinyl Pop-Up',sub:'Food + Records',venue:'Meanwhile Brewing',city:'Austin, TX',type:'Food & Drink',category:'Food',tags:['Food & Drink','Outdoor','Free'],ticket:'orange',image:'img-market',saved:true,saves:76,desc:'A laid-back afternoon with tacos, craft beer and local DJs spinning vinyl.'},
+      {id:5,date:'2026-05-17',time:'5:00 PM',title:'Austin Jazz Courtyard',sub:'Happy Hour Set',venue:'Hotel San José',city:'Austin, TX',type:'Live Music',category:'Music',tags:['Jazz','Date Night','21+'],ticket:'red',image:'img-jazz',saved:false,saves:66,desc:'Smooth jazz in a courtyard setting with cocktails, candlelight and easy conversation.'},
+      {id:6,date:'2026-05-17',time:'7:30 PM',title:'Red River Rising',sub:'Local Band Showcase',venue:'Empire Garage',city:'Austin, TX',type:'Live Music',category:'Music',tags:['Indie','Nightlife','18+'],ticket:'teal',image:'img-music',saved:false,saves:148,desc:'A stacked local lineup that feels like the city’s best-kept Friday secret.'},
+      {id:7,date:'2026-05-17',time:'10:00 PM',title:'Vinyl After Dark',sub:'Late-Night DJ Set',venue:'High Noon',city:'Austin, TX',type:'Nightlife',category:'Nightlife',tags:['DJ Set','21+','Late Night'],ticket:'red',image:'img-jazz',saved:true,saves:207,desc:'A late-night dance set for people who want to keep the night moving.'},
+      {id:8,date:'2026-05-18',time:'10:00 AM',title:'Family Music Picnic',sub:'Community Stage',venue:'Mueller Lake Park',city:'Austin, TX',type:'Family',category:'Family',tags:['Outdoor','Family','Free'],ticket:'yellow',image:'img-outdoor',saved:false,saves:43,desc:'Blankets, snacks, and easy live music for a relaxed family-friendly Sunday.'},
+      {id:9,date:'2026-05-18',time:'1:00 PM',title:'Brunch on the Patio',sub:'Acoustic Set',venue:'Cosmic Coffee',city:'Austin, TX',type:'Food & Drink',category:'Food',tags:['Food & Drink','Acoustic','Outdoor'],ticket:'teal',image:'img-outdoor',saved:false,saves:54,desc:'An easy daytime plan with patio brunch, acoustic music and room to linger.'},
+      {id:10,date:'2026-05-18',time:'6:30 PM',title:'Local Legends Live',sub:'Texas Songwriters Round',venue:'C-Boy’s Heart & Soul',city:'Austin, TX',type:'Live Music',category:'Music',tags:['Singer-Songwriter','21+','Live Music'],ticket:'orange',image:'img-music',saved:false,saves:96,desc:'An intimate songwriter round with the kind of local talent you tell people about later.'},
+      {id:11,date:'2026-05-20',time:'7:00 PM',title:'Midweek Food Truck Fest',sub:'Neighborhood Eats',venue:'The Yard',city:'Austin, TX',type:'Food & Drink',category:'Food',tags:['Family','Food & Drink','Outdoor'],ticket:'orange',image:'img-market',saved:false,saves:35,desc:'A casual midweek reset with music, bites and neighborhood hangout energy.'},
+      {id:12,date:'2026-05-21',time:'8:00 PM',title:'Open Mic Underground',sub:'Local Voices',venue:'Radio East',city:'Austin, TX',type:'Live Music',category:'Music',tags:['Open Mic','All Ages','Free'],ticket:'teal',image:'img-jazz',saved:false,saves:29,desc:'New voices, low stakes, and a room full of people rooting for local talent.'},
+      {id:13,date:'2026-05-23',time:'11:00 AM',title:'Neighborhood Makers Fair',sub:'Weekend Finds',venue:'South Congress Plaza',city:'Austin, TX',type:'Markets',category:'Market',tags:['Markets','Family','Free'],ticket:'yellow',image:'img-market',saved:false,saves:72,desc:'An easy browse of makers, food stands, and local artists worth discovering.'},
+      {id:14,date:'2026-05-23',time:'8:30 PM',title:'Dance Hall Revival',sub:'Tejano & Country Mix',venue:'Sagebrush',city:'Austin, TX',type:'Nightlife',category:'Nightlife',tags:['Country','Dance','21+'],ticket:'red',image:'img-music',saved:true,saves:164,desc:'A high-energy dance hall night with room for both first-timers and regulars.'}
+    ];
+
+    const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+    function dateObj(key){ const [y,m,d] = key.split('-').map(Number); return new Date(y,m-1,d); }
+    function keyFromDate(d){ return d.toISOString().slice(0,10); }
+    function fmtLong(key){ const d = dateObj(key); return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`; }
+    function monthShort(key){ const d = dateObj(key); return `${months[d.getMonth()].slice(0,3).toUpperCase()}`; }
+    function timeNum(t){ let [hm,ap] = t.split(' '); let [h,m] = hm.split(':').map(Number); if(ap==='PM' && h!==12) h += 12; if(ap==='AM' && h===12) h = 0; return h*60+m; }
+    function eventTypeClass(evt){
+      if(evt.type === 'Live Music') return 'music';
+      if(evt.type === 'Markets' || evt.type === 'Food & Drink') return 'market';
+      if(evt.type === 'Nightlife') return 'night';
+      if(evt.type === 'Family') return 'family';
+      return 'outdoor';
+    }
+    function timeBucket(evt){
+      const n = timeNum(evt.time);
+      if(n < 720) return 'Morning';
+      if(n < 1020) return 'Afternoon';
+      return 'Tonight';
+    }
+    function toggleFilter(filter){
+      const exclusive = ['Tonight','This Weekend','Next 7 Days','Saved','Most Saved','New'];
+      if(state.filters.has(filter)) state.filters.delete(filter); else {
+        if(exclusive.includes(filter)) exclusive.forEach(x=> state.filters.delete(x));
+        state.filters.add(filter);
+      }
+      renderAll();
+    }
+    function filteredEvents(){
+      let list = [...events];
+      const q = state.query.trim().toLowerCase();
+      if(q){
+        list = list.filter(e => [e.title,e.sub,e.venue,e.type,e.category,...e.tags,e.desc].join(' ').toLowerCase().includes(q));
+      }
+      list = list.filter(e => e.city === state.city);
+      state.filters.forEach(f => {
+        if(f === 'Tonight') list = list.filter(e => e.date === '2026-05-16');
+        else if(f === 'This Weekend') list = list.filter(e => ['2026-05-16','2026-05-17','2026-05-18'].includes(e.date));
+        else if(f === 'Next 7 Days') list = list.filter(e => dateObj(e.date) >= dateObj('2026-05-16') && dateObj(e.date) <= dateObj('2026-05-23'));
+        else if(f === 'Saved') list = list.filter(e => e.saved);
+        else if(f === 'Most Saved') list = list.sort((a,b)=>b.saves-a.saves);
+        else if(f === 'New') list = list.sort((a,b)=>dateObj(b.date)-dateObj(a.date));
+        else if(['Live Music','Markets','Food & Drink','Outdoor','Family'].includes(f)) list = list.filter(e => e.type===f || e.tags.includes(f));
+      });
+      return list.sort((a,b)=> dateObj(a.date)-dateObj(b.date) || timeNum(a.time)-timeNum(b.time));
+    }
+
+    function visibleEvents(){
+      const base = filteredEvents();
+      if(!state.selectedDate) return base;
+      return base.filter(e => e.date === state.selectedDate);
+    }
+
+    function syncSelectedDate(){
+      const list = filteredEvents();
+      if(!list.length) return;
+      if(!list.some(e => e.date === state.selectedDate)){
+        state.selectedDate = list[0].date;
+        const d = dateObj(state.selectedDate);
+        state.month = new Date(d.getFullYear(), d.getMonth(), 1);
+      }
+    }
+
+    function renderActiveFilters(){
+      const zone = $('#activeFilters');
+      const filters = [...state.filters];
+      zone.innerHTML = filters.map(f => `<span class="chip">${f}<button data-remove="${f}">×</button></span>`).join('');
+      $$('[data-remove]', zone).forEach(btn => btn.onclick = () => { state.filters.delete(btn.dataset.remove); renderAll(); });
+      $$('.sub-item[data-filter]').forEach(btn => btn.classList.toggle('active-sub', state.filters.has(btn.dataset.filter)));
+    }
+
+    function cardMarkup(e){
+      return `
+        <article class="event-card">
+          <div class="ticket ${e.ticket}">
+            <div>
+              <div class="month">${days[dateObj(e.date).getDay()].toUpperCase()} ${monthShort(e.date)}</div>
+              <div class="date">${dateObj(e.date).getDate()}</div>
+            </div>
+            <div class="time">${e.time}</div>
+          </div>
+          <div class="thumb ${e.image}"></div>
+          <div class="card-body">
+            <span class="card-tag">${e.type}</span>
+            <h2 class="card-title">${e.title}<small>${e.sub}</small></h2>
+            <div class="card-meta">⌖ ${e.venue} · ${e.city}</div>
+            <div class="card-copy">${e.desc}</div>
+            <div class="meta-row">${e.tags.slice(0,3).map(t=>`<span class="mini-tag">${t}</span>`).join('')}</div>
+            <div class="actions">
+              <button class="tiny-btn ${e.saved ? 'saved' : ''}" data-save="${e.id}">${e.saved ? '♥ Saved' : '♡ Save'}</button>
+              <button class="tiny-btn">▣ Add to Calendar</button>
+            </div>
+          </div>
+        </article>`;
+    }
+
+    function renderCards(){
+      const list = visibleEvents();
+      $('#cardsGrid').innerHTML = list.length ? list.map(cardMarkup).join('') : `<div class="empty"><h3>Nothing here yet.</h3><p>Try another date or clear a filter.</p></div>`;
+      bindSaveButtons();
+    }
+
+    function renderList(){
+      const list = visibleEvents();
+      const grouped = {};
+      list.forEach(e => { (grouped[e.date] ||= []).push(e); });
+      const html = Object.keys(grouped).map(date => `
+        <div class="day-group">
+          <h3>${fmtLong(date)}</h3>
+          ${grouped[date].map(e => `
+            <div class="list-row">
+              <div class="list-time">${e.time}</div>
+              <div class="list-detail"><strong>${e.title}</strong><span>${e.venue} · ${e.city}</span></div>
+              <div class="list-type">${e.type}</div>
+            </div>`).join('')}
+        </div>`).join('');
+      $('#listView').innerHTML = html || `<div class="empty"><h3>No events found.</h3><p>Try another search or pick another date.</p></div>`;
+    }
+
+    function buildCalendarData(){
+      const list = filteredEvents();
+      const counts = {};
+      list.forEach(e => { (counts[e.date] ||= []).push(e); });
+      return counts;
+    }
+
+    function renderCalendar(target){
+      const root = $(target);
+      const counts = buildCalendarData();
+      const y = state.month.getFullYear(), m = state.month.getMonth();
+      const first = new Date(y,m,1);
+      const start = new Date(y,m,1-first.getDay());
+      let html = days.map(d => `<div class="dow">${d}</div>`).join('');
+      for(let i=0;i<42;i++){
+        const d = new Date(start); d.setDate(start.getDate()+i);
+        const key = keyFromDate(d);
+        const dayEvents = counts[key] || [];
+        const preview = dayEvents[0] ? dayEvents[0].title.replace(/\s+\w+$/,'') : '';
+        const uniqueTypes = [...new Set(dayEvents.map(eventTypeClass))].slice(0,4);
+        const isHot = dayEvents.length >= 3;
+        const isToday = key === '2026-05-16';
+        const dim = d.getMonth() !== m;
+        html += `
+          <button class="day-cell ${dayEvents.length?'has-events':''} ${dim?'dim':''} ${isHot?'hot':''} ${key===state.selectedDate?'selected':''} ${isToday?'today':''}" data-date="${key}" aria-label="${fmtLong(key)}${dayEvents.length ? `, ${dayEvents.length} events` : ', no events'}">
+            <div class="day-top">
+              <div class="day-number">${d.getDate()}</div>
+              ${dayEvents.length ? `<div class="count-badge" title="${dayEvents.length} event${dayEvents.length>1?'s':''}">${dayEvents.length}</div>` : ''}
+            </div>
+            ${uniqueTypes.length ? `<div class="dots">${uniqueTypes.map(t=>`<i class="dot ${t}"></i>`).join('')}</div>` : ''}
+            ${preview ? `<div class="cell-preview">${preview}</div>` : ''}
+          </button>`;
+      }
+      root.innerHTML = html;
+      $$('[data-date]', root).forEach(btn => btn.onclick = () => { state.selectedDate = btn.dataset.date; renderAll(false); document.querySelector('.left-column')?.scrollIntoView({behavior:'smooth', block:'start'}); if(window.innerWidth <= 980) closeMonthModal(); });
+    }
+
+    function renderWeekStrip(){
+      const selected = dateObj(state.selectedDate);
+      const start = new Date(selected); start.setDate(selected.getDate() - selected.getDay());
+      const counts = buildCalendarData();
+      $('#weekStrip').innerHTML = Array.from({length:7}).map((_,i)=>{
+        const d = new Date(start); d.setDate(start.getDate()+i); const key = keyFromDate(d); const c = (counts[key]||[]).length;
+        return `<button class="week-day ${key===state.selectedDate?'selected':''}" data-wdate="${key}"><div class="w">${days[d.getDay()]}</div><div class="n">${d.getDate()}</div><div class="c">${c} events</div></button>`;
+      }).join('');
+      $$('[data-wdate]').forEach(btn => btn.onclick = () => { state.selectedDate = btn.dataset.wdate; renderAll(false); });
+    }
+
+    function renderAgenda(){
+      const list = filteredEvents().filter(e => e.date === state.selectedDate).sort((a,b)=>timeNum(a.time)-timeNum(b.time));
+      $('#agendaDate').textContent = fmtLong(state.selectedDate);
+      $('#agendaMeta').textContent = `${list.length} event${list.length!==1?'s':''} near ${state.city.split(',')[0]}`;
+      if(!list.length){
+        $('#agendaContent').innerHTML = `<div class="empty"><h3>Nothing on the calendar yet.</h3><p>Try another date or help locals find what’s happening.</p></div>`;
+        return;
+      }
+      const buckets = {Morning:[],Afternoon:[],Tonight:[]};
+      list.forEach(e => buckets[timeBucket(e)].push(e));
+      $('#agendaContent').innerHTML = Object.entries(buckets).filter(([,items])=>items.length).map(([label,items]) => `
+        <div class="agenda-group">
+          <h4>${label}</h4>
+          ${items.map(e => `
+            <div class="agenda-item">
+              <div class="agenda-time">${e.time}</div>
+              <div class="agenda-detail"><strong>${e.title}</strong><span>${e.venue} · ${e.type}</span></div>
+              <button class="agenda-save ${e.saved ? 'saved' : ''}" data-save="${e.id}">${e.saved ? 'Saved' : 'Save'}</button>
+            </div>`).join('')}
+        </div>`).join('');
+      bindSaveButtons();
+    }
+
+    function renderBestDay(){
+      const counts = buildCalendarData();
+      const top = Object.entries(counts).sort((a,b)=>b[1].length-a[1].length)[0];
+      if(!top) return;
+      const [date,list] = top;
+      const d = dateObj(date);
+      $('#bestDayTitle').innerHTML = `${days[d.getDay()]} <span>${d.getDate()}</span>`;
+      $('#bestDayCopy').textContent = `${list.length} events, including ${list[0].type.toLowerCase()} and ${list[1] ? list[1].type.toLowerCase() : 'local plans'}, make this the best night-out pick right now.`;
+    }
+
+    function renderMeta(){
+      const list = visibleEvents();
+      $('#resultCount').textContent = list.length;
+      $('#cityLabel').textContent = state.city.split(',')[0];
+      const sel = dateObj(state.selectedDate);
+      if($('#selectedShort')) $('#selectedShort').textContent = `${months[sel.getMonth()]} ${sel.getDate()}`;
+      $('#monthTitle').textContent = `${months[state.month.getMonth()]} ${state.month.getFullYear()}`;
+      $('#monthModalTitle').textContent = `${months[state.month.getMonth()]} ${state.month.getFullYear()}`;
+    }
+
+    function bindSaveButtons(){
+      $$('[data-save]').forEach(btn => btn.onclick = () => {
+        const e = events.find(x => String(x.id) === String(btn.dataset.save));
+        if(e){ e.saved = !e.saved; renderAll(false); }
+      });
+    }
+
+    function setView(v){
+      state.view = v;
+      document.body.classList.remove('view-cards','view-list','view-calendar');
+      document.body.classList.add(`view-${v}`);
+      $$('[data-view]').forEach(btn => btn.classList.toggle('active', btn.dataset.view === v));
+    }
+
+    function renderAll(withCards=true){
+      syncSelectedDate();
+      renderMeta();
+      renderActiveFilters();
+      renderCards();
+      renderList();
+      renderCalendar('#calendarGrid');
+      renderCalendar('#monthModalGrid');
+      renderAgenda();
+    }
+
+    function openSidebar(){ $('#sidebar').classList.add('open'); $('#sidebarOverlay').classList.add('show'); }
+    function closeSidebar(){ $('#sidebar').classList.remove('open'); $('#sidebarOverlay').classList.remove('show'); }
+    function openDrawer(){ $('#filterDrawer').classList.add('open'); }
+    function closeDrawer(){ $('#filterDrawer').classList.remove('open'); }
+    function openMonthModal(){ $('#monthModal').classList.add('open'); }
+    function closeMonthModal(){ $('#monthModal').classList.remove('open'); }
+
+    // interactions
+    $('#searchForm').addEventListener('submit', (e)=>{
+      e.preventDefault();
+      state.query = $('#queryInput').value;
+      state.city = $('#cityInput').value || 'Austin, TX';
+      const preset = $('#datePreset').value;
+      ['Tonight','This Weekend','Next 7 Days'].forEach(x=>state.filters.delete(x));
+      if(preset !== 'All') state.filters.add(preset);
+      renderAll();
+    });
+
+    $$('[data-view]').forEach(btn => btn.onclick = ()=> setView(btn.dataset.view));
+    $$('[data-month]').forEach(btn => btn.onclick = ()=> { state.month.setMonth(state.month.getMonth() + (btn.dataset.month === 'next' ? 1 : -1)); renderAll(false); });
+    $('#goToday').onclick = ()=> { state.month = new Date(2026,4,1); state.selectedDate = '2026-05-16'; renderAll(false); };
+
+    $$('.nav-item[data-accordion]').forEach(btn => btn.onclick = ()=> {
+      const id = btn.dataset.accordion; const pane = document.getElementById(id); const open = pane.classList.toggle('open'); btn.classList.toggle('expanded', open);
+    });
+    $$('.sub-item[data-city]').forEach(btn => btn.onclick = ()=>{
+      $$('.sub-item[data-city]').forEach(x=>x.classList.remove('active-sub')); btn.classList.add('active-sub');
+      state.city = btn.dataset.city; $('#cityInput').value = state.city; renderAll(); if(window.innerWidth <= 980) closeSidebar();
+    });
+    $$('.sub-item[data-filter]').forEach(btn => btn.onclick = ()=> toggleFilter(btn.dataset.filter));
+    $$('.browse-item').forEach(btn => btn.onclick = ()=> toggleFilter(btn.dataset.quick));
+    $$('[data-drawer-filter]').forEach(btn => btn.onclick = ()=> toggleFilter(btn.dataset.drawerFilter));
+
+    $('#openSidebar').onclick = openSidebar;
+    $('#sidebarOverlay').onclick = closeSidebar;
+    $('#openDrawer').onclick = openDrawer;
+    $('#openFilters').onclick = openDrawer;
+    $('#closeDrawer').onclick = closeDrawer;
+    $('#filterDrawer').addEventListener('click', (e)=>{ if(e.target.id === 'filterDrawer') closeDrawer(); });
+    $('#openMonthModal').onclick = openMonthModal;
+    $('#closeMonthModal').onclick = closeMonthModal;
+    $('#monthModal').addEventListener('click', (e)=>{ if(e.target.id === 'monthModal') closeMonthModal(); });
+
+    $$('.bottom-nav button').forEach(btn => btn.onclick = ()=>{
+      const action = btn.dataset.bottom;
+      if(action === 'events') setView('cards');
+      if(action === 'calendar') setView('calendar');
+      if(action === 'filters') openDrawer();
+      if(action === 'saved'){ state.filters.add('Saved'); renderAll(); setView('cards'); }
+      if(action === 'login') alert('Login flow placeholder');
+    });
+
+    window.addEventListener('keydown', (e)=>{ if(e.key === 'Escape'){ closeSidebar(); closeDrawer(); closeMonthModal(); } });
+
+    renderAll();
+  </script>
+</body>
+</html>
