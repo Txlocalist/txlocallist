@@ -112,6 +112,7 @@ export async function createEventAction(prevState, formData) {
   }
 
   revalidatePath("/events");
+  revalidatePath("/events/results");
   revalidatePath("/dashboard/events");
   redirect("/dashboard/events?created=1");
 }
@@ -131,6 +132,7 @@ export async function deleteEventAction(formData) {
   await prisma.event.delete({ where: { id: eventId } });
 
   revalidatePath("/events");
+  revalidatePath("/events/results");
   revalidatePath("/dashboard/events");
   redirect("/dashboard/events");
 }

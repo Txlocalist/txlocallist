@@ -5,7 +5,7 @@ import { useFormStatus } from "react-dom";
 
 import { signUpAction } from "@/app/actions/auth";
 
-import styles from "../auth.module.css";
+import styles from "../login/login.module.css";
 
 const INITIAL_STATE = {
   error: "",
@@ -17,7 +17,10 @@ function SubmitButton() {
 
   return (
     <button type="submit" className={styles.submitButton} disabled={pending}>
-      {pending ? "Creating your account..." : "Create account"}
+      {pending ? "Creating your account..." : "Create Account"}
+      <span className="material-icons" aria-hidden="true">
+        arrow_forward
+      </span>
     </button>
   );
 }
@@ -38,14 +41,14 @@ export function SignupForm({ intent = "" }) {
 
       <div className={styles.field}>
         <label htmlFor="email" className={styles.label}>
-          Email
+          Email Address
         </label>
         <input
           id="email"
           name="email"
           type="email"
           autoComplete="email"
-          placeholder="you@example.com"
+          placeholder="sam@texaslocal.com"
           className={styles.input}
           required
         />
@@ -63,7 +66,7 @@ export function SignupForm({ intent = "" }) {
           name="password"
           type="password"
           autoComplete="new-password"
-          placeholder="At least 12 characters"
+          placeholder="............"
           className={styles.input}
           minLength={12}
           required
@@ -85,7 +88,7 @@ export function SignupForm({ intent = "" }) {
           name="confirmPassword"
           type="password"
           autoComplete="new-password"
-          placeholder="Repeat your password"
+          placeholder="............"
           className={styles.input}
           minLength={12}
           required

@@ -74,7 +74,8 @@ model User {
   canceledAt    DateTime?
 
   // Localist favorites + searches
-  favorites    Favorite[]
+  favorites      Favorite[]
+  eventFavorites EventFavorite[]
 
   // Owner info (only filled if role includes OWNER)
   ownedBusinesses Business[]
@@ -410,6 +411,19 @@ model Favorite {
   @@index([businessId])
 }
 
+model EventFavorite {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, eventId])
+  @@index([userId])
+  @@index([eventId])
+}
+
 // =============================================================================
 // AUDIT & LOGGING (optional, Phase 10+)
 // =============================================================================
@@ -456,6 +470,7 @@ model Event {
 
   // Tags (reuse existing Tag table via join)
   tags        Tag[]
+  favorites   EventFavorite[]
 
   // Schedule (optional for future use)
   startDate   DateTime?

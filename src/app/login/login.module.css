@@ -190,6 +190,13 @@
   font-weight: 700;
 }
 
+.helper {
+  margin: -0.18rem 0 0;
+  color: rgba(92, 75, 62, 0.68);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
 .errorBanner,
 .fieldError {
   margin: 0;
@@ -258,6 +265,20 @@
   text-align: center;
   color: #0f7d7a;
   font-size: 0.96rem;
+  font-weight: 900;
+}
+
+.authFootnote {
+  margin: 1rem auto 0;
+  max-width: 25rem;
+  text-align: center;
+  color: rgba(92, 75, 62, 0.74);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.authFootnote a {
+  color: #0f7d7a;
   font-weight: 900;
 }
 

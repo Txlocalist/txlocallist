@@ -11,11 +11,7 @@
     padding var(--dur-lg) var(--ease-snap);
 }
 
-:global(html[data-home-mode="events"] body) {
-  background: #050605;
-}
-
-:global(html[data-home-mode="events"] [data-primary-nav]) {
+:global(html[data-home-mode="events"]) .nav {
   display: none;
 }
 
@@ -26,54 +22,24 @@
 }
 
 .logo {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   flex: 0 0 auto;
   width: 168px;
-  line-height: 0.72;
   transform: rotate(-3deg);
   transform-origin: center;
   filter: drop-shadow(0 5px 0 rgba(0, 0, 0, 0.45));
   transition: transform var(--dur-sm) var(--ease-snap);
 }
 
+.logoImage {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
 .logo:hover {
   transform: rotate(-3deg) scale(1.04);
-}
-
-.logoState {
-  display: block;
-  margin-left: 42px;
-  color: #fff8df;
-  font-family: var(--font-accent), cursive;
-  font-size: 13px;
-  font-weight: 900;
-  letter-spacing: 0.06em;
-  text-shadow: 2px 2px 0 var(--retro-red);
-  text-transform: uppercase;
-}
-
-.logoWord {
-  display: block;
-  color: #fff8df;
-  font-family: var(--font-display), cursive;
-  font-size: 45px;
-  letter-spacing: 0;
-  -webkit-text-stroke: 1.1px var(--retro-red);
-  text-shadow:
-    3px 3px 0 var(--retro-orange),
-    6px 6px 0 #1d7270;
-}
-
-.logoUrl {
-  display: block;
-  margin-top: 4px;
-  margin-left: 56px;
-  color: #fff8df;
-  font-family: var(--font-accent), cursive;
-  font-size: 7px;
-  font-weight: 900;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
 }
 
 .navLinks {
@@ -248,19 +214,5 @@
 
   .logo {
     width: 128px;
-  }
-
-  .logoState {
-    margin-left: 31px;
-    font-size: 10px;
-  }
-
-  .logoWord {
-    font-size: 36px;
-  }
-
-  .logoUrl {
-    margin-left: 44px;
-    font-size: 6px;
   }
 }

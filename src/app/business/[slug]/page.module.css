@@ -150,6 +150,11 @@
   backdrop-filter: blur(8px);
   box-shadow: none !important;
   gap: 0 !important;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: transform 0.13s ease, background-color 0.13s ease;
 }
 .heroShareBtn:hover {
   background: rgba(255, 255, 255, 0.25) !important;
@@ -787,27 +792,7 @@
 /* ────────────────────────────────────────
    SHARE BUTTON (global, used by ShareButton.jsx)
 ──────────────────────────────────────── */
-:global(.share-btn) {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.55rem 1.25rem;
-  background-color: var(--retro-brown);
-  color: white;
-  border: 2px solid var(--retro-brown);
-  border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  cursor: pointer;
-  transition: transform 0.13s ease, background-color 0.13s ease;
-}
-:global(.share-btn:hover) {
-  background-color: var(--retro-teal);
-  border-color: var(--retro-teal);
-  transform: translate(-2px, -2px);
-}
-:global(.share-btn-icon) { font-size: 1rem; }
+.heroShareBtn :global(.share-btn-icon) { font-size: 1rem; }
 
 /* ────────────────────────────────────────
    RESPONSIVE

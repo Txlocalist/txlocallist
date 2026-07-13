@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 import { getCurrentUser } from "@/lib/auth/session";
@@ -29,9 +30,14 @@ export default async function Navbar({ links = DEFAULT_LINKS }) {
     <nav className={styles.nav} aria-label="Primary" data-primary-nav>
       <div className={styles.navBrand}>
         <Link href="/" aria-label="Texas Localist Home" className={styles.logo}>
-          <span className={styles.logoState}>Texas</span>
-          <span className={styles.logoWord}>Localist</span>
-          <span className={styles.logoUrl}>TXLocalist.com</span>
+          <Image
+            src="/Main-Logo.svg"
+            alt="Texas Localist"
+            width={220}
+            height={96}
+            className={styles.logoImage}
+            priority
+          />
         </Link>
       </div>
 
