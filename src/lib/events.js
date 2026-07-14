@@ -145,10 +145,10 @@ export function formatShortDateLabel(dateKey) {
 function normalizeEvent(event) {
   const type = inferEventType(event);
   const tags = unique([type, ...(event.tags || []).map((tag) => tag.name)]).slice(0, 6);
-  const categoryTags = unique((event.tags || []).map((tag) => tag.name)).map((name) => ({
-    name,
-    slug: slugifyCategoryLabel(name),
-  }));
+  // The event's category is its display-cased type (e.g. "Live Music"), not the
+  // raw tag rows (e.g. "music"), so the category list, calendar legend, and card
+  // labels all share one vocabulary. Raw tags remain available via `tags`.
+  const categoryTags = [{ name: type, slug: slugifyCategoryLabel(type) }];
 
   return {
     id: event.id,
@@ -210,12 +210,7 @@ export function getEventCities(events) {
   return unique(events.map((event) => event.cityLabel)).sort((a, b) => a.localeCompare(b));
 }
 
-export function getEventCategories(events, liveCategoryNames = []) {
-  const fromDashboard = unique(liveCategoryNames);
-  if (fromDashboard.length) {
-    return fromDashboard.sort((a, b) => a.localeCompare(b));
-  }
-
+export function getEventCategories(events) {
   return unique(
     events.flatMap((event) => {
       const names = (event.categoryTags || []).map((category) => category.name).filter(Boolean);
@@ -296,13 +291,7 @@ export function groupEventsByDate(events) {
 }
 
 export async function getEventsPageData(filters = {}) {
-  const [events, liveCategories] = await Promise.all([
-    getPublishedEvents(),
-    prisma.tag.findMany({
-      orderBy: { name: "asc" },
-      select: { name: true },
-    }),
-  ]);
+  const events = await getPublishedEvents();
   const filteredEvents = filterEvents(events, filters);
 
   return {
@@ -310,10 +299,7 @@ export async function getEventsPageData(filters = {}) {
     filteredEvents,
     groupedEvents: groupEventsByDate(filteredEvents),
     cities: getEventCities(events),
-    categories: getEventCategories(
-      events,
-      liveCategories.map((category) => category.name)
-    ),
+    categories: getEventCategories(events),
   };
 }
 

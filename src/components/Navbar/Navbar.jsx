@@ -19,7 +19,7 @@ const DEFAULT_LINKS = [
  * Props:
  *   - links: array of { href, label } overrides
  */
-export default async function Navbar({ links = DEFAULT_LINKS }) {
+export default async function Navbar({ links = DEFAULT_LINKS, logoSrc = "/Main-Logo.svg" }) {
   const user = await getCurrentUser().catch(() => null);
 
   const pillHref = user ? "/dashboard" : "/login";
@@ -31,7 +31,7 @@ export default async function Navbar({ links = DEFAULT_LINKS }) {
       <div className={styles.navBrand}>
         <Link href="/" aria-label="Texas Localist Home" className={styles.logo}>
           <Image
-            src="/Main-Logo.svg"
+            src={logoSrc}
             alt="Texas Localist"
             width={220}
             height={96}

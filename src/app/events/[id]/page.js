@@ -91,7 +91,7 @@ export default async function EventDetailPage({ params }) {
 
   return (
     <div className={styles.page}>
-      <Navbar />
+      <Navbar logoSrc="/Dark-mode-logo.svg" />
 
       <main className={styles.shell}>
         <Link href="/events/results" className={styles.backLink}>

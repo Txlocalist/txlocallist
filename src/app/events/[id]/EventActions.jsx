@@ -5,26 +5,6 @@ import { useRouter } from "next/navigation";
 
 import styles from "./page.module.css";
 
-function escapeCalendarText(value) {
-  return String(value || "")
-    .replace(/\\/g, "\\\\")
-    .replace(/\r?\n/g, "\\n")
-    .replace(/,/g, "\\,")
-    .replace(/;/g, "\\;");
-}
-
-function toCalendarDate(value) {
-  return new Date(value).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
-}
-
-function calendarFileName(title) {
-  const safeTitle = String(title || "texas-localist-event")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-  return `${safeTitle || "texas-localist-event"}.ics`;
-}
-
 export default function EventActions({
   eventId,
   initialSaved = false,
@@ -101,43 +81,6 @@ export default function EventActions({
     }
   }
 
-  function addToCalendar() {
-    if (!event.startDate) return;
-
-    const startDate = new Date(event.startDate);
-    const endDate = event.endDate
-      ? new Date(event.endDate)
-      : new Date(startDate.getTime() + 2 * 60 * 60 * 1000);
-    const location = [event.venue, event.address, event.cityLabel].filter(Boolean).join(", ");
-    const calendar = [
-      "BEGIN:VCALENDAR",
-      "VERSION:2.0",
-      "PRODID:-//Texas Localist//Event Calendar//EN",
-      "CALSCALE:GREGORIAN",
-      "BEGIN:VEVENT",
-      `UID:${eventId}@txlocalist.com`,
-      `DTSTAMP:${toCalendarDate(new Date())}`,
-      `DTSTART:${toCalendarDate(startDate)}`,
-      `DTEND:${toCalendarDate(endDate)}`,
-      `SUMMARY:${escapeCalendarText(event.title)}`,
-      `DESCRIPTION:${escapeCalendarText(event.description)}`,
-      `LOCATION:${escapeCalendarText(location)}`,
-      `URL:${escapeCalendarText(window.location.href)}`,
-      "END:VEVENT",
-      "END:VCALENDAR",
-    ].join("\r\n");
-
-    const url = URL.createObjectURL(new Blob([calendar], { type: "text/calendar;charset=utf-8" }));
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = calendarFileName(event.title);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
-    setFeedback("Calendar file downloaded.");
-  }
-
   const savedCopy = count > 0
     ? `${count.toLocaleString()} ${count === 1 ? "local has" : "locals have"} saved this event`
     : "Be the first local to save this event";
@@ -150,7 +93,7 @@ export default function EventActions({
           onClick={toggleSave}
           disabled={loading}
           aria-pressed={saved}
-          className={`${styles.actionButton} ${saved ? styles.actionButtonSaved : ""}`}
+          className={`${styles.actionButton} ${styles.saveButton}`}
         >
           <span className="material-icons" aria-hidden="true">
             {saved ? "favorite" : "favorite_border"}
@@ -161,16 +104,6 @@ export default function EventActions({
         <button type="button" onClick={shareEvent} className={styles.actionButton}>
           <span className="material-icons" aria-hidden="true">share</span>
           Share
-        </button>
-
-        <button
-          type="button"
-          onClick={addToCalendar}
-          disabled={!event.startDate}
-          className={`${styles.actionButton} ${styles.calendarButton}`}
-        >
-          <span className="material-icons" aria-hidden="true">calendar_month</span>
-          Add to Calendar
         </button>
       </div>
 
