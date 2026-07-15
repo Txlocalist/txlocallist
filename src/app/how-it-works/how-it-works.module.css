@@ -571,24 +571,15 @@
   justify-items: center;
   align-content: center;
   align-self: stretch;
+  min-width: 11.5rem;
   padding-right: 1.5rem;
   border-right: 1px dashed rgba(255, 246, 223, 0.62);
 }
 
-.ctaMark p {
-  margin: 0 0 0.75rem;
-  color: #f2a269;
-  font-family: var(--font-accent), sans-serif;
-  font-size: 0.8rem;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  transform: rotate(-5deg);
-}
-
-.ctaLonghorn {
-  width: 6.5rem;
+.ctaMarkImage {
+  width: min(10rem, 100%);
   height: auto;
-  opacity: 0.86;
+  object-fit: contain;
 }
 
 .ctaCopy {
@@ -924,18 +915,15 @@
     grid-template-columns: auto 5.5rem;
     justify-content: start;
     gap: 1rem;
-    min-height: 4.5rem;
+    min-height: 5rem;
+    min-width: 0;
     padding: 0 0 1rem;
     border-right: 0;
     border-bottom: 1px dashed rgba(255, 246, 223, 0.62);
   }
 
-  .ctaMark p {
-    margin: 0;
-  }
-
-  .ctaLonghorn {
-    width: 5.5rem;
+  .ctaMarkImage {
+    width: min(8.75rem, 100%);
   }
 
   .ctaCopy h2 {

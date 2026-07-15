@@ -5,6 +5,7 @@ import heroImage from "@/app/assets/hero-how-it-works.webp";
 import bluebonnetImage from "@/app/assets/how-it-works (1).webp";
 import gasStationImage from "@/app/assets/how-it-works (3).webp";
 import longhornImage from "@/app/assets/Longhorn-white.webp";
+import keepLocalImage from "@/app/assets/Keep-local.webp";
 import { Footer, Navbar } from "@/components";
 
 import styles from "./how-it-works.module.css";
@@ -192,8 +193,7 @@ export default function HowItWorksPage() {
 
           <section className={styles.ctaSection} aria-labelledby="cta-title">
             <div className={styles.ctaMark} aria-hidden="true">
-              <p>Keep it local</p>
-              <Image src={longhornImage} alt="" className={styles.ctaLonghorn} />
+              <Image src={keepLocalImage} alt="" className={styles.ctaMarkImage} />
             </div>
 
             <div className={styles.ctaCopy}>
