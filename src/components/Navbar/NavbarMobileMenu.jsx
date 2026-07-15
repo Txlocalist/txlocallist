@@ -5,7 +5,7 @@ import { useEffect, useId, useState } from "react";
 
 import styles from "./Navbar.module.css";
 
-export default function NavbarMobileMenu({ links, pillHref, pillLabel }) {
+export default function NavbarMobileMenu({ links, pillHref, pillLabel, activeHref }) {
   const [open, setOpen] = useState(false);
   const menuId = useId();
 
@@ -44,7 +44,7 @@ export default function NavbarMobileMenu({ links, pillHref, pillLabel }) {
           <button
             type="button"
             className={styles.mobileMenuOverlay}
-            aria-label="Close navigation menu"
+            aria-label="Dismiss navigation menu"
             onClick={closeMenu}
           />
           <div id={menuId} className={styles.mobileMenuPanel}>
@@ -52,7 +52,10 @@ export default function NavbarMobileMenu({ links, pillHref, pillLabel }) {
               <Link
                 key={link.href}
                 href={link.href}
-                className={styles.mobileMenuLink}
+                className={`${styles.mobileMenuLink} ${
+                  activeHref === link.href ? styles.mobileMenuLinkActive : ""
+                }`}
+                aria-current={activeHref === link.href ? "page" : undefined}
                 onClick={closeMenu}
               >
                 {link.label}

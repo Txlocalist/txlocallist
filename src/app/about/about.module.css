@@ -1,0 +1,716 @@
+.pageShell {
+  --about-ink: #2c1e17;
+  --about-paper: #f7ead0;
+  --about-paper-light: #fff7e6;
+  --about-teal: #11666d;
+  --about-rust: #aa4529;
+  --about-line: rgba(69, 44, 29, 0.7);
+  position: relative;
+  isolation: isolate;
+  min-height: 100dvh;
+  overflow: hidden;
+  color: var(--about-ink);
+  background:
+    radial-gradient(circle at 14% 10%, rgba(152, 92, 49, 0.08), transparent 22rem),
+    radial-gradient(circle at 86% 38%, rgba(17, 102, 109, 0.055), transparent 24rem),
+    var(--about-paper);
+}
+
+.pageShell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.34;
+  background-image:
+    radial-gradient(circle, rgba(60, 38, 24, 0.24) 0 0.55px, transparent 0.7px),
+    radial-gradient(circle, rgba(170, 69, 41, 0.15) 0 0.45px, transparent 0.65px);
+  background-position: 0 0, 4px 3px;
+  background-size: 7px 7px, 9px 9px;
+}
+
+.pageShell :global([data-primary-nav]) {
+  width: min(calc(100% - 48px), 72.5rem);
+  padding-top: 1.15rem;
+  padding-bottom: 1.15rem;
+}
+
+.page {
+  position: relative;
+  z-index: 1;
+  padding: 0 1.5rem 0.9rem;
+}
+
+.hero,
+.originSection,
+.beliefsSection,
+.nextSection,
+.ctaSection,
+.sectionRule {
+  width: min(100%, 72.5rem);
+  margin: 0 auto;
+}
+
+.hero {
+  padding-top: 0.25rem;
+}
+
+.heroInner {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.32fr) minmax(19rem, 0.68fr);
+  gap: clamp(2rem, 5vw, 4rem);
+  align-items: center;
+  min-height: 25.5rem;
+  padding: clamp(2rem, 4vw, 3.4rem);
+  border: 2px solid var(--about-line);
+  border-radius: 1.45rem;
+  background: rgba(255, 248, 232, 0.66);
+  box-shadow: 0.25rem 0.3rem 0 rgba(74, 45, 28, 0.18);
+}
+
+.heroInner::after {
+  content: "";
+  position: absolute;
+  inset: 0.38rem;
+  border: 1px solid rgba(73, 45, 28, 0.34);
+  border-radius: 1.08rem;
+  pointer-events: none;
+}
+
+.heroCopy {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: start;
+  gap: 0.8rem;
+}
+
+.eyebrow,
+.ctaEyebrow {
+  margin: 0;
+  color: var(--about-rust);
+  font-family: var(--font-accent), sans-serif;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.title {
+  max-width: 15ch;
+  margin: 0;
+  color: var(--about-ink);
+  font-family: var(--font-editorial), Georgia, serif;
+  font-size: clamp(3.35rem, 4.45vw, 4rem);
+  font-weight: 400;
+  line-height: 0.98;
+  text-wrap: balance;
+}
+
+.heroFlourish {
+  display: grid;
+  grid-template-columns: auto 7.5rem;
+  align-items: center;
+  gap: 0.65rem;
+  width: 11rem;
+  color: var(--about-teal);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.heroFlourish::after {
+  content: "";
+  height: 2px;
+  background: currentColor;
+}
+
+.lede {
+  max-width: 42rem;
+  margin: 0.25rem 0 0;
+  color: rgba(44, 30, 23, 0.82);
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+.heroMedia {
+  position: relative;
+  z-index: 2;
+  min-height: 22rem;
+  border: 3px solid var(--about-line);
+  border-radius: 1.35rem;
+  background: var(--about-teal);
+  box-shadow:
+    inset 0 0 0 0.35rem rgba(255, 247, 230, 0.78),
+    0.34rem 0.34rem 0 rgba(17, 102, 109, 0.78);
+}
+
+.heroMedia::before {
+  content: "";
+  position: absolute;
+  inset: 0.45rem;
+  z-index: 2;
+  border: 1px solid rgba(255, 247, 230, 0.78);
+  border-radius: 0.9rem;
+  pointer-events: none;
+}
+
+.heroImage,
+.nextImage {
+  object-fit: cover;
+}
+
+.heroImage {
+  border-radius: 1.1rem;
+}
+
+.heroSeal {
+  position: absolute;
+  right: -2.25rem;
+  bottom: -1.8rem;
+  z-index: 3;
+  width: clamp(6.7rem, 12vw, 8.7rem);
+  height: auto;
+  filter: drop-shadow(0.22rem 0.28rem 0 rgba(44, 30, 23, 0.38));
+}
+
+.sectionRule {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 0.75rem;
+  align-items: center;
+  height: 3.5rem;
+  color: var(--about-rust);
+}
+
+.sectionRule::before,
+.sectionRule::after {
+  content: "";
+  height: 1px;
+  background: var(--about-line);
+}
+
+.sectionRule > span {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.originInner {
+  display: grid;
+  grid-template-columns: minmax(13rem, 0.58fr) minmax(0, 1.42fr);
+  gap: clamp(2rem, 4vw, 3.4rem);
+  padding: 0.55rem 3rem 0.7rem;
+}
+
+.originLabel {
+  display: grid;
+  grid-template-columns: 4.4rem minmax(0, 1fr);
+  gap: 1.1rem;
+  align-items: center;
+  align-self: stretch;
+  padding-right: 2rem;
+  border-right: 1px dashed rgba(80, 48, 30, 0.42);
+  color: var(--about-rust);
+  font-family: var(--font-accent), sans-serif;
+  font-size: 1rem;
+  line-height: 1.25;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.originIcon,
+.beliefIcon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 2px solid var(--about-ink);
+  border-radius: 50%;
+  background: var(--about-teal);
+  box-shadow: inset 0 0 0 0.22rem rgba(255, 247, 230, 0.9), 0.18rem 0.22rem 0 rgba(44, 30, 23, 0.24);
+  color: var(--about-paper-light);
+}
+
+.originIcon {
+  width: 4rem;
+  height: 4rem;
+  font-size: 1.65rem;
+}
+
+.originCopy {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.originCopy h2,
+.beliefsHeader h2,
+.nextCopy h2,
+.ctaCopy h2 {
+  margin: 0;
+  color: var(--about-ink);
+  font-family: var(--font-editorial), Georgia, serif;
+  font-size: clamp(2.65rem, 4.2vw, 4rem);
+  font-weight: 400;
+  line-height: 1;
+}
+
+.originCopy p,
+.nextCopy p {
+  max-width: 53rem;
+  margin: 0;
+  color: rgba(44, 30, 23, 0.83);
+  font-size: 0.98rem;
+  line-height: 1.58;
+}
+
+.beliefsInner {
+  display: grid;
+  grid-template-columns: minmax(14rem, 0.62fr) minmax(0, 1.38fr);
+  gap: clamp(2rem, 4vw, 3.2rem);
+  padding: 0.55rem 3rem 0.25rem;
+}
+
+.beliefsHeader {
+  position: relative;
+  min-height: 14rem;
+  padding-right: 2.4rem;
+  border-right: 1px dashed rgba(80, 48, 30, 0.42);
+}
+
+.beliefsHeader::after {
+  content: "";
+  position: absolute;
+  right: 1rem;
+  bottom: 0;
+  left: -2.2rem;
+  height: 7.2rem;
+  opacity: 0.13;
+  background: url("../assets/vintage Texas landscape.png") center bottom / cover no-repeat;
+  filter: grayscale(1) sepia(1) contrast(1.4);
+  mask-image: linear-gradient(180deg, transparent, #000 42%);
+}
+
+.beliefsHeader h2 {
+  position: relative;
+  z-index: 1;
+  max-width: 6ch;
+}
+
+.beliefList {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.beliefItem {
+  display: grid;
+  grid-template-columns: 3.35rem minmax(0, 1fr);
+  gap: 1rem;
+  align-items: center;
+  min-height: 4.5rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px dashed rgba(80, 48, 30, 0.34);
+  color: rgba(44, 30, 23, 0.9);
+  font-size: 0.94rem;
+  font-weight: 700;
+  line-height: 1.45;
+  transition: color var(--dur-sm) var(--ease-snap), transform var(--dur-sm) var(--ease-snap);
+}
+
+.beliefItem:last-child {
+  border-bottom: 0;
+}
+
+.beliefIcon {
+  width: 3rem;
+  height: 3rem;
+  font-size: 1.35rem;
+  transition: transform var(--dur-sm) var(--ease-snap);
+}
+
+.beliefItem:nth-child(even) .beliefIcon {
+  background: var(--about-rust);
+}
+
+.beliefItem:hover {
+  color: var(--about-rust);
+  transform: translateX(0.2rem);
+}
+
+.beliefItem:hover .beliefIcon {
+  transform: rotate(-4deg) scale(1.04);
+}
+
+.nextSection {
+  margin-top: 0.75rem;
+}
+
+.nextInner {
+  display: grid;
+  grid-template-columns: minmax(0, 0.93fr) minmax(0, 1.07fr);
+  min-height: 19rem;
+  overflow: hidden;
+  border: 2px solid var(--about-line);
+  border-radius: 1.1rem;
+  background: rgba(255, 248, 232, 0.72);
+  box-shadow: inset 0 0 0 0.35rem rgba(109, 74, 46, 0.08);
+}
+
+.nextMedia {
+  position: relative;
+  min-height: 19rem;
+  overflow: hidden;
+  border-right: 2px solid var(--about-line);
+  background: #17161a;
+}
+
+.nextImage {
+  object-position: center;
+  transition: transform 420ms var(--ease-snap);
+}
+
+.nextInner:hover .nextImage {
+  transform: scale(1.018);
+}
+
+.nextCopy {
+  position: relative;
+  display: grid;
+  align-content: center;
+  gap: 0.9rem;
+  padding: clamp(2rem, 4vw, 3.4rem);
+}
+
+.nextCopy::after {
+  content: "★";
+  position: absolute;
+  right: 1.25rem;
+  bottom: 1rem;
+  display: grid;
+  place-items: center;
+  width: 4.6rem;
+  aspect-ratio: 1;
+  border: 2px solid rgba(170, 69, 41, 0.25);
+  border-radius: 50%;
+  color: rgba(170, 69, 41, 0.25);
+  font-size: 1.6rem;
+  transform: rotate(-12deg);
+}
+
+.inlineLink {
+  color: var(--about-teal);
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  transition: color var(--dur-sm) var(--ease-snap);
+}
+
+.inlineLink:hover {
+  color: var(--about-rust);
+}
+
+.ctaSection {
+  padding: 0.9rem 0 0.65rem;
+}
+
+.ctaCard {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2rem;
+  align-items: center;
+  min-height: 10.4rem;
+  overflow: hidden;
+  padding: 1.45rem 2.15rem;
+  border: 2px solid var(--about-ink);
+  border-radius: 1.1rem;
+  background:
+    repeating-radial-gradient(circle at 80% 115%, transparent 0 1.45rem, rgba(247, 234, 208, 0.045) 1.5rem 1.58rem),
+    #0d4143;
+  box-shadow: inset 0 0 0 0.35rem rgba(247, 234, 208, 0.12);
+  color: var(--about-paper-light);
+}
+
+.ctaCard::after {
+  content: "";
+  position: absolute;
+  right: 30%;
+  bottom: -0.6rem;
+  width: 12rem;
+  height: 5.4rem;
+  opacity: 0.12;
+  background: url("../assets/Longhorn-white.webp") center / contain no-repeat;
+}
+
+.ctaCopy {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.ctaCopy h2 {
+  max-width: none;
+  color: var(--about-paper-light);
+  font-family: var(--font-display), Georgia, serif;
+  font-size: clamp(2rem, 2.8vw, 2.85rem);
+  line-height: 1.08;
+}
+
+.ctaCopy > p:last-child {
+  max-width: 39rem;
+  margin: 0;
+  color: rgba(255, 247, 230, 0.86);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.ctaButton {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  min-width: 14.5rem;
+  min-height: 3.65rem;
+  padding: 0 1.5rem;
+  border: 2px solid var(--about-paper-light);
+  border-radius: 999px;
+  background: var(--about-rust);
+  box-shadow: 0 0.2rem 0 rgba(44, 30, 23, 0.72);
+  color: var(--about-paper-light);
+  font-family: var(--font-accent), sans-serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.045em;
+  line-height: 1;
+  text-decoration: none;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: background-color var(--dur-sm) var(--ease-snap), box-shadow var(--dur-sm) var(--ease-snap), transform var(--dur-sm) var(--ease-snap);
+}
+
+.ctaButton:hover {
+  background: #8f351f;
+  transform: translateY(-0.12rem);
+  box-shadow: 0 0.35rem 0 rgba(44, 30, 23, 0.72);
+}
+
+.ctaButton:active {
+  transform: translateY(0.12rem) scale(0.99);
+  box-shadow: 0 0.08rem 0 rgba(44, 30, 23, 0.72);
+}
+
+.buttonIcon {
+  font-size: 1.25rem;
+  transition: transform var(--dur-sm) var(--ease-snap);
+}
+
+.ctaButton:hover .buttonIcon {
+  transform: translateX(0.22rem);
+}
+
+@media (max-width: 980px) {
+  .heroInner {
+    grid-template-columns: minmax(0, 1.14fr) minmax(17rem, 0.86fr);
+    gap: 2.25rem;
+  }
+
+  .heroMedia {
+    min-height: 21rem;
+  }
+
+  .originInner,
+  .beliefsInner {
+    padding-right: 1.5rem;
+    padding-left: 1.5rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .pageShell :global([data-primary-nav]) {
+    width: min(calc(100% - 32px), 72.5rem);
+    padding-top: 0.8rem;
+    padding-bottom: 0.8rem;
+  }
+
+  .page {
+    padding-right: 1rem;
+    padding-left: 1rem;
+  }
+
+  .heroInner {
+    grid-template-columns: 1fr;
+    gap: 1.35rem;
+    min-height: 0;
+    padding: 1.5rem;
+    border-radius: 1.15rem;
+  }
+
+  .heroInner::after {
+    border-radius: 0.82rem;
+  }
+
+  .title {
+    max-width: 12ch;
+    font-size: clamp(2.55rem, 11.8vw, 3.25rem);
+    line-height: 1.02;
+  }
+
+  .lede {
+    font-size: 0.94rem;
+  }
+
+  .heroMedia {
+    min-height: 15.5rem;
+    border-radius: 1rem;
+  }
+
+  .heroImage {
+    border-radius: 0.82rem;
+  }
+
+  .heroSeal {
+    right: -0.75rem;
+    bottom: -1rem;
+    width: clamp(4.9rem, 24vw, 5.8rem);
+  }
+
+  .sectionRule {
+    height: 2.9rem;
+  }
+
+  .originInner,
+  .beliefsInner {
+    grid-template-columns: 1fr;
+    gap: 1.4rem;
+    padding: 0.25rem 0.7rem;
+  }
+
+  .originLabel {
+    grid-template-columns: 3.65rem minmax(0, 1fr);
+    min-height: 4.5rem;
+    padding: 0 0 1.15rem;
+    border-right: 0;
+    border-bottom: 1px dashed rgba(80, 48, 30, 0.42);
+  }
+
+  .originIcon {
+    width: 3.4rem;
+    height: 3.4rem;
+    font-size: 1.45rem;
+  }
+
+  .originCopy h2,
+  .beliefsHeader h2,
+  .nextCopy h2,
+  .ctaCopy h2 {
+    font-size: clamp(2.25rem, 10vw, 3rem);
+  }
+
+  .originCopy p,
+  .nextCopy p {
+    font-size: 0.94rem;
+  }
+
+  .beliefsHeader {
+    min-height: 8.5rem;
+    padding: 0 0 1rem;
+    border-right: 0;
+    border-bottom: 1px dashed rgba(80, 48, 30, 0.42);
+  }
+
+  .beliefsHeader::after {
+    right: 0;
+    left: 38%;
+    height: 6.4rem;
+  }
+
+  .beliefItem {
+    grid-template-columns: 3.1rem minmax(0, 1fr);
+    min-height: 4.25rem;
+    font-size: 0.91rem;
+  }
+
+  .beliefIcon {
+    width: 2.8rem;
+    height: 2.8rem;
+    font-size: 1.25rem;
+  }
+
+  .nextSection {
+    margin-top: 0.4rem;
+  }
+
+  .nextInner {
+    grid-template-columns: 1fr;
+    border-radius: 1rem;
+  }
+
+  .nextMedia {
+    min-height: 14.5rem;
+    border-right: 0;
+    border-bottom: 2px solid var(--about-line);
+  }
+
+  .nextCopy {
+    padding: 1.65rem 1.4rem 2rem;
+  }
+
+  .nextCopy::after {
+    width: 3.6rem;
+  }
+
+  .ctaSection {
+    padding-top: 0.75rem;
+  }
+
+  .ctaCard {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+    justify-items: stretch;
+    padding: 1.45rem 1.35rem 1.6rem;
+  }
+
+  .ctaCard::after {
+    right: 1rem;
+    bottom: 0.15rem;
+    width: 8.6rem;
+    height: 3.8rem;
+  }
+
+  .ctaButton {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 390px) {
+  .title {
+    font-size: 2.45rem;
+  }
+
+  .heroInner {
+    padding: 1.25rem;
+  }
+
+  .heroMedia {
+    min-height: 13.75rem;
+  }
+
+  .ctaButton {
+    font-size: 0.71rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .beliefItem,
+  .beliefIcon,
+  .nextImage,
+  .ctaButton,
+  .buttonIcon {
+    transition: none;
+  }
+}

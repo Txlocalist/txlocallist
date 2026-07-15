@@ -23,11 +23,12 @@ export default function Footer({
     { href: "#", icon: "share", label: "Share Texas Localist" },
     { href: "#", icon: "camera_alt", label: "Instagram" },
   ],
+  compact = false,
 }) {
   return (
-    <footer className={styles.footer}>
+    <footer className={`${styles.footer} ${compact ? styles.footerCompact : ""}`}>
       <div className={styles.footerContainer}>
-        <Link href="/" className={styles.footerLogo} aria-label="Texas Localist — Home">
+        <Link href="/" className={styles.footerLogo} aria-label="Texas Localist - Home">
           <Image
             alt="Texas Localist"
             src={logo}

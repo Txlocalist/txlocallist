@@ -19,7 +19,11 @@ const DEFAULT_LINKS = [
  * Props:
  *   - links: array of { href, label } overrides
  */
-export default async function Navbar({ links = DEFAULT_LINKS, logoSrc = "/Main-Logo.svg" }) {
+export default async function Navbar({
+  links = DEFAULT_LINKS,
+  logoSrc = "/Main-Logo.svg",
+  activeHref,
+}) {
   const user = await getCurrentUser().catch(() => null);
 
   const pillHref = user ? "/dashboard" : "/login";
@@ -43,7 +47,12 @@ export default async function Navbar({ links = DEFAULT_LINKS, logoSrc = "/Main-L
 
       <div className={styles.navLinks}>
         {links.map((link) => (
-          <Link key={link.href} href={link.href} className={styles.navLink}>
+          <Link
+            key={link.href}
+            href={link.href}
+            className={`${styles.navLink} ${activeHref === link.href ? styles.navLinkActive : ""}`}
+            aria-current={activeHref === link.href ? "page" : undefined}
+          >
             {link.label}
           </Link>
         ))}
@@ -52,7 +61,12 @@ export default async function Navbar({ links = DEFAULT_LINKS, logoSrc = "/Main-L
         </Link>
       </div>
 
-      <NavbarMobileMenu links={links} pillHref={pillHref} pillLabel={pillLabel} />
+      <NavbarMobileMenu
+        links={links}
+        pillHref={pillHref}
+        pillLabel={pillLabel}
+        activeHref={activeHref}
+      />
     </nav>
   );
 }

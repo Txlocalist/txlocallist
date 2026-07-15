@@ -1,0 +1,979 @@
+.page {
+  --page-ink: #35231a;
+  --page-paper: #f9edcf;
+  --page-paper-light: #fff6df;
+  --page-orange: #cf511e;
+  --page-orange-dark: #a83c19;
+  --page-teal: #1f6668;
+  --page-teal-dark: #164b4d;
+  --page-line: rgba(78, 49, 34, 0.34);
+  position: relative;
+  min-height: 100dvh;
+  overflow: hidden;
+  border-top: 1px solid rgba(78, 49, 34, 0.18);
+  color: var(--page-ink);
+  background:
+    radial-gradient(circle at 18% 6%, rgba(255, 255, 255, 0.34), transparent 25rem),
+    radial-gradient(circle at 83% 34%, rgba(184, 108, 49, 0.09), transparent 22rem),
+    radial-gradient(circle at 20% 72%, rgba(34, 104, 105, 0.06), transparent 23rem),
+    #f6e8c8;
+}
+
+.page::before {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background-image:
+    radial-gradient(rgba(63, 39, 27, 0.11) 0.55px, transparent 0.75px),
+    radial-gradient(rgba(255, 255, 255, 0.34) 0.6px, transparent 0.8px);
+  background-position: 0 0, 3px 3px;
+  background-size: 6px 6px;
+  content: "";
+  opacity: 0.42;
+  pointer-events: none;
+}
+
+.pageInner {
+  position: relative;
+  z-index: 1;
+  width: min(calc(100% - 48px), 73.75rem);
+  margin: 0 auto;
+  padding: clamp(2.25rem, 4vw, 3.75rem) 0 clamp(1.75rem, 4vw, 3rem);
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(1.5rem, 3.2vw, 3.75rem);
+  align-items: center;
+  min-height: 31rem;
+}
+
+.heroCopy {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  justify-items: start;
+  align-content: center;
+  min-width: 0;
+}
+
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin: 0 0 1.15rem;
+  color: var(--page-orange-dark);
+  font-family: var(--font-accent), sans-serif;
+  font-size: clamp(0.64rem, 0.8vw, 0.76rem);
+  letter-spacing: 0.055em;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+
+.eyebrowStar {
+  font-size: 0.78rem;
+}
+
+.title {
+  margin: 0;
+  color: var(--page-ink);
+  font-family: var(--font-editorial), Georgia, serif;
+  font-size: clamp(2.9rem, 4vw, 3.4rem);
+  font-weight: 400;
+  letter-spacing: -0.035em;
+  line-height: 0.97;
+}
+
+.title span {
+  display: block;
+  white-space: nowrap;
+}
+
+.brushRule,
+.smallBrushRule,
+.dividerRule {
+  display: block;
+  height: 0.22rem;
+  background: var(--page-teal);
+  clip-path: polygon(0 42%, 21% 28%, 36% 54%, 56% 36%, 76% 62%, 100% 39%, 100% 66%, 73% 77%, 49% 59%, 26% 79%, 0 63%);
+}
+
+.brushRule {
+  width: 11.5rem;
+  margin: 1.35rem 0 1.1rem;
+  transform: rotate(-1.5deg);
+}
+
+.lede {
+  max-width: 34rem;
+  margin: 0;
+  color: rgba(53, 35, 26, 0.82);
+  font-size: clamp(0.95rem, 1.25vw, 1.04rem);
+  line-height: 1.58;
+}
+
+.heroMedia {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+.heroMedia::before {
+  position: absolute;
+  top: 6%;
+  right: -8%;
+  width: 57%;
+  aspect-ratio: 1;
+  border: 1px solid rgba(31, 102, 104, 0.14);
+  border-radius: 50%;
+  content: "";
+}
+
+.heroImage {
+  position: relative;
+  width: 112%;
+  max-width: none;
+  height: auto;
+  margin: -2% 0 -4% -8%;
+  filter: drop-shadow(0 0.7rem 0.65rem rgba(71, 44, 28, 0.16));
+}
+
+.localsSection {
+  display: grid;
+  grid-template-columns: minmax(11.5rem, 0.72fr) minmax(0, 2.28fr);
+  gap: clamp(1.4rem, 3vw, 2.5rem);
+  align-items: stretch;
+  margin-top: clamp(1.25rem, 2.6vw, 2rem);
+  padding: clamp(1.45rem, 2.6vw, 2rem);
+  border: 1px solid rgba(78, 49, 34, 0.28);
+  border-radius: 0.5rem;
+  background:
+    linear-gradient(90deg, rgba(201, 125, 54, 0.04), transparent 35%),
+    rgba(255, 247, 226, 0.5);
+  box-shadow: inset 0 0 0 0.28rem rgba(255, 255, 255, 0.16);
+}
+
+.localsHeading {
+  position: relative;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  min-height: 13.75rem;
+  padding: 0.75rem 1.25rem 0.75rem 1.75rem;
+}
+
+.localsHeading::before {
+  position: absolute;
+  top: 1.45rem;
+  bottom: 1.45rem;
+  left: 0.82rem;
+  border-left: 1px solid var(--page-orange);
+  content: "";
+}
+
+.headingStar {
+  position: absolute;
+  top: 0.2rem;
+  left: 0.15rem;
+  color: var(--page-orange);
+  font-size: 1.45rem;
+  transform: rotate(12deg);
+}
+
+.localsHeading h2,
+.ownerTitlePanel h2,
+.plansCopy h2,
+.ctaCopy h2 {
+  margin: 0;
+  font-family: var(--font-editorial), Georgia, serif;
+  font-weight: 400;
+}
+
+.localsHeading h2 {
+  max-width: 7ch;
+  font-size: clamp(2.5rem, 4.2vw, 3.45rem);
+  letter-spacing: -0.035em;
+  line-height: 0.96;
+}
+
+.smallBrushRule {
+  width: 8.25rem;
+  margin-top: 0.8rem;
+  transform: rotate(-3deg);
+}
+
+.localSteps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.localStep {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  justify-items: center;
+  align-content: start;
+  min-width: 0;
+  min-height: 13.75rem;
+  padding: 1.2rem 1.25rem 1.35rem;
+  border: 1px solid rgba(78, 49, 34, 0.22);
+  border-radius: 0.5rem;
+  background: rgba(255, 249, 233, 0.65);
+  text-align: center;
+  transition:
+    transform var(--dur-sm) var(--ease-snap),
+    border-color var(--dur-sm) var(--ease-snap),
+    background-color var(--dur-sm) var(--ease-snap),
+    box-shadow var(--dur-sm) var(--ease-snap);
+}
+
+.localStep:hover {
+  border-color: rgba(31, 102, 104, 0.52);
+  background: rgba(255, 249, 233, 0.9);
+  box-shadow: 0 0.4rem 0 rgba(74, 45, 29, 0.08);
+  transform: translateY(-0.25rem);
+}
+
+.stepNumber {
+  display: grid;
+  width: 2.3rem;
+  height: 2.3rem;
+  place-items: center;
+  margin-top: -0.8rem;
+  border: 2px solid var(--page-paper-light);
+  border-radius: 50%;
+  outline: 1px solid var(--page-teal-dark);
+  background: var(--page-teal);
+  color: var(--page-paper-light);
+  font-family: var(--font-editorial), Georgia, serif;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.localIcon {
+  margin: 0.85rem 0 1.15rem;
+  color: var(--page-orange);
+  font-size: 2.6rem;
+  font-weight: 300;
+}
+
+.localStep p,
+.ownerStep p,
+.plansCopy p,
+.ctaCopy p {
+  margin: 0;
+}
+
+.localStep p {
+  color: rgba(53, 35, 26, 0.84);
+  font-size: 0.93rem;
+  line-height: 1.55;
+}
+
+.ownersSection {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(13.5rem, 0.72fr) minmax(18rem, 0.95fr) minmax(0, 1.33fr);
+  min-height: 22rem;
+  margin-top: 0.55rem;
+  border: 1px solid rgba(78, 49, 34, 0.25);
+  border-radius: 0.45rem;
+  background: rgba(255, 247, 226, 0.62);
+}
+
+.ownerTitlePanel {
+  position: relative;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  overflow: hidden;
+  min-width: 0;
+  padding: 2.15rem 1.65rem;
+  border-radius: 0.4rem 0 0 0.4rem;
+  color: var(--page-paper-light);
+  background:
+    repeating-radial-gradient(circle at -5% 20%, transparent 0 1.15rem, rgba(255, 246, 223, 0.1) 1.2rem 1.28rem),
+    var(--page-orange);
+  text-align: center;
+}
+
+.ownerTitlePanel h2 {
+  max-width: none;
+  width: 100%;
+  font-size: clamp(2.15rem, 3.1vw, 3.05rem);
+  letter-spacing: -0.03em;
+  line-height: 0.94;
+}
+
+.ownerLonghorn {
+  width: 7.25rem;
+  height: auto;
+  margin-top: 1.65rem;
+  opacity: 0.92;
+}
+
+.ownerProcess {
+  display: grid;
+  align-items: center;
+  min-width: 0;
+  padding: 1.25rem clamp(1rem, 2.2vw, 2rem);
+}
+
+.ownerSteps {
+  position: relative;
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ownerSteps::before {
+  position: absolute;
+  top: 2rem;
+  bottom: 2rem;
+  left: 1.77rem;
+  border-left: 2px dashed rgba(31, 102, 104, 0.72);
+  content: "";
+}
+
+.ownerStep {
+  position: relative;
+  display: grid;
+  grid-template-columns: 3.55rem minmax(0, 1fr);
+  gap: 1.2rem;
+  align-items: center;
+  min-width: 0;
+  padding: 0.75rem 0;
+}
+
+.ownerNumber {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 3.55rem;
+  height: 2.75rem;
+  place-items: center;
+  background: var(--page-teal);
+  clip-path: polygon(50% 0, 92% 18%, 100% 72%, 50% 100%, 0 72%, 8% 18%);
+  color: var(--page-paper-light);
+  font-family: var(--font-accent), sans-serif;
+  font-size: 0.88rem;
+  letter-spacing: 0.02em;
+}
+
+.ownerStep p {
+  max-width: 19rem;
+  padding: 0 0 0.85rem;
+  border-bottom: 1px solid rgba(207, 81, 30, 0.52);
+  color: rgba(53, 35, 26, 0.89);
+  font-size: 0.88rem;
+  font-weight: 650;
+  line-height: 1.48;
+}
+
+.ownerStep:last-child p {
+  border-bottom: 0;
+}
+
+.ownerMedia {
+  position: relative;
+  z-index: 2;
+  min-width: 0;
+  min-height: 21rem;
+  margin: -0.65rem -0.45rem 0.65rem 0;
+  overflow: hidden;
+  border: 0.55rem solid var(--page-paper-light);
+  border-radius: 0.35rem;
+  box-shadow: 0.45rem 0.55rem 0 rgba(65, 40, 25, 0.13);
+  transform: rotate(1.4deg);
+  transform-origin: center;
+}
+
+.ownerImage,
+.plansImage {
+  object-fit: cover;
+}
+
+.ownerImage {
+  object-position: 50% 51%;
+  transition: transform 500ms var(--ease-snap);
+}
+
+.ownerMedia:hover .ownerImage {
+  transform: scale(1.025);
+}
+
+.plansSection {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.04fr);
+  gap: 0.65rem;
+  align-items: stretch;
+  margin-top: 1.1rem;
+}
+
+.plansMedia {
+  position: relative;
+  min-height: 18.25rem;
+  overflow: hidden;
+  border: 1px solid rgba(78, 49, 34, 0.38);
+  border-radius: 0.45rem;
+  background: var(--page-teal-dark);
+  box-shadow: 0.3rem 0.35rem 0 rgba(64, 39, 24, 0.12);
+}
+
+.plansImage {
+  object-position: center 58%;
+  transition: transform 600ms var(--ease-snap);
+}
+
+.plansMedia:hover .plansImage {
+  transform: scale(1.025);
+}
+
+.texasBadge {
+  position: absolute;
+  right: 0.8rem;
+  bottom: -0.3rem;
+  display: grid;
+  width: 7.25rem;
+  height: 7.25rem;
+  place-content: center;
+  border: 0.3rem solid var(--page-paper);
+  border-radius: 50%;
+  outline: 2px solid var(--page-teal-dark);
+  background: rgba(31, 102, 104, 0.94);
+  box-shadow: 0 0.35rem 0 rgba(53, 35, 26, 0.2);
+  color: var(--page-paper-light);
+  font-family: var(--font-accent), sans-serif;
+  text-align: center;
+  text-transform: uppercase;
+  transform: rotate(4deg);
+}
+
+.texasBadge span {
+  font-size: 0.62rem;
+  letter-spacing: 0.055em;
+}
+
+.texasBadge strong {
+  margin: 0.18rem 0;
+  font-family: var(--font-editorial), Georgia, serif;
+  font-size: 1.28rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+}
+
+.badgeStar {
+  font-size: 0.82rem;
+}
+
+.plansCopy {
+  position: relative;
+  display: grid;
+  align-content: center;
+  gap: 1rem;
+  min-width: 0;
+  padding: clamp(2rem, 4.2vw, 3.25rem);
+  border: 1px solid rgba(31, 102, 104, 0.75);
+  border-radius: 0.28rem;
+  background:
+    linear-gradient(135deg, transparent 52%, rgba(31, 102, 104, 0.04) 52% 54%, transparent 54%),
+    rgba(255, 247, 226, 0.76);
+  background-size: 2rem 2rem, auto;
+}
+
+.plansStar {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.5rem;
+  color: var(--page-orange);
+  font-size: 1.7rem;
+  transform: rotate(15deg);
+}
+
+.plansCopy h2 {
+  max-width: 14ch;
+  font-size: clamp(2.35rem, 3.25vw, 2.9rem);
+  letter-spacing: -0.035em;
+  line-height: 0.98;
+}
+
+.plansCopy p {
+  max-width: 37rem;
+  color: rgba(53, 35, 26, 0.82);
+  font-size: 0.96rem;
+  line-height: 1.55;
+}
+
+.dividerRule {
+  width: 72%;
+  height: 0.12rem;
+  margin: 0.15rem 0;
+  background: var(--page-teal);
+  opacity: 0.68;
+  clip-path: none;
+}
+
+.inlineLink {
+  color: var(--page-orange-dark);
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.18em;
+  transition: color var(--dur-sm) var(--ease-snap);
+}
+
+.inlineLink:hover {
+  color: var(--page-teal-dark);
+}
+
+.ctaSection {
+  position: relative;
+  display: grid;
+  grid-template-columns: 12rem minmax(0, 1fr) auto;
+  gap: clamp(1.25rem, 3vw, 2.75rem);
+  align-items: center;
+  min-height: 9.75rem;
+  margin-top: 1.35rem;
+  overflow: hidden;
+  padding: 1.25rem clamp(1.5rem, 3vw, 2.5rem);
+  border: 0.35rem double var(--page-paper);
+  border-radius: 0.75rem;
+  outline: 2px solid var(--page-teal-dark);
+  background:
+    repeating-radial-gradient(circle at 12% 100%, transparent 0 1.6rem, rgba(255, 246, 223, 0.08) 1.66rem 1.74rem),
+    var(--page-teal-dark);
+  color: var(--page-paper-light);
+  box-shadow: 0.3rem 0.38rem 0 rgba(53, 35, 26, 0.16);
+}
+
+.ctaSection::after {
+  position: absolute;
+  right: 5.5rem;
+  width: 11rem;
+  height: 11rem;
+  border: 1px solid rgba(255, 246, 223, 0.1);
+  border-radius: 50%;
+  content: "";
+  pointer-events: none;
+}
+
+.ctaMark {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  align-self: stretch;
+  padding-right: 1.5rem;
+  border-right: 1px dashed rgba(255, 246, 223, 0.62);
+}
+
+.ctaMark p {
+  margin: 0 0 0.75rem;
+  color: #f2a269;
+  font-family: var(--font-accent), sans-serif;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transform: rotate(-5deg);
+}
+
+.ctaLonghorn {
+  width: 6.5rem;
+  height: auto;
+  opacity: 0.86;
+}
+
+.ctaCopy {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.ctaCopy h2 {
+  max-width: 17ch;
+  font-size: clamp(2.15rem, 3.7vw, 3.25rem);
+  letter-spacing: -0.03em;
+  line-height: 0.98;
+}
+
+.ctaCopy p {
+  max-width: 37rem;
+  color: rgba(255, 246, 223, 0.86);
+  font-size: 0.91rem;
+  line-height: 1.45;
+}
+
+.ctaButton {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  min-width: 15.25rem;
+  min-height: 3.7rem;
+  padding: 0.85rem 1.5rem;
+  border: 2px solid var(--page-paper-light);
+  border-radius: var(--radius-pill);
+  background: #c2471b;
+  box-shadow: 0 0.3rem 0 var(--page-ink);
+  color: var(--page-paper-light);
+  font-family: var(--font-accent), sans-serif;
+  font-size: 0.79rem;
+  letter-spacing: 0.055em;
+  text-decoration: none;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition:
+    transform var(--dur-sm) var(--ease-snap),
+    background-color var(--dur-sm) var(--ease-snap),
+    box-shadow var(--dur-sm) var(--ease-snap);
+}
+
+.ctaButton:hover {
+  background: var(--page-orange-dark);
+  box-shadow: 0 0.45rem 0 var(--page-ink);
+  transform: translateY(-0.15rem);
+}
+
+.ctaButton:focus-visible {
+  outline-color: var(--page-paper-light);
+  outline-offset: 0.2rem;
+}
+
+.ctaButton:active {
+  box-shadow: 0 0.12rem 0 var(--page-ink);
+  transform: translateY(0.15rem) scale(0.99);
+}
+
+.buttonIcon {
+  font-size: 1.15rem;
+  transition: transform var(--dur-sm) var(--ease-snap);
+}
+
+.ctaButton:hover .buttonIcon {
+  transform: translateX(0.2rem);
+}
+
+@media (max-width: 68.75rem) {
+  .pageInner {
+    width: min(calc(100% - 40px), 73.75rem);
+  }
+
+  .title {
+    font-size: clamp(2.7rem, 4.7vw, 3rem);
+  }
+
+  .ownersSection {
+    grid-template-columns: minmax(12.5rem, 0.66fr) minmax(17rem, 0.92fr) minmax(0, 1.2fr);
+  }
+
+  .ctaSection {
+    grid-template-columns: 10.5rem minmax(0, 1fr) auto;
+  }
+}
+
+@media (max-width: 56.25rem) {
+  .hero {
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+    gap: 1.5rem;
+    min-height: 27rem;
+  }
+
+  .title {
+    font-size: clamp(2.4rem, 4.8vw, 2.7rem);
+  }
+
+  .lede {
+    font-size: 0.91rem;
+  }
+
+  .localsSection {
+    grid-template-columns: 10.5rem minmax(0, 1fr);
+    padding: 1.25rem;
+  }
+
+  .localStep {
+    padding-right: 0.85rem;
+    padding-left: 0.85rem;
+  }
+
+  .localStep p {
+    font-size: 0.84rem;
+  }
+
+  .ownersSection {
+    grid-template-columns: 13rem minmax(0, 1fr);
+  }
+
+  .ownerMedia {
+    grid-column: 1 / -1;
+    min-height: 23rem;
+    margin: 0;
+    border-width: 0.45rem;
+    transform: rotate(0);
+  }
+
+  .ownerTitlePanel {
+    border-radius: 0.4rem 0 0 0;
+  }
+
+  .plansCopy {
+    padding: 2rem;
+  }
+
+  .ctaSection {
+    grid-template-columns: 8.5rem minmax(0, 1fr);
+  }
+
+  .ctaButton {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
+
+@media (max-width: 47.9375rem) {
+  .pageInner {
+    width: min(calc(100% - 28px), 36rem);
+    padding-top: 1.55rem;
+  }
+
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 1.4rem;
+    min-height: 0;
+  }
+
+  .eyebrow {
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-bottom: 0.9rem;
+    font-size: 0.61rem;
+  }
+
+  .eyebrowStar:last-child {
+    display: none;
+  }
+
+  .title {
+    font-size: 1.8rem;
+    line-height: 0.98;
+  }
+
+  .title span {
+    white-space: nowrap;
+  }
+
+  .brushRule {
+    margin: 1.1rem 0 0.9rem;
+  }
+
+  .lede {
+    font-size: 0.96rem;
+    line-height: 1.58;
+  }
+
+  .heroMedia {
+    margin: 0;
+  }
+
+  .heroImage {
+    width: 100%;
+    margin: 0 0 -2%;
+  }
+
+  .localsSection {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-top: 1.15rem;
+    padding: 1rem;
+  }
+
+  .localsHeading {
+    min-height: 0;
+    padding: 1rem 1rem 1rem 1.8rem;
+  }
+
+  .localsHeading::before {
+    top: 0.65rem;
+    bottom: 0.65rem;
+  }
+
+  .headingStar {
+    top: -0.15rem;
+  }
+
+  .localsHeading h2 {
+    max-width: none;
+    font-size: 2.7rem;
+  }
+
+  .localSteps {
+    grid-template-columns: 1fr;
+  }
+
+  .localStep {
+    grid-template-columns: 2.3rem 2.8rem minmax(0, 1fr);
+    grid-template-rows: 1fr;
+    gap: 0.85rem;
+    align-items: center;
+    justify-items: start;
+    min-height: 0;
+    padding: 1rem;
+    text-align: left;
+  }
+
+  .stepNumber {
+    margin-top: 0;
+  }
+
+  .localIcon {
+    margin: 0;
+    font-size: 2.15rem;
+  }
+
+  .localStep p {
+    font-size: 0.9rem;
+  }
+
+  .ownersSection {
+    grid-template-columns: 1fr;
+    margin-top: 0.9rem;
+  }
+
+  .ownerTitlePanel {
+    min-height: 14rem;
+    border-radius: 0.4rem 0.4rem 0 0;
+  }
+
+  .ownerTitlePanel h2 {
+    font-size: 3.05rem;
+  }
+
+  .ownerLonghorn {
+    width: 6.6rem;
+    margin-top: 1rem;
+  }
+
+  .ownerProcess {
+    padding: 1.1rem 1.15rem;
+  }
+
+  .ownerStep {
+    grid-template-columns: 3.2rem minmax(0, 1fr);
+    gap: 0.9rem;
+  }
+
+  .ownerNumber {
+    width: 3.2rem;
+  }
+
+  .ownerSteps::before {
+    left: 1.57rem;
+  }
+
+  .ownerMedia {
+    grid-column: 1;
+    min-height: 18.5rem;
+  }
+
+  .plansSection {
+    grid-template-columns: 1fr;
+  }
+
+  .plansMedia {
+    min-height: 15.5rem;
+  }
+
+  .texasBadge {
+    right: 0.65rem;
+    width: 6rem;
+    height: 6rem;
+  }
+
+  .plansCopy {
+    padding: 2rem 1.45rem 2.2rem;
+  }
+
+  .plansCopy h2 {
+    padding-right: 1.25rem;
+    font-size: 2.65rem;
+  }
+
+  .plansStar {
+    top: 1.1rem;
+    right: 1rem;
+  }
+
+  .ctaSection {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+    padding: 1.4rem;
+  }
+
+  .ctaMark {
+    grid-template-columns: auto 5.5rem;
+    justify-content: start;
+    gap: 1rem;
+    min-height: 4.5rem;
+    padding: 0 0 1rem;
+    border-right: 0;
+    border-bottom: 1px dashed rgba(255, 246, 223, 0.62);
+  }
+
+  .ctaMark p {
+    margin: 0;
+  }
+
+  .ctaLonghorn {
+    width: 5.5rem;
+  }
+
+  .ctaCopy h2 {
+    font-size: 2.55rem;
+  }
+
+  .ctaButton {
+    grid-column: 1;
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 24rem) {
+  .title {
+    font-size: 1.7rem;
+  }
+
+  .localStep {
+    grid-template-columns: 2.3rem minmax(0, 1fr);
+  }
+
+  .localIcon {
+    display: none;
+  }
+
+  .ownerStep p {
+    font-size: 0.84rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .localStep,
+  .ownerImage,
+  .plansImage,
+  .inlineLink,
+  .ctaButton,
+  .buttonIcon {
+    transition: none;
+  }
+}

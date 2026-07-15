@@ -1,4 +1,4 @@
-import { Bungee, Geist_Mono, Shrikhand, Space_Grotesk } from "next/font/google";
+import { Bungee, Geist_Mono, Shrikhand, Space_Grotesk, Ultra } from "next/font/google";
 import "./globals.css";
 import "./results/globals.css";
 
@@ -24,6 +24,12 @@ const bungee = Bungee({
   weight: "400",
 });
 
+const ultra = Ultra({
+  variable: "--font-editorial",
+  subsets: ["latin"],
+  weight: "400",
+});
+
 export const metadata = {
   title: "TX Local List",
   description:
@@ -39,7 +45,7 @@ export default function RootLayout({ children }) {
   return (
     <html
       lang="en"
-      className={`${spaceGrotesk.variable} ${geistMono.variable} ${shrikhand.variable} ${bungee.variable}`}
+      className={`${spaceGrotesk.variable} ${geistMono.variable} ${shrikhand.variable} ${bungee.variable} ${ultra.variable}`}
     >
       <body suppressHydrationWarning={true}>{children}</body>
     </html>
