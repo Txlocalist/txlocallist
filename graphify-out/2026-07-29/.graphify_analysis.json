@@ -1,0 +1,943 @@
+{
+  "communities": {
+    "0": [
+      "src_app_actions_events",
+      "src_app_actions_events_createeventaction",
+      "src_app_actions_events_deleteeventaction",
+      "src_app_actions_events_gettextvalue",
+      "src_app_actions_events_slugifytag",
+      "src_app_dashboard_applications_page",
+      "src_app_dashboard_applications_page_applicationspage",
+      "src_app_dashboard_billing_page",
+      "src_app_dashboard_billing_page_billingpage",
+      "src_app_dashboard_billing_page_getbillingstatusclass",
+      "src_app_dashboard_billing_page_getnotice",
+      "src_app_dashboard_billing_page_getsubscriptiondetail",
+      "src_app_dashboard_businesses_businesshourseditor",
+      "src_app_dashboard_businesses_businesshourseditor_businesshourseditor",
+      "src_app_dashboard_businesses_id_edit_editbusinessform",
+      "src_app_dashboard_businesses_id_edit_editbusinessform_editbusinessform",
+      "src_app_dashboard_businesses_id_edit_editbusinessform_parsehiringroles",
+      "src_app_dashboard_businesses_id_edit_page",
+      "src_app_dashboard_businesses_id_edit_page_editbusinesspage",
+      "src_app_dashboard_businesses_new_createbusinessform",
+      "src_app_dashboard_businesses_new_createbusinessform_createbusinessform",
+      "src_app_dashboard_businesses_new_page",
+      "src_app_dashboard_businesses_new_page_newbusinesspage",
+      "src_app_dashboard_businesses_page",
+      "src_app_dashboard_businesses_page_businessespage",
+      "src_app_dashboard_businesses_saved_page",
+      "src_app_dashboard_dashboardshell",
+      "src_app_dashboard_dashboardshell_dashboardlayout",
+      "src_app_dashboard_events_new_createeventform",
+      "src_app_dashboard_events_new_createeventform_createeventform",
+      "src_app_dashboard_events_new_createeventform_initial_state",
+      "src_app_dashboard_events_new_page",
+      "src_app_dashboard_events_new_page_neweventpage",
+      "src_app_dashboard_events_page",
+      "src_app_dashboard_events_page_dashboardeventspage",
+      "src_app_dashboard_events_page_formatdate",
+      "src_app_dashboard_events_page_geteventstatusclass",
+      "src_app_dashboard_events_saved_page",
+      "src_app_dashboard_events_saved_page_savedeventspage",
+      "src_app_dashboard_favorites_favoritesdashboard",
+      "src_app_dashboard_favorites_favoritesdashboard_favoritesdashboard",
+      "src_app_dashboard_favorites_favoritesdashboard_formatsaveddate",
+      "src_app_dashboard_favorites_favoritesdashboard_sort_options",
+      "src_app_dashboard_favorites_page",
+      "src_app_dashboard_favorites_page_favoritespage",
+      "src_app_dashboard_overviewcontent",
+      "src_app_dashboard_overviewcontent_metriccard",
+      "src_app_dashboard_overviewcontent_overviewcontent",
+      "src_app_dashboard_overviewcontent_quickactioncard",
+      "src_app_dashboard_page",
+      "src_app_dashboard_page_dashboardpage",
+      "src_app_dashboard_page_quickactioncard",
+      "src_app_dashboard_page_statcard",
+      "src_app_dashboard_page_titlecase",
+      "src_app_dashboard_settings_page",
+      "src_app_dashboard_settings_page_settingspage"
+    ],
+    "1": [
+      "src_components_businesscard_businesscard",
+      "src_components_businesscard_businesscard_badge_tones",
+      "src_components_businesscard_businesscard_businesscard",
+      "src_components_businesscard_index",
+      "src_components_button_button",
+      "src_components_button_button_button",
+      "src_components_button_index",
+      "src_components_categorypills_categorypills",
+      "src_components_categorypills_categorypills_business_categories",
+      "src_components_categorypills_categorypills_categorypills",
+      "src_components_categorypills_categorypills_event_categories",
+      "src_components_footer_footer",
+      "src_components_footer_footer_footer",
+      "src_components_footer_index",
+      "src_components_index",
+      "src_components_navbar_index",
+      "src_components_navbar_navbar",
+      "src_components_navbar_navbar_default_links",
+      "src_components_navbar_navbar_navbar",
+      "src_components_navbar_navbarmobilemenu",
+      "src_components_navbar_navbarmobilemenu_navbarmobilemenu",
+      "src_components_photouploader_index",
+      "src_components_photouploader_photouploader",
+      "src_components_photouploader_photouploader_photouploader",
+      "src_components_savebutton_index",
+      "src_components_savebutton_savebutton",
+      "src_components_savebutton_savebutton_savebutton",
+      "src_components_searchbar_index",
+      "src_components_searchbar_searchbar",
+      "src_components_searchbar_searchbar_searchbar"
+    ],
+    "2": [
+      "package",
+      "package_devdependencies",
+      "package_devdependencies_eslint",
+      "package_devdependencies_eslint_config_next",
+      "package_devdependencies_prisma",
+      "package_name",
+      "package_private",
+      "package_scripts",
+      "package_scripts_build",
+      "package_scripts_db_generate",
+      "package_scripts_db_migrate",
+      "package_scripts_db_push",
+      "package_scripts_db_seed_admin",
+      "package_scripts_db_seed_all",
+      "package_scripts_db_seed_categories",
+      "package_scripts_db_seed_cities",
+      "package_scripts_db_seed_events",
+      "package_scripts_db_seed_italian",
+      "package_scripts_db_seed_plans",
+      "package_scripts_db_seed_tags",
+      "package_scripts_db_seed_test_users",
+      "package_scripts_dev",
+      "package_scripts_dev_turbo",
+      "package_scripts_lint",
+      "package_scripts_postinstall",
+      "package_scripts_start",
+      "package_version",
+      "src_lib_prisma",
+      "src_lib_prisma_createprismaclient"
+    ],
+    "3": [
+      "src_app_results_icons",
+      "src_app_results_icons_arrowrighticon",
+      "src_app_results_icons_banicon",
+      "src_app_results_icons_cameraicon",
+      "src_app_results_icons_compassicon",
+      "src_app_results_icons_iconbase",
+      "src_app_results_icons_loadericon",
+      "src_app_results_icons_mappinicon",
+      "src_app_results_icons_pluscircleicon",
+      "src_app_results_icons_searchicon",
+      "src_app_results_icons_shareicon",
+      "src_app_results_icons_staricon",
+      "src_app_results_icons_thumbsupicon",
+      "src_app_results_icons_volumexicon",
+      "src_app_results_page",
+      "src_app_results_page_metadata",
+      "src_app_results_page_resultspage",
+      "src_app_results_page_tobusinessresult",
+      "src_app_results_resultsexperience",
+      "src_app_results_resultsexperience_buildsuggestbusinesshref",
+      "src_app_results_resultsexperience_businesscard",
+      "src_app_results_resultsexperience_businessrow",
+      "src_app_results_resultsexperience_emptyresultsstate",
+      "src_app_results_resultsexperience_eventcard",
+      "src_app_results_resultsexperience_eventrow",
+      "src_app_results_resultsexperience_filterchip",
+      "src_app_results_resultsexperience_resultsexperience"
+    ],
+    "4": [
+      "src_app_events_results_eventsresults",
+      "src_app_events_results_eventsresults_adddays",
+      "src_app_events_results_eventsresults_category_colors",
+      "src_app_events_results_eventsresults_date_filters",
+      "src_app_events_results_eventsresults_dateobj",
+      "src_app_events_results_eventsresults_datewindowkeys",
+      "src_app_events_results_eventsresults_days",
+      "src_app_events_results_eventsresults_eventdate",
+      "src_app_events_results_eventsresults_eventsresults",
+      "src_app_events_results_eventsresults_eventthumb",
+      "src_app_events_results_eventsresults_eventtypeclass",
+      "src_app_events_results_eventsresults_filterevents",
+      "src_app_events_results_eventsresults_fmtlong",
+      "src_app_events_results_eventsresults_geteventcategorynames",
+      "src_app_events_results_eventsresults_imagetone",
+      "src_app_events_results_eventsresults_keyfromdate",
+      "src_app_events_results_eventsresults_logo",
+      "src_app_events_results_eventsresults_months",
+      "src_app_events_results_eventsresults_monthshort",
+      "src_app_events_results_eventsresults_pad",
+      "src_app_events_results_eventsresults_tickettone",
+      "src_app_events_results_eventsresults_timebucket",
+      "src_app_events_results_eventsresults_todaykey",
+      "src_app_events_results_page",
+      "src_app_events_results_page_eventresultspage",
+      "src_app_events_results_page_metadata"
+    ],
+    "5": [
+      "src_app_actions_tags",
+      "src_app_actions_tags_builderrorstate",
+      "src_app_actions_tags_createtagaction",
+      "src_app_actions_tags_gettextvalue",
+      "src_app_actions_tags_slugifytag",
+      "src_app_admin_admincreateform",
+      "src_app_admin_admincreateform_admincreateform",
+      "src_app_admin_admincreateform_initial_state",
+      "src_app_admin_admincreateform_submitbutton",
+      "src_app_admin_adminshell",
+      "src_app_admin_adminshell_adminshell",
+      "src_app_admin_page",
+      "src_app_admin_page_adminoverviewpage",
+      "src_app_admin_page_formatdate",
+      "src_app_admin_settings_page",
+      "src_app_admin_settings_page_adminsettingspage",
+      "src_app_admin_tagcreateform",
+      "src_app_admin_tagcreateform_initial_state",
+      "src_app_admin_tagcreateform_submitbutton",
+      "src_app_admin_tagcreateform_tagcreateform",
+      "src_app_admin_tags_page",
+      "src_app_admin_tags_page_admintagspage",
+      "src_app_admin_users_page",
+      "src_app_admin_users_page_adminuserspage",
+      "src_app_admin_users_page_formatdate"
+    ],
+    "6": [
+      "src_lib_billing",
+      "src_lib_billing_active_subscription_statuses",
+      "src_lib_billing_createstripecheckoutsession",
+      "src_lib_billing_createstripeportalsession",
+      "src_lib_billing_ensurestripecustomerforuser",
+      "src_lib_billing_feature_access_subscription_statuses",
+      "src_lib_billing_formatpricefromcents",
+      "src_lib_billing_formatsubscriptionstatus",
+      "src_lib_billing_getbillingdates",
+      "src_lib_billing_getbillingpath",
+      "src_lib_billing_getfreeplan",
+      "src_lib_billing_getfreeplanid",
+      "src_lib_billing_getownerbillingstate",
+      "src_lib_billing_getstripepriceidfromsubscription",
+      "src_lib_billing_handlestripesubscriptionwebhook",
+      "src_lib_billing_hassubscriptionfeatureaccess",
+      "src_lib_billing_issubscriptionactive",
+      "src_lib_billing_mapstripesubscriptionstatus",
+      "src_lib_billing_stripe_status_to_local_status",
+      "src_lib_billing_syncsubscriptionfromcheckoutsessionid",
+      "src_lib_billing_syncsubscriptionfromstripesubscriptionid",
+      "src_lib_billing_syncuserstripecustomer",
+      "src_lib_billing_upsertsubscriptionfromstripesubscription"
+    ],
+    "7": [
+      "package_dependencies",
+      "package_dependencies_dotenv",
+      "package_dependencies_neondatabase_serverless",
+      "package_dependencies_next",
+      "package_dependencies_prisma_adapter_neon",
+      "package_dependencies_prisma_client",
+      "package_dependencies_react",
+      "package_dependencies_react_dom",
+      "package_dependencies_resend",
+      "package_dependencies_stripe",
+      "package_dependencies_vercel_blob",
+      "package_dependencies_zustand",
+      "scripts_seed_event_data",
+      "scripts_seed_event_data_adapter",
+      "scripts_seed_event_data_main",
+      "scripts_seed_event_data_prisma",
+      "src_lib_stripe",
+      "src_lib_stripe_getsiteurl",
+      "src_lib_stripe_getstripe",
+      "src_lib_stripe_getstripesecretkey",
+      "src_lib_stripe_isstripeconfigured",
+      "src_lib_stripe_isstripewebhookconfigured"
+    ],
+    "8": [
+      "src_lib_events",
+      "src_lib_events_adddays",
+      "src_lib_events_filterevents",
+      "src_lib_events_formatcitylabel",
+      "src_lib_events_formateventdatekey",
+      "src_lib_events_formateventtime",
+      "src_lib_events_formatlongeventdate",
+      "src_lib_events_formatshortdatelabel",
+      "src_lib_events_getdatewindowkeys",
+      "src_lib_events_geteventbyid",
+      "src_lib_events_geteventcategories",
+      "src_lib_events_geteventcities",
+      "src_lib_events_geteventspagedata",
+      "src_lib_events_getpublishedevents",
+      "src_lib_events_gettodaykey",
+      "src_lib_events_groupeventsbydate",
+      "src_lib_events_infereventtype",
+      "src_lib_events_keyfromlocaldate",
+      "src_lib_events_normalizeevent",
+      "src_lib_events_parsedatekey",
+      "src_lib_events_slugifycategorylabel",
+      "src_lib_events_unique"
+    ],
+    "9": [
+      "src_app_actions_auth",
+      "src_app_actions_auth_builderrorstate",
+      "src_app_actions_auth_createadminaction",
+      "src_app_actions_auth_gettextvalue",
+      "src_app_actions_auth_loginaction",
+      "src_app_actions_auth_logoutaction",
+      "src_app_actions_auth_signupaction",
+      "src_app_actions_auth_validatecredentials",
+      "src_app_login_loginform",
+      "src_app_login_loginform_initial_state",
+      "src_app_login_loginform_loginform",
+      "src_app_login_loginform_submitbutton",
+      "src_app_login_page",
+      "src_app_login_page_loginpage",
+      "src_app_signup_page",
+      "src_app_signup_page_signuppage",
+      "src_app_signup_signupform",
+      "src_app_signup_signupform_initial_state",
+      "src_app_signup_signupform_signupform",
+      "src_app_signup_signupform_submitbutton"
+    ],
+    "10": [
+      "src_app_events_eventslanding",
+      "src_app_events_eventslanding_datefromkey",
+      "src_app_events_eventslanding_day_names",
+      "src_app_events_eventslanding_eventcard",
+      "src_app_events_eventslanding_eventday",
+      "src_app_events_eventslanding_eventmonth",
+      "src_app_events_eventslanding_eventslanding",
+      "src_app_events_eventslanding_eventweekday",
+      "src_app_events_eventslanding_featured_categories",
+      "src_app_events_eventslanding_iso",
+      "src_app_events_eventslanding_logo",
+      "src_app_events_eventslanding_nice",
+      "src_app_events_eventslanding_pad",
+      "src_app_events_eventslanding_phototone",
+      "src_app_events_eventslanding_sameday",
+      "src_app_events_eventslanding_tickettone",
+      "src_app_events_page",
+      "src_app_events_page_eventspage",
+      "src_app_events_page_metadata"
+    ],
+    "11": [
+      "src_app_actions_businesses",
+      "src_app_actions_businesses_archivebusinessaction",
+      "src_app_actions_businesses_builderrorstate",
+      "src_app_actions_businesses_createbusinessaction",
+      "src_app_actions_businesses_createbusinessfromformaction",
+      "src_app_actions_businesses_generateslug",
+      "src_app_actions_businesses_gettextvalue",
+      "src_app_actions_businesses_isvalidemail",
+      "src_app_actions_businesses_isvalidhttpurl",
+      "src_app_actions_businesses_normalizehiringroles",
+      "src_app_actions_businesses_normalizeidlist",
+      "src_app_actions_businesses_parsestoredhiringroles",
+      "src_app_actions_businesses_pausebusinessaction",
+      "src_app_actions_businesses_publishbusinessaction",
+      "src_app_actions_businesses_publishbusinessformaction",
+      "src_app_actions_businesses_slugify",
+      "src_app_actions_businesses_submitbusinessapplicationaction",
+      "src_app_actions_businesses_updatebusinessaction"
+    ],
+    "12": [
+      "src_app_businesses_page",
+      "src_app_businesses_page_businessespage",
+      "src_app_businesses_page_metadata",
+      "src_app_homeexperience",
+      "src_app_homeexperience_event_chips",
+      "src_app_homeexperience_event_steps",
+      "src_app_homeexperience_eventsearchpanel",
+      "src_app_homeexperience_featured_businesses",
+      "src_app_homeexperience_featured_events",
+      "src_app_homeexperience_features",
+      "src_app_homeexperience_homeexperience",
+      "src_app_homeexperience_steps",
+      "src_app_landingpagetemplate",
+      "src_app_landingpagetemplate_landingpagetemplate",
+      "src_app_page",
+      "src_app_page_home",
+      "src_app_page_metadata"
+    ],
+    "13": [
+      "src_lib_tiers",
+      "src_lib_tiers_canbefeatured",
+      "src_lib_tiers_canpostjobs",
+      "src_lib_tiers_canshowcontact",
+      "src_lib_tiers_canshowsocials",
+      "src_lib_tiers_canshowwebsite",
+      "src_lib_tiers_getfeatures",
+      "src_lib_tiers_getmaxjobpostings",
+      "src_lib_tiers_getmaxphotos",
+      "src_lib_tiers_getpriceindollars",
+      "src_lib_tiers_gettierlabel",
+      "src_lib_tiers_hasprioritysearch",
+      "src_lib_tiers_parsefeatures",
+      "src_lib_tiers_tier_labels",
+      "src_lib_tiers_tier_names",
+      "src_lib_tiers_tier_prices",
+      "src_lib_tiers_tierfeatures"
+    ],
+    "14": [
+      "src_app_business_slug_page",
+      "src_app_business_slug_page_businessdetailpage",
+      "src_app_business_slug_page_generatemetadata",
+      "src_app_business_slug_page_generatestaticparams",
+      "src_app_business_slug_page_getdomain",
+      "src_app_business_slug_page_parsehiringroles",
+      "src_app_business_slug_page_social_icons",
+      "src_app_business_slug_photogallery",
+      "src_app_business_slug_photogallery_photogallery",
+      "src_app_business_slug_sharebutton",
+      "src_app_business_slug_sharebutton_sharebutton"
+    ],
+    "15": [
+      "src_lib_auth_session",
+      "src_lib_auth_session_clearcurrentsession",
+      "src_lib_auth_session_createusersession",
+      "src_lib_auth_session_getcurrentsession",
+      "src_lib_auth_session_getcurrentuser",
+      "src_lib_auth_session_getdashboardpath",
+      "src_lib_auth_session_getsessioncookieoptions",
+      "src_lib_auth_session_hashtoken",
+      "src_lib_auth_session_normalizeemail",
+      "src_lib_auth_session_requireadmin",
+      "src_lib_auth_session_requireuser"
+    ],
+    "16": [
+      "src_lib_email_index",
+      "src_lib_email_index_btn",
+      "src_lib_email_index_emailshell",
+      "src_lib_email_index_listingpublishedtemplate",
+      "src_lib_email_index_listingsuspendedtemplate",
+      "src_lib_email_index_sendemail",
+      "src_lib_email_index_sendlistingpublishedemail",
+      "src_lib_email_index_sendlistingsuspendedemail",
+      "src_lib_email_index_sendwelcomeemail",
+      "src_lib_email_index_striphtml",
+      "src_lib_email_index_welcometemplate"
+    ],
+    "17": [
+      "src_app_actions_admin",
+      "src_app_actions_admin_activatebusinessaction",
+      "src_app_actions_admin_admindeleteeventaction",
+      "src_app_actions_admin_archivebusinessaction",
+      "src_app_actions_admin_changeuserroleaction",
+      "src_app_actions_admin_deletetagaction",
+      "src_app_actions_admin_mapmoderationchoice",
+      "src_app_actions_admin_revalidateadminmoderationpaths",
+      "src_app_actions_admin_suspendbusinessaction",
+      "src_app_actions_admin_updatepostmoderationstatusaction"
+    ],
+    "18": [
+      "src_app_admin_posts_page",
+      "src_app_admin_posts_page_adminpostspage",
+      "src_app_admin_posts_page_business_review_statuses",
+      "src_app_admin_posts_page_event_review_statuses",
+      "src_app_admin_posts_page_formatdate",
+      "src_app_admin_posts_page_getmoderationbadgeclass",
+      "src_app_admin_posts_page_getmoderationvalue",
+      "src_app_admin_posts_page_getownerlabel",
+      "src_app_admin_posts_page_moderationform"
+    ],
+    "19": [
+      "src_lib_business_hours",
+      "src_lib_business_hours_business_days",
+      "src_lib_business_hours_createbusinesshoursformstate",
+      "src_lib_business_hours_formatbusinesshoursvalue",
+      "src_lib_business_hours_formatbusinesstime",
+      "src_lib_business_hours_getbusinesshoursdisplayrows",
+      "src_lib_business_hours_normalizebusinesshoursinput",
+      "src_lib_business_hours_sanitizetimevalue"
+    ],
+    "20": [
+      "scripts_seed_admin",
+      "scripts_seed_admin_adapter",
+      "scripts_seed_admin_email",
+      "scripts_seed_admin_hashpassword",
+      "scripts_seed_admin_normalizeemail",
+      "scripts_seed_admin_prisma",
+      "scripts_seed_admin_scrypt"
+    ],
+    "21": [
+      "src_app_layout",
+      "src_app_layout_bungee",
+      "src_app_layout_geistmono",
+      "src_app_layout_metadata",
+      "src_app_layout_rootlayout",
+      "src_app_layout_shrikhand",
+      "src_app_layout_spacegrotesk"
+    ],
+    "22": [
+      "scripts_seed_test_users",
+      "scripts_seed_test_users_adapter",
+      "scripts_seed_test_users_hashpassword",
+      "scripts_seed_test_users_prisma",
+      "scripts_seed_test_users_scrypt",
+      "scripts_seed_test_users_test_accounts"
+    ],
+    "23": [
+      "src_app_business_slug_apply_applyform",
+      "src_app_business_slug_apply_applyform_applyform",
+      "src_app_business_slug_apply_page",
+      "src_app_business_slug_apply_page_businessapplypage",
+      "src_app_business_slug_apply_page_generatemetadata",
+      "src_app_business_slug_apply_page_parsehiringroles"
+    ],
+    "24": [
+      "src_app_search_page",
+      "src_app_search_page_metadata",
+      "src_app_search_page_searchpage",
+      "src_app_search_page_searchpageskeleton",
+      "src_app_search_searchresultscontent",
+      "src_app_search_searchresultscontent_searchresultscontent"
+    ],
+    "25": [
+      "src_app_suggest_business_page",
+      "src_app_suggest_business_page_metadata",
+      "src_app_suggest_business_page_suggestbusinesspage",
+      "src_app_suggest_business_suggestbusinessform",
+      "src_app_suggest_business_suggestbusinessform_buildmailtourl",
+      "src_app_suggest_business_suggestbusinessform_suggestbusinessform"
+    ],
+    "26": [
+      "scripts_seed_categories",
+      "scripts_seed_categories_adapter",
+      "scripts_seed_categories_categories",
+      "scripts_seed_categories_main",
+      "scripts_seed_categories_prisma"
+    ],
+    "27": [
+      "scripts_seed_cities",
+      "scripts_seed_cities_adapter",
+      "scripts_seed_cities_main",
+      "scripts_seed_cities_prisma",
+      "scripts_seed_cities_texas_cities"
+    ],
+    "28": [
+      "scripts_seed_event_tags",
+      "scripts_seed_event_tags_adapter",
+      "scripts_seed_event_tags_default_event_tags",
+      "scripts_seed_event_tags_prisma",
+      "scripts_seed_event_tags_slugifytag"
+    ],
+    "29": [
+      "scripts_seed_italian_test",
+      "scripts_seed_italian_test_adapter",
+      "scripts_seed_italian_test_main",
+      "scripts_seed_italian_test_photos",
+      "scripts_seed_italian_test_prisma"
+    ],
+    "30": [
+      "scripts_seed_plans",
+      "scripts_seed_plans_adapter",
+      "scripts_seed_plans_main",
+      "scripts_seed_plans_plans",
+      "scripts_seed_plans_prisma"
+    ],
+    "31": [
+      "src_app_actions_billing",
+      "src_app_actions_billing_createbillingportalsessionaction",
+      "src_app_actions_billing_createcheckoutsessionaction",
+      "src_app_actions_billing_redirecttobilling",
+      "src_app_actions_billing_requirebillingusercontext"
+    ],
+    "32": [
+      "src_app_api_applications_resume_upload_route",
+      "src_app_api_applications_resume_upload_route_allowed_extensions",
+      "src_app_api_applications_resume_upload_route_hasallowedextension",
+      "src_app_api_applications_resume_upload_route_post",
+      "src_app_api_applications_resume_upload_route_sanitizefilename"
+    ],
+    "33": [
+      "src_app_post_your_business_page",
+      "src_app_post_your_business_page_benefits",
+      "src_app_post_your_business_page_metadata",
+      "src_app_post_your_business_page_postyourbusinesspage",
+      "src_app_post_your_business_page_steps"
+    ],
+    "34": [
+      "src_app_pricing_page",
+      "src_app_pricing_page_faq",
+      "src_app_pricing_page_metadata",
+      "src_app_pricing_page_plans",
+      "src_app_pricing_page_pricingpage"
+    ],
+    "35": [
+      "jsconfig",
+      "jsconfig_compileroptions",
+      "jsconfig_compileroptions_paths",
+      "jsconfig_paths"
+    ],
+    "36": [
+      "src_app_categories_category_page",
+      "src_app_categories_category_page_categorypage",
+      "src_app_categories_category_page_generatemetadata",
+      "src_app_categories_category_page_generatestaticparams"
+    ],
+    "37": [
+      "src_app_cities_city_page",
+      "src_app_cities_city_page_citypage",
+      "src_app_cities_city_page_generatemetadata",
+      "src_app_cities_city_page_generatestaticparams"
+    ],
+    "38": [
+      "src_app_results_data",
+      "src_app_results_data_buildmapslink",
+      "src_app_results_data_featuredgems",
+      "src_app_results_data_matchessearch"
+    ],
+    "39": [
+      "src_lib_auth_password",
+      "src_lib_auth_password_hashpassword",
+      "src_lib_auth_password_scrypt",
+      "src_lib_auth_password_verifypassword"
+    ],
+    "40": [
+      "next_config",
+      "next_config_dirname",
+      "next_config_nextconfig"
+    ],
+    "41": [
+      "src_app_about_page",
+      "src_app_about_page_aboutpage",
+      "src_app_about_page_metadata"
+    ],
+    "42": [
+      "src_app_api_admin_seed_listing_route",
+      "src_app_api_admin_seed_listing_route_get",
+      "src_app_api_admin_seed_listing_route_photos"
+    ],
+    "43": [
+      "src_app_api_business_photos_upload_route",
+      "src_app_api_business_photos_upload_route_post",
+      "src_app_api_business_photos_upload_route_sanitizefilename"
+    ],
+    "44": [
+      "src_app_api_dashboard_applications_id_resume_route",
+      "src_app_api_dashboard_applications_id_resume_route_get",
+      "src_app_api_dashboard_applications_id_resume_route_sanitizefilename"
+    ],
+    "45": [
+      "src_app_contact_page",
+      "src_app_contact_page_contactpage",
+      "src_app_contact_page_metadata"
+    ],
+    "46": [
+      "src_app_events_id_page",
+      "src_app_events_id_page_eventdetailpage",
+      "src_app_events_id_page_generatemetadata"
+    ],
+    "47": [
+      "src_app_how_it_works_page",
+      "src_app_how_it_works_page_howitworkspage",
+      "src_app_how_it_works_page_metadata"
+    ],
+    "48": [
+      "src_app_privacy_page",
+      "src_app_privacy_page_metadata",
+      "src_app_privacy_page_privacypage"
+    ],
+    "49": [
+      "src_app_results_eventssection",
+      "src_app_results_eventssection_eventssection",
+      "src_app_results_eventssection_formatdate"
+    ],
+    "50": [
+      "src_app_results_layout",
+      "src_app_results_layout_metadata",
+      "src_app_results_layout_resultslayout"
+    ],
+    "51": [
+      "src_app_terms_page",
+      "src_app_terms_page_metadata",
+      "src_app_terms_page_termspage"
+    ],
+    "52": [
+      "src_components_eventlandingheader_eventlandingheader",
+      "src_components_eventlandingheader_eventlandingheader_eventlandingheader",
+      "src_components_eventlandingheader_eventlandingheader_links"
+    ],
+    "53": [
+      "src_lib_blob",
+      "src_lib_blob_getblobimageurl",
+      "src_lib_blob_isprivatebloburl"
+    ],
+    "54": [
+      "eslint_config",
+      "eslint_config_eslintconfig"
+    ],
+    "55": [
+      "src_app_admin_businesses_page",
+      "src_app_admin_businesses_page_adminbusinessesredirectpage"
+    ],
+    "56": [
+      "src_app_admin_events_page",
+      "src_app_admin_events_page_admineventsredirectpage"
+    ],
+    "57": [
+      "src_app_api_blob_image_route",
+      "src_app_api_blob_image_route_get"
+    ],
+    "58": [
+      "src_app_api_events_route",
+      "src_app_api_events_route_get"
+    ],
+    "59": [
+      "src_app_api_favorites_route",
+      "src_app_api_favorites_route_post"
+    ],
+    "60": [
+      "src_app_api_search_route",
+      "src_app_api_search_route_get"
+    ],
+    "61": [
+      "src_app_api_stripe_webhook_route",
+      "src_app_api_stripe_webhook_route_post"
+    ],
+    "62": [
+      "src_app_dashboard_dashboardlayout",
+      "src_app_dashboard_dashboardlayout_dashboardlayout"
+    ],
+    "63": [
+      "src_app_events_target_results_route",
+      "src_app_events_target_results_route_get"
+    ],
+    "64": [
+      "src_app_events_target_route",
+      "src_app_events_target_route_get"
+    ],
+    "65": [
+      "src_components_staticpagelayout_staticpagelayout",
+      "src_components_staticpagelayout_staticpagelayout_staticpagelayout"
+    ],
+    "66": [
+      "src_lib_prisma_errors",
+      "src_lib_prisma_errors_ismissingprismatableerror"
+    ],
+    "67": [
+      "prisma_config"
+    ],
+    "68": [
+      "reference_images_test"
+    ]
+  },
+  "cohesion": {
+    "0": 0.05454545454545454,
+    "1": 0.07126436781609195,
+    "2": 0.06896551724137931,
+    "3": 0.09971509971509972,
+    "4": 0.14461538461538462,
+    "5": 0.11666666666666667,
+    "6": 0.16205533596837945,
+    "7": 0.09523809523809523,
+    "8": 0.18614718614718614,
+    "9": 0.15263157894736842,
+    "10": 0.17543859649122806,
+    "11": 0.24183006535947713,
+    "12": 0.13970588235294118,
+    "13": 0.18382352941176472,
+    "14": 0.2545454545454545,
+    "15": 0.32727272727272727,
+    "16": 0.41818181818181815,
+    "17": 0.24444444444444444,
+    "18": 0.3333333333333333,
+    "19": 0.5,
+    "20": 0.3333333333333333,
+    "21": 0.2857142857142857,
+    "22": 0.4,
+    "23": 0.4666666666666667,
+    "24": 0.4,
+    "25": 0.4666666666666667,
+    "26": 0.4,
+    "27": 0.4,
+    "28": 0.4,
+    "29": 0.4,
+    "30": 0.4,
+    "31": 0.9,
+    "32": 0.7,
+    "33": 0.4,
+    "34": 0.4,
+    "35": 0.5,
+    "36": 0.5,
+    "37": 0.5,
+    "38": 0.5,
+    "39": 0.8333333333333334,
+    "40": 0.6666666666666666,
+    "41": 0.6666666666666666,
+    "42": 0.6666666666666666,
+    "43": 1.0,
+    "44": 1.0,
+    "45": 0.6666666666666666,
+    "46": 0.6666666666666666,
+    "47": 0.6666666666666666,
+    "48": 0.6666666666666666,
+    "49": 1.0,
+    "50": 0.6666666666666666,
+    "51": 0.6666666666666666,
+    "52": 0.6666666666666666,
+    "53": 1.0,
+    "54": 1.0,
+    "55": 1.0,
+    "56": 1.0,
+    "57": 1.0,
+    "58": 1.0,
+    "59": 1.0,
+    "60": 1.0,
+    "61": 1.0,
+    "62": 1.0,
+    "63": 1.0,
+    "64": 1.0,
+    "65": 1.0,
+    "66": 1.0,
+    "67": 1.0,
+    "68": 1.0
+  },
+  "gods": [
+    {
+      "id": "package_scripts",
+      "label": "scripts",
+      "degree": 19
+    },
+    {
+      "id": "src_app_dashboard_dashboardshell_dashboardlayout",
+      "label": "DashboardLayout()",
+      "degree": 12
+    },
+    {
+      "id": "src_app_events_results_eventsresults_eventsresults",
+      "label": "EventsResults()",
+      "degree": 10
+    },
+    {
+      "id": "src_lib_tiers_parsefeatures",
+      "label": "parseFeatures()",
+      "degree": 10
+    },
+    {
+      "id": "src_lib_billing_upsertsubscriptionfromstripesubscription",
+      "label": "upsertSubscriptionFromStripeSubscription()",
+      "degree": 9
+    },
+    {
+      "id": "src_lib_events_normalizeevent",
+      "label": "normalizeEvent()",
+      "degree": 9
+    },
+    {
+      "id": "src_app_actions_businesses_createbusinessaction",
+      "label": "createBusinessAction()",
+      "degree": 6
+    },
+    {
+      "id": "src_app_events_eventslanding_eventcard",
+      "label": "EventCard()",
+      "degree": 6
+    },
+    {
+      "id": "src_app_events_results_eventsresults_dateobj",
+      "label": "dateObj()",
+      "degree": 6
+    },
+    {
+      "id": "src_app_events_results_eventsresults_datewindowkeys",
+      "label": "dateWindowKeys()",
+      "degree": 6
+    }
+  ],
+  "surprises": [
+    {
+      "source": "main()",
+      "target": "@prisma/client",
+      "source_files": [
+        "scripts/seed-event-data.mjs",
+        "package.json"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "connects across different repos/directories"
+    },
+    {
+      "source": "AdminCreateForm()",
+      "target": "createAdminAction()",
+      "source_files": [
+        "src/app/admin/AdminCreateForm.jsx",
+        "src/app/actions/auth.js"
+      ],
+      "confidence": "INFERRED",
+      "relation": "indirect_call",
+      "why": "inferred connection - not explicitly stated in source; bridges separate communities"
+    },
+    {
+      "source": "SignupForm()",
+      "target": "signUpAction()",
+      "source_files": [
+        "src/app/signup/SignupForm.jsx",
+        "src/app/actions/auth.js"
+      ],
+      "confidence": "INFERRED",
+      "relation": "indirect_call",
+      "why": "inferred connection - not explicitly stated in source"
+    },
+    {
+      "source": "LoginForm()",
+      "target": "loginAction()",
+      "source_files": [
+        "src/app/login/LoginForm.jsx",
+        "src/app/actions/auth.js"
+      ],
+      "confidence": "INFERRED",
+      "relation": "indirect_call",
+      "why": "inferred connection - not explicitly stated in source"
+    },
+    {
+      "source": "CreateEventForm()",
+      "target": "createEventAction()",
+      "source_files": [
+        "src/app/dashboard/events/new/CreateEventForm.jsx",
+        "src/app/actions/events.js"
+      ],
+      "confidence": "INFERRED",
+      "relation": "indirect_call",
+      "why": "inferred connection - not explicitly stated in source"
+    }
+  ],
+  "questions": [
+    {
+      "type": "bridge_node",
+      "question": "Why does `dependencies` connect `dependencies` to `scripts`?",
+      "why": "High betweenness centrality (0.005) - this node is a cross-community bridge."
+    },
+    {
+      "type": "isolated_nodes",
+      "question": "What connects `eslintConfig`, `@/*`, `__dirname` to the rest of the system?",
+      "why": "115 weakly-connected nodes found - possible documentation gaps or missing edges."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `DashboardShell.jsx` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.05454545454545454 - nodes in this community are weakly interconnected."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `index.js` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.07126436781609195 - nodes in this community are weakly interconnected."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `scripts` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.06896551724137931 - nodes in this community are weakly interconnected."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `ResultsExperience.jsx` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.09971509971509972 - nodes in this community are weakly interconnected."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `EventsResults.jsx` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.14461538461538462 - nodes in this community are weakly interconnected."
+    }
+  ]
+}
