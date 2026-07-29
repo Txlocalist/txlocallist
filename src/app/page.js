@@ -1,5 +1,6 @@
 import LandingPageTemplate from "./LandingPageTemplate";
 import { redirect } from "next/navigation";
+import { getTopRatedLocals } from "@/lib/top-rated-locals";
 
 export const metadata = {
   title: "Texas Localist | Find What's Nearby. Fast.",
@@ -14,5 +15,7 @@ export default async function Home({ searchParams }) {
     redirect("/");
   }
 
-  return <LandingPageTemplate />;
+  const topRatedLocals = await getTopRatedLocals();
+
+  return <LandingPageTemplate homepageQuickLinks topRatedLocals={topRatedLocals} />;
 }

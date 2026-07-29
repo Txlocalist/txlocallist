@@ -337,6 +337,103 @@
   }
 }
 
+.quickLinks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+  width: min(58rem, 100%);
+  margin-top: 2.5rem;
+}
+
+.quickLink {
+  --quick-accent: var(--retro-teal);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.9rem;
+  align-items: center;
+  min-height: 5.2rem;
+  padding: 0.85rem 1rem;
+  border: 3px solid var(--retro-brown);
+  border-radius: 1.15rem;
+  background: #fffaf0;
+  box-shadow:
+    inset 0 0 0 0.2rem color-mix(in srgb, var(--quick-accent) 15%, transparent),
+    0.32rem 0.38rem 0 var(--retro-brown);
+  color: var(--retro-brown);
+  text-decoration: none;
+  transition:
+    transform var(--dur-sm) var(--ease-snap),
+    box-shadow var(--dur-sm) var(--ease-snap);
+}
+
+.quickLink:hover {
+  transform: translate(-0.12rem, -0.12rem);
+  box-shadow:
+    inset 0 0 0 0.2rem color-mix(in srgb, var(--quick-accent) 23%, transparent),
+    0.45rem 0.52rem 0 var(--retro-brown);
+}
+
+.quickLink_teal {
+  --quick-accent: var(--retro-teal);
+}
+
+.quickLink_yellow {
+  --quick-accent: var(--retro-yellow);
+}
+
+.quickLink_orange {
+  --quick-accent: var(--retro-orange);
+}
+
+.quickLink_red {
+  --quick-accent: var(--retro-red);
+}
+
+.quickLinkIcon {
+  display: grid;
+  place-items: center;
+  width: 3.15rem;
+  height: 3.15rem;
+  border: 2px solid var(--retro-brown);
+  border-radius: 50%;
+  background: var(--quick-accent);
+  color: #fffdf7;
+  font-size: 1.35rem;
+}
+
+.quickLink_yellow .quickLinkIcon {
+  color: var(--retro-brown);
+}
+
+.quickLinkCopy {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.quickLinkCopy strong {
+  font-family: var(--font-display), cursive;
+  font-size: clamp(1.25rem, 2vw, 1.65rem);
+  font-weight: 400;
+  line-height: 1;
+}
+
+.quickLinkCopy small {
+  color: var(--retro-brown-soft);
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.quickLinkArrow {
+  color: var(--quick-accent);
+  font-size: 1.35rem;
+  transition: transform var(--dur-sm) var(--ease-snap);
+}
+
+.quickLink:hover .quickLinkArrow {
+  transform: translateX(0.25rem);
+}
+
 .eventsMode .hero {
   z-index: 8;
   min-height: 748px;
@@ -1049,6 +1146,15 @@
 }
 
 @media (max-width: 700px) {
+  .quickLinks {
+    grid-template-columns: 1fr;
+    margin-top: 2rem;
+  }
+
+  .quickLink {
+    min-height: 4.75rem;
+  }
+
   .eventsMode .hero {
     min-height: auto;
     padding-top: 7.4rem;

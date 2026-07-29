@@ -4,9 +4,7 @@ import styles from "./EventLandingHeader.module.css";
 
 const LINKS = [
   { href: "/events", label: "Explore" },
-  { href: "/how-it-works", label: "How It Works" },
   { href: "/about", label: "About" },
-  { href: "/pricing", label: "Pricing" },
   { href: "/post-your-business", label: "Add Listing" },
 ];
 

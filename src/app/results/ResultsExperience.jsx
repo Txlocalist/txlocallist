@@ -37,6 +37,12 @@ function BusinessCard({ biz, saved, count, onSave }) {
         </div>
       )}
       <div className="category-tag">{biz.city?.name ?? biz.city}</div>
+      {biz.activeJobCount > 0 && (
+        <div className="hiring-tag">
+          <span className="material-icons" aria-hidden="true">work</span>
+          {biz.activeJobCount} {biz.activeJobCount === 1 ? "job" : "jobs"}
+        </div>
+      )}
       <h4 className="gem-name">{biz.name}</h4>
       <p className="gem-desc">
         {biz.description?.slice(0, 120)}{biz.description?.length > 120 ? "..." : ""}
@@ -99,6 +105,11 @@ function BusinessRow({ biz, saved, count, onSave }) {
           <span className="font-accent list-item-city">{biz.city?.name ?? biz.city}</span>
           {biz.categories?.[0]?.name && (
             <span className="font-accent list-item-cat">{biz.categories[0].name.toUpperCase()}</span>
+          )}
+          {biz.activeJobCount > 0 && (
+            <span className="font-accent list-item-hiring">
+              HIRING {biz.activeJobCount} {biz.activeJobCount === 1 ? "ROLE" : "ROLES"}
+            </span>
           )}
         </div>
         <h4 className="list-item-name">{biz.name}</h4>
@@ -214,6 +225,8 @@ function EmptyResultsState({
 export default function ResultsExperience({
   initialQuery = "",
   initialLocation = "",
+  initialBrowseAll = false,
+  initialJobsOnly = false,
   user = null,
   dashboardPath = null,
   savedIds = [],
@@ -235,7 +248,10 @@ export default function ResultsExperience({
   const [showCategories,   setShowCategories]   = useState(false);
   const [showMobileCities, setShowMobileCities] = useState(false);
   const [activeSort,       setActiveSort]       = useState(""); // "" | "popular"
-  const [activeBrowseTab,  setActiveBrowseTab]  = useState(initialQuery || initialLocation ? "search" : "");
+  const [activeBrowseTab,  setActiveBrowseTab]  = useState(
+    initialJobsOnly ? "jobs" : initialBrowseAll ? "all" : initialQuery || initialLocation ? "search" : ""
+  );
+  const [jobsOnly, setJobsOnly] = useState(initialJobsOnly);
   const [favoriteBusinesses, setFavoriteBusinesses] = useState(initialFavoriteBusinesses);
 
   // Saved state: tracks { [businessId]: { saved, count } } for optimistic UI
@@ -250,11 +266,19 @@ export default function ResultsExperience({
     location: lastSearch.loc,
   });
 
-  function replaceResultsUrl({ query = "", location = "", type = "businesses" }) {
+  function replaceResultsUrl({
+    query = "",
+    location = "",
+    type = "businesses",
+    jobs = false,
+    browse = "",
+  }) {
     const params = new URLSearchParams();
     if (query) params.set("q", query);
     if (location) params.set("loc", location);
     if (type && type !== "businesses") params.set("tab", type);
+    if (jobs) params.set("jobs", "1");
+    if (browse === "all") params.set("browse", "all");
 
     const queryString = params.toString();
     router.replace(queryString ? "/results?" + queryString : "/results", { scroll: false });
@@ -266,8 +290,16 @@ export default function ResultsExperience({
   }, [urlParams]);
 
   useEffect(() => {
-    if (initialQuery || initialLocation) runSearch(initialQuery, initialLocation, "", "search");
-  }, []);
+    if (initialQuery || initialLocation || initialBrowseAll || initialJobsOnly) {
+      runSearch(
+        initialQuery,
+        initialLocation,
+        "",
+        initialJobsOnly ? "jobs" : initialBrowseAll ? "all" : "search",
+        initialJobsOnly
+      );
+    }
+  }, [initialBrowseAll, initialJobsOnly, initialLocation, initialQuery]);
 
   function syncFavoriteBusinesses(biz, shouldBeSaved, count) {
     setFavoriteBusinesses((prev) => {
@@ -291,17 +323,19 @@ export default function ResultsExperience({
     });
   }
 
-  async function runSearch(q, loc, sort = "", browseTab = "search") {
+  async function runSearch(q, loc, sort = "", browseTab = "search", nextJobsOnly = false) {
     setIsSearching(true);
     setHasSearched(true);
     setLastSearch({ q, loc });
     setActiveSort(sort);
     setActiveBrowseTab(browseTab);
+    setJobsOnly(nextJobsOnly);
 
     const bizP = new URLSearchParams();
     if (q)    bizP.set("q",    q);
     if (loc)  bizP.set("loc",  loc);
     if (sort) bizP.set("sort", sort);
+    if (nextJobsOnly) bizP.set("jobs", "1");
 
     const evtP = new URLSearchParams();
     if (loc) evtP.set("city", loc);
@@ -327,8 +361,9 @@ export default function ResultsExperience({
 
   function handleSearchBarSubmit({ query, location, type }) {
     setActiveTab(type);
-    replaceResultsUrl({ query, location, type });
-    runSearch(query, location, "", "search");
+    const preserveJobs = type === "businesses" && jobsOnly;
+    replaceResultsUrl({ query, location, type, jobs: preserveJobs });
+    runSearch(query, location, "", preserveJobs ? "jobs" : "search", preserveJobs);
   }
 
   function clearSearch() {
@@ -337,12 +372,14 @@ export default function ResultsExperience({
     setHasSearched(false);
     setActiveSort("");
     setActiveBrowseTab("");
+    setJobsOnly(false);
     router.replace("/results", { scroll: false });
   }
 
   function openNewListings() {
     setActiveTab("businesses");
     setViewMode("card");
+    setJobsOnly(false);
     replaceResultsUrl({ query: "", location: "", type: "businesses" });
     runSearch("", "", "", "new");
   }
@@ -350,6 +387,7 @@ export default function ResultsExperience({
   function openMostSaved() {
     setActiveTab("businesses");
     setViewMode("card");
+    setJobsOnly(false);
     replaceResultsUrl({ query: "", location: lastSearch.loc, type: "businesses" });
     runSearch("", lastSearch.loc, "popular", "popular");
   }
@@ -363,6 +401,7 @@ export default function ResultsExperience({
     setActiveTab("businesses");
     setViewMode("card");
     setActiveSort("");
+    setJobsOnly(false);
     setActiveBrowseTab("favorites");
     setHasSearched(true);
     replaceResultsUrl({ query: "", location: "", type: "businesses" });
@@ -374,13 +413,25 @@ export default function ResultsExperience({
     const nextQuery = "";
     const nextLocation = activeBrowseTab === "new" ? "" : lastSearch.loc;
 
-    if (!nextLocation && activeTab === "businesses" && activeBrowseTab !== "popular") {
+    if (
+      !nextLocation &&
+      activeTab === "businesses" &&
+      activeBrowseTab !== "popular" &&
+      activeBrowseTab !== "all" &&
+      !jobsOnly
+    ) {
       clearSearch();
       return;
     }
 
-    replaceResultsUrl({ query: nextQuery, location: nextLocation, type: activeTab });
-    runSearch(nextQuery, nextLocation, activeSort, activeBrowseTab || "search");
+    replaceResultsUrl({
+      query: nextQuery,
+      location: nextLocation,
+      type: activeTab,
+      jobs: jobsOnly,
+      browse: activeBrowseTab === "all" ? "all" : "",
+    });
+    runSearch(nextQuery, nextLocation, activeSort, activeBrowseTab || "search", jobsOnly);
   }
 
   function removeLocationFilter() {
@@ -388,13 +439,25 @@ export default function ResultsExperience({
 
     const nextLocation = "";
 
-    if (!lastSearch.q && activeTab === "businesses" && activeBrowseTab !== "popular") {
+    if (
+      !lastSearch.q &&
+      activeTab === "businesses" &&
+      activeBrowseTab !== "popular" &&
+      activeBrowseTab !== "all" &&
+      !jobsOnly
+    ) {
       clearSearch();
       return;
     }
 
-    replaceResultsUrl({ query: lastSearch.q, location: nextLocation, type: activeTab });
-    runSearch(lastSearch.q, nextLocation, activeSort, activeBrowseTab || "search");
+    replaceResultsUrl({
+      query: lastSearch.q,
+      location: nextLocation,
+      type: activeTab,
+      jobs: jobsOnly,
+      browse: activeBrowseTab === "all" ? "all" : "",
+    });
+    runSearch(lastSearch.q, nextLocation, activeSort, activeBrowseTab || "search", jobsOnly);
   }
 
   function removeBrowseFilter() {
@@ -425,6 +488,17 @@ export default function ResultsExperience({
     } else {
       clearSearch();
     }
+  }
+
+  function removeJobsFilter() {
+    setJobsOnly(false);
+    replaceResultsUrl({
+      query: lastSearch.q,
+      location: lastSearch.loc,
+      type: "businesses",
+      browse: "all",
+    });
+    runSearch(lastSearch.q, lastSearch.loc, "", "all", false);
   }
 
   async function toggleSave(biz) {
@@ -506,6 +580,15 @@ export default function ResultsExperience({
       label: "My Favorites",
       tone: "favorites",
       onRemove: removeBrowseFilter,
+    });
+  }
+
+  if (hasSearched && jobsOnly) {
+    activeFilterChips.push({
+      key: "jobs",
+      label: "Hiring Now",
+      tone: "jobs",
+      onRemove: removeJobsFilter,
     });
   }
 
@@ -785,7 +868,11 @@ export default function ResultsExperience({
               action="/results"
               initialQuery={activeBrowseTab === "favorites" ? "" : lastSearch.q}
               initialLocation={activeBrowseTab === "favorites" ? "" : lastSearch.loc}
-              defaultLocation={activeBrowseTab === "favorites" ? "" : "Austin, TX"}
+              defaultLocation={
+                activeBrowseTab === "favorites" || activeBrowseTab === "all" || jobsOnly
+                  ? ""
+                  : "Austin, TX"
+              }
               initialType={activeTab}
               variant="inline"
               autoSubmitOnTypeChange
@@ -812,7 +899,9 @@ export default function ResultsExperience({
                             ? "BUSINESSES"
                             : "BUSINESS"
                         }${
-                          activeBrowseTab === "favorites"
+                          jobsOnly
+                            ? " · HIRING NOW"
+                            : activeBrowseTab === "favorites"
                             ? " · MY FAVORITES"
                             : activeSort === "popular"
                               ? " · MOST SAVED"

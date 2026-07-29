@@ -5,6 +5,8 @@ import HomeExperience from "./HomeExperience";
 export default function LandingPageTemplate({
   initialType = "businesses",
   visibleTypes = ["businesses", "events"],
+  homepageQuickLinks = false,
+  topRatedLocals = [],
   businessEyebrow,
   businessHeadingIntro,
   businessAccent,
@@ -22,6 +24,8 @@ export default function LandingPageTemplate({
       <HomeExperience
         initialType={initialType}
         visibleTypes={visibleTypes}
+        homepageQuickLinks={homepageQuickLinks}
+        topRatedLocals={topRatedLocals}
         businessEyebrow={businessEyebrow}
         businessHeadingIntro={businessHeadingIntro}
         businessAccent={businessAccent}

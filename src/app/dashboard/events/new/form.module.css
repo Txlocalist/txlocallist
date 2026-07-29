@@ -125,6 +125,26 @@
   min-height: 120px;
 }
 
+.descriptionMeta {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.descriptionMeta > :last-child {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.fieldError {
+  margin: 0;
+  color: var(--retro-red);
+  font-size: 0.85rem;
+}
+
 /* Categories Grid */
 .categoryGrid {
   display: grid;

@@ -18,7 +18,7 @@ const STEPS = [
   {
     number: "02",
     title: "Start The Paid Plan",
-    description: "Unlock listing access with one simple $20 monthly subscription through Stripe.",
+    description: "Unlock listing access with one simple $10 monthly subscription through Stripe.",
   },
   {
     number: "03",
@@ -38,7 +38,6 @@ const BENEFITS = [
   { icon: "📸", title: "Photo Gallery", description: "Showcase your space, products, or team with photos." },
   { icon: "💼", title: "Job Postings", description: "Post open positions and find local talent fast." },
   { icon: "🔗", title: "Website & Socials", description: "Link your website and social profiles to your listing." },
-  { icon: "⭐", title: "Featured Placement", description: "Paid listings earn stronger placement in local search." },
 ];
 
 export default async function PostYourBusinessPage() {
@@ -65,12 +64,12 @@ export default async function PostYourBusinessPage() {
             >
               {user ? "Upgrade To Post →" : "Create Account →"}
             </Link>
-            <Link href="/pricing" className={styles.heroSecondary}>
+            <Link href="/about#pricing" className={styles.heroSecondary}>
               View Plans & Pricing
             </Link>
           </div>
           <p className={styles.heroNote}>
-            $20/month paid plan required before listing creation
+            $10/month paid plan required before listing creation
           </p>
         </div>
       </section>
@@ -122,11 +121,11 @@ export default async function PostYourBusinessPage() {
             </div>
             <div className={`${styles.teaseCard} ${styles.teaseCardHighlight}`}>
               <p className={styles.teasePlan}>Paid</p>
-              <p className={styles.teasePrice}>$20<span>/mo</span></p>
-              <p className={styles.teaseDesc}>Contact info, socials, featured placement, more photos, and job postings.</p>
+              <p className={styles.teasePrice}>$10<span>/mo</span></p>
+              <p className={styles.teaseDesc}>Contact info, socials, more photos, and job postings.</p>
             </div>
           </div>
-          <Link href="/pricing" className={styles.teaseLink}>
+          <Link href="/about#pricing" className={styles.teaseLink}>
             See Full Feature Comparison →
           </Link>
         </div>

@@ -61,7 +61,7 @@ export default async function SignupPage({ searchParams }) {
             {isOwner ? (
               <p className={styles.authFootnote}>
                 You can review plans from billing after signup, or visit{" "}
-                <Link href="/pricing">pricing</Link> first.
+                <Link href="/about#pricing">pricing</Link> first.
               </p>
             ) : null}
           </div>

@@ -29,7 +29,7 @@ export default async function NewEventPage() {
           <div className={styles.emptyState}>
             <h2 className={styles.emptyStateTitle}>Upgrade Required</h2>
             <p className={styles.emptyStateDescription}>
-              Event posting is part of the $20 paid creator account. Upgrade in billing first, then
+              Event posting is part of the $10 paid creator account. Upgrade in billing first, then
               attach events to your business from this dashboard.
             </p>
             <Link href="/dashboard/billing" className={styles.emptyStateAction}>

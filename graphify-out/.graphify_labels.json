@@ -75,5 +75,7 @@
   "73": "Q: Match the About page to the supplied visual reference",
   "74": "Q: How is the how-it-works page composed, which shared components and routes does it depend on, and what must be preserved during a visual redesign?",
   "75": "AGENTS.md",
-  "76": "route.js"
+  "76": "route.js",
+  "77": "directory-demo.js",
+  "78": "top-rated-locals.js"
 }

@@ -219,6 +219,31 @@
   border: 2px solid var(--retro-brown);
 }
 
+.hiring-tag {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 1.8rem;
+  padding: 0.2rem 0.65rem;
+  border: 2px solid var(--retro-brown);
+  border-radius: 999px;
+  background: var(--retro-yellow);
+  box-shadow: 0.14rem 0.16rem 0 var(--retro-brown);
+  color: var(--retro-brown);
+  font-family: var(--font-accent), sans-serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.hiring-tag .material-icons {
+  font-size: 0.9rem;
+}
+
 /* Map (legacy small — kept for any reuse) */
 .map-container {
   width: 100%;
@@ -654,6 +679,11 @@
   color: var(--retro-red);
 }
 
+.active-filter-chip-jobs {
+  background: rgba(249, 200, 70, 0.24);
+  color: var(--retro-brown);
+}
+
 .active-filter-chip-events {
   background: rgba(214, 73, 51, 0.12);
   color: var(--retro-red);
@@ -917,6 +947,12 @@
   letter-spacing: 0.08em;
   opacity: 0.5;
   color: var(--retro-teal);
+}
+
+.list-item-hiring {
+  color: var(--retro-red);
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
 }
 
 .list-item-name {

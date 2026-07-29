@@ -256,9 +256,7 @@ export default function EventsLanding({ events = [], cities = [], categories = [
             <Logo />
             <nav className="nav-links" aria-label="Main navigation">
               <Link href="/results">Explore</Link>
-              <a href="#how">How It Works</a>
               <Link href="/about">About</Link>
-              <Link href="/pricing">Pricing</Link>
               <Link href="/post-your-business">Add Listing</Link>
             </nav>
             <Link href="/login" className="login-btn">

@@ -157,7 +157,7 @@ function welcomeTemplate({ email, isOwner, siteUrl }) {
     </ul>
     <p style="margin:0;font-size:14px;color:#6A4A31;">
       Ready to show contact info, your website, and more?
-      <a href="${siteUrl}/pricing" style="color:#4A9D9C;">View paid plans →</a>
+      <a href="${siteUrl}/about#pricing" style="color:#4A9D9C;">View paid plans →</a>
     </p>`;
 
   const userBody = `
@@ -191,7 +191,7 @@ function listingPublishedTemplate({ businessName, listingUrl, siteUrl }) {
       <li>Upload more photos to attract more clicks</li>
       <li>Post a job opening to reach local candidates</li>
     </ul>
-    <p style="margin:0;text-align:center;">${btn(`${siteUrl}/pricing`, "Upgrade Your Plan")}</p>`;
+    <p style="margin:0;text-align:center;">${btn(`${siteUrl}/about#pricing`, "Upgrade Your Plan")}</p>`;
 
   return emailShell({ title: `${businessName} is live on TX Localist`, body, siteUrl });
 }

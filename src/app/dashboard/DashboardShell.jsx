@@ -163,7 +163,7 @@ export async function DashboardLayout({ children, activeTab = "overview" }) {
               <p className={styles.helpText}>
                 {hasCreatorAccess
                   ? "Your paid account is active. Create listings and post events from the dashboard."
-                  : "Sign in as a normal user, save favorites, and upgrade to the $20 plan when you're ready to post."}
+                  : "Sign in as a normal user, save favorites, and upgrade to the $10 plan when you're ready to post."}
               </p>
             </div>
           </div>

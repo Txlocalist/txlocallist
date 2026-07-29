@@ -1,5 +1,6 @@
 import LandingPageTemplate from "../LandingPageTemplate";
 import { redirect } from "next/navigation";
+import { getTopRatedLocals } from "@/lib/top-rated-locals";
 
 export const metadata = {
   title: "Texas Localist | Local Businesses",
@@ -14,6 +15,8 @@ export default async function BusinessesPage({ searchParams }) {
     redirect("/businesses");
   }
 
+  const topRatedLocals = await getTopRatedLocals();
+
   return (
     <LandingPageTemplate
       initialType="businesses"
@@ -22,6 +25,7 @@ export default async function BusinessesPage({ searchParams }) {
       businessAccent="Businesses."
       businessUnderline="Fast."
       businessTagline="Search verified local businesses across Texas. No ads. No clutter. Just the spots worth finding."
+      topRatedLocals={topRatedLocals}
     />
   );
 }

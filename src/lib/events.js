@@ -1,4 +1,8 @@
 import { prisma } from "@/lib/prisma";
+import {
+  fromEventCategoryTagName,
+  isEventCategoryTagName,
+} from "@/lib/event-categories.mjs";
 
 function unique(values) {
   return Array.from(new Set(values.filter(Boolean)));
@@ -14,6 +18,12 @@ function slugifyCategoryLabel(value) {
 }
 
 function inferEventType(event) {
+  const explicitCategory = (event.tags || [])
+    .map((tag) => fromEventCategoryTagName(tag.name))
+    .find(Boolean);
+
+  if (explicitCategory) return explicitCategory;
+
   const text = [
     event.title,
     event.description,
@@ -144,7 +154,10 @@ export function formatShortDateLabel(dateKey) {
 
 function normalizeEvent(event) {
   const type = inferEventType(event);
-  const tags = unique([type, ...(event.tags || []).map((tag) => tag.name)]).slice(0, 6);
+  const rawTagNames = (event.tags || [])
+    .map((tag) => tag.name)
+    .filter((tagName) => !isEventCategoryTagName(tagName));
+  const tags = unique([type, ...rawTagNames]).slice(0, 6);
   // The event's category is its display-cased type (e.g. "Live Music"), not the
   // raw tag rows (e.g. "music"), so the category list, calendar legend, and card
   // labels all share one vocabulary. Raw tags remain available via `tags`.

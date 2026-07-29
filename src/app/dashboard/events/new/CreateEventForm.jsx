@@ -5,6 +5,7 @@ import { useActionState } from "react";
 
 import { createEventAction } from "@/app/actions/events";
 import { PhotoUploader } from "@/components/PhotoUploader";
+import { EVENT_CATEGORIES } from "@/lib/event-categories.mjs";
 
 import styles from "./form.module.css";
 
@@ -13,6 +14,7 @@ const INITIAL_STATE = { error: null, fieldErrors: {} };
 export function CreateEventForm({ businesses = [] }) {
   const [state, formAction, isPending] = useActionState(createEventAction, INITIAL_STATE);
   const [photos, setPhotos] = useState([]);
+  const [description, setDescription] = useState("");
 
   return (
     <form action={formAction} className={styles.form}>
@@ -23,6 +25,19 @@ export function CreateEventForm({ businesses = [] }) {
       <div className={styles.step}>
         <h2 className={styles.stepTitle}>Event Details</h2>
         <p className={styles.stepDescription}>Tell people what is happening, where, and when.</p>
+
+        <div className={styles.formGroup}>
+          <label className={styles.label} htmlFor="category">Event Category *</label>
+          <select id="category" name="category" className={styles.select} defaultValue="" required>
+            <option value="" disabled>Select a category</option>
+            {EVENT_CATEGORIES.map((category) => (
+              <option key={category} value={category}>{category}</option>
+            ))}
+          </select>
+          {state?.fieldErrors?.category && (
+            <p className={styles.fieldError}>{state.fieldErrors.category}</p>
+          )}
+        </div>
 
         {/* Title */}
         <div className={styles.formGroup}>
@@ -43,9 +58,20 @@ export function CreateEventForm({ businesses = [] }) {
             id="description" name="description" rows={4}
             className={styles.textarea}
             placeholder="Tell people what this event is about (at least 20 characters)..."
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            minLength={20}
+            maxLength={300}
             required
           />
-          {state?.fieldErrors?.description && <p style={{ color: "var(--retro-red)", fontSize: "0.85rem" }}>{state.fieldErrors.description}</p>}
+          <div className={styles.descriptionMeta}>
+            {state?.fieldErrors?.description ? (
+              <p className={styles.fieldError}>{state.fieldErrors.description}</p>
+            ) : (
+              <span>Keep it useful and concise.</span>
+            )}
+            <span aria-live="polite">{description.length}/300</span>
+          </div>
         </div>
 
         {/* Cover Image */}
@@ -54,7 +80,7 @@ export function CreateEventForm({ businesses = [] }) {
           <input type="hidden" name="imageUrl" value={photos[0]?.url || ""} />
           <PhotoUploader photos={photos} onChange={setPhotos} maxPhotos={1} />
           <p className={styles.uploadHint}>
-            Event images upload to the same private Vercel Blob storage used for business photos.
+            Add one optional cover image. 1 photo maximum.
           </p>
         </div>
 

@@ -19,7 +19,8 @@
     "db:seed-tags": "node scripts/seed-event-tags.mjs",
     "db:seed-test-users": "node scripts/seed-test-users.mjs",
     "db:seed-italian": "node scripts/seed-italian-test.mjs",
-    "db:seed-all": "npm run db:seed-cities && npm run db:seed-categories && npm run db:seed-plans && npm run db:seed-events",
+    "db:seed-local-businesses": "node scripts/seed-local-businesses.mjs",
+    "db:seed-all": "npm run db:seed-cities && npm run db:seed-categories && npm run db:seed-plans && npm run db:seed-events && npm run db:seed-local-businesses",
     "postinstall": "prisma generate"
   },
   "dependencies": {

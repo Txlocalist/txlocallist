@@ -11,46 +11,6 @@ import SearchBar from "@/components/SearchBar/SearchBar";
 import heroBackgroundArt from "@/app/assets/Tx Localist-03.png";
 import styles from "./home.module.css";
 
-const FEATURED_BUSINESSES = [
-  {
-    slug: "starlight-cafe-austin",
-    name: "Starlight Cafe",
-    city: "AUSTIN",
-    description: "The best sourdough in the hill country. Family owned since 1974.",
-    price: "$$",
-    category: "Bakery",
-    imageUrl:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuA8A2GdyTWdqLn6jx-_hSITUXdNr3wORseQXb01vX21diKx9xFiAGyi9t78SHN7LRGsejMKYzNg9k6utvRci63AmGAfZkbZq71UX0gJcpgbtIV7rVYv4B2GwS2PWhMCEFlmqv-T9CXDkidJJ9fRyckmDUBcb97vf6uDBAK7BFRiDF9PjGPgZDX2VUxJUD0hu5tx8HfWMN97D5710zHV4daKtfJGXLDcQebSDfPbK_o7jVUIZTFcilrWR43Et2YLnSkOtuBwZv9vkwI",
-    imageAlt: "Starlight Cafe storefront at dusk",
-    badgeTone: "yellow",
-  },
-  {
-    slug: "neon-cowboy-marfa",
-    name: "Neon Cowboy",
-    city: "MARFA",
-    description:
-      "Curated vintage Western wear and desert oddities. Truly one of a kind.",
-    price: "$$$",
-    category: "Retail",
-    imageUrl:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuBbEIBI6L9dC0ie9eU66YFIzNdrZyg083eCuDV666N6H9tAr94iR5gwTUOWmYyifRCsSopwn6rub9ymjqcFTgZ6_tlmoUguiR7rxL831CVzjMBBk6ec8bSYW_G5a00AqWmHKZTJpX6IFAOwUugfmtG6SYCiEBUWxI8gNUajUDFwMdUnKBpmGcd6TkE48IQRPY9B-CF7QzubJlb5lQsBt8ygRIECGar-DfsoO7NTJa6igIxonbvFHt1zxQl4RKa_mkf_S3Ba-lxJZuY",
-    imageAlt: "Neon Cowboy vintage boutique exterior",
-    badgeTone: "red",
-  },
-  {
-    slug: "old-oak-bbq-lockhart",
-    name: "Old Oak BBQ",
-    city: "LOCKHART",
-    description: "Central Texas style brisket smoked for 16 hours. No sauce needed.",
-    price: "$",
-    category: "Food",
-    imageUrl:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuDhb_JF5jLsjsWFF3OgR0xWgx6NxlHjg5et6OuMW3DsbsHQzGfH-p8ZwKK4MUf3t9AphDfz-dKM4ZvwBjd6F63BHyX0dkjpibA2eZhIm019AY8SnrRW1xCDmCsRRyXm4I6dtsS6JbEmsYcIHaizCKBz0Rpw6GkFXz2Ud_rUltWn6V0vCfapnJ00RJnlj2yJfVNNmKjZGaUXhvBnnGdM1ITZPu7Ajo8dIODcLA8BGOsMgASgDn58-BlebRW-ftzXmDsrsRdZpCGZgfk",
-    imageAlt: "Old Oak BBQ pitmaster tending brisket",
-    badgeTone: "teal",
-  },
-];
-
 const FEATURED_EVENTS = [
   {
     title: "Friday Night Honky Tonk",
@@ -146,6 +106,37 @@ const EVENT_CHIPS = [
   { label: "Nightlife", icon: "dark_mode", query: "nightlife" },
 ];
 
+const HOME_QUICK_LINKS = [
+  {
+    label: "A Business?",
+    href: "/results?browse=all",
+    icon: "storefront",
+    tone: "teal",
+    description: "Browse local businesses",
+  },
+  {
+    label: "A Job?",
+    href: "/results?jobs=1",
+    icon: "work",
+    tone: "yellow",
+    description: "Find businesses hiring now",
+  },
+  {
+    label: "An Event?",
+    href: "/events/results",
+    icon: "event",
+    tone: "orange",
+    description: "See what is happening nearby",
+  },
+  {
+    label: "Live Music?",
+    href: "/events/results?category=Live%20Music",
+    icon: "music_note",
+    tone: "red",
+    description: "Find local shows and sets",
+  },
+];
+
 function EventSearchPanel() {
   return (
     <>
@@ -228,6 +219,8 @@ function EventSearchPanel() {
 export default function HomeExperience({
   initialType = "businesses",
   visibleTypes = ["businesses", "events"],
+  homepageQuickLinks = false,
+  topRatedLocals = [],
   businessEyebrow = "TEXAS LOCAL DIRECTORY",
   businessHeadingIntro = "Find what's",
   businessAccent = "Local.",
@@ -301,7 +294,28 @@ export default function HomeExperience({
             : businessTagline}
         </p>
 
-        {isEvents ? (
+        {homepageQuickLinks ? (
+          <nav className={styles.quickLinks} aria-label="What are you looking for?">
+            {HOME_QUICK_LINKS.map((link) => (
+              <Link
+                key={link.label}
+                href={link.href}
+                className={`${styles.quickLink} ${styles[`quickLink_${link.tone}`]}`}
+              >
+                <span className={`material-icons ${styles.quickLinkIcon}`} aria-hidden="true">
+                  {link.icon}
+                </span>
+                <span className={styles.quickLinkCopy}>
+                  <strong>{link.label}</strong>
+                  <small>{link.description}</small>
+                </span>
+                <span className={`material-icons ${styles.quickLinkArrow}`} aria-hidden="true">
+                  arrow_forward
+                </span>
+              </Link>
+            ))}
+          </nav>
+        ) : isEvents ? (
           <EventSearchPanel />
         ) : (
           <>
@@ -336,9 +350,9 @@ export default function HomeExperience({
         </div>
       </section>
 
-      <section className={styles.gemsSection} aria-labelledby="featured-heading">
+      <section className={styles.gemsSection} aria-labelledby="top-rated-heading">
         <div className={styles.gemsSectionHeader}>
-          <h2 id="featured-heading" className={styles.gemsTitle}>
+          <h2 id="top-rated-heading" className={styles.gemsTitle}>
             {isEvents ? (
               <>
                 Trending <br />
@@ -346,8 +360,8 @@ export default function HomeExperience({
               </>
             ) : (
               <>
-                Featured <br />
-                <span className={styles.gemsTitleAccent}>Gems</span>
+                Top Rated <br />
+                <span className={styles.gemsTitleAccent}>Locals</span>
               </>
             )}
           </h2>
@@ -390,38 +404,40 @@ export default function HomeExperience({
           </div>
         ) : (
           <div className={styles.gemsGrid}>
-            {FEATURED_BUSINESSES.map((business) => (
+            {topRatedLocals.map((business, index) => (
               <BusinessCard
                 key={business.slug}
                 business={business}
-                badgeTone={business.badgeTone}
+                badgeTone={["yellow", "red", "teal"][index % 3]}
               />
             ))}
           </div>
         )}
       </section>
 
-      <section className={styles.howItWorksSection} aria-labelledby="how-heading">
-        <div className={styles.howItWorksContainer}>
-          <h2 id="how-heading" className={styles.howItWorksTitle}>
-            How it <span className={styles.howItWorksAccent}>Works.</span>
-          </h2>
+      {!homepageQuickLinks && (
+        <section className={styles.howItWorksSection} aria-labelledby="how-heading">
+          <div className={styles.howItWorksContainer}>
+            <h2 id="how-heading" className={styles.howItWorksTitle}>
+              How it <span className={styles.howItWorksAccent}>Works.</span>
+            </h2>
 
-          <div className={styles.howItWorksGrid}>
-            {currentSteps.map((step) => (
-              <div key={step.number} className={styles.stepItem}>
-                <div
-                  className={`${styles.stepNumber} ${styles[`stepBorder_${step.borderTone}`]}`}
-                >
-                  {step.number}
+            <div className={styles.howItWorksGrid}>
+              {currentSteps.map((step) => (
+                <div key={step.number} className={styles.stepItem}>
+                  <div
+                    className={`${styles.stepNumber} ${styles[`stepBorder_${step.borderTone}`]}`}
+                  >
+                    {step.number}
+                  </div>
+                  <h3 className={styles.stepLabel}>{step.label}</h3>
+                  <p className={styles.stepDescription}>{step.description}</p>
                 </div>
-                <h3 className={styles.stepLabel}>{step.label}</h3>
-                <p className={styles.stepDescription}>{step.description}</p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       <section className={styles.ctaSection} aria-labelledby="cta-heading">
         <div className={styles.ctaBg} aria-hidden="true">

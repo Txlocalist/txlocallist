@@ -7,9 +7,7 @@ import styles from "./Navbar.module.css";
 
 const DEFAULT_LINKS = [
   { href: "/results", label: "EXPLORE" },
-  { href: "/how-it-works", label: "HOW IT WORKS" },
   { href: "/about", label: "ABOUT" },
-  { href: "/pricing", label: "PRICING" },
   { href: "/post-your-business", label: "ADD LISTING" },
 ];
 

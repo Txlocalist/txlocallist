@@ -27,7 +27,7 @@ export const TIER_LABELS: Record<string, string> = {
 
 export const TIER_PRICES: Record<string, number> = {
   free: 0, // in cents
-  starter: 2000,
+  starter: 1000,
 };
 
 /**
@@ -59,14 +59,14 @@ export function getFeatures(tierSlug?: string | null): TierFeatures {
         SHOW_WEBSITE: true,
         SHOW_SOCIALS: true,
         JOB_POSTINGS: 3,
-        FEATURED: true,
-        PRIORITY_SEARCH: true,
+        FEATURED: false,
+        PRIORITY_SEARCH: false,
       };
 
     case TIER_NAMES.FREE:
     default:
       return {
-        MAX_PHOTOS: 1,
+        MAX_PHOTOS: 0,
         SHOW_CONTACT: false,
         SHOW_WEBSITE: false,
         SHOW_SOCIALS: false,

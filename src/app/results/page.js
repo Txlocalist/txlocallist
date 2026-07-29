@@ -21,6 +21,7 @@ function toBusinessResult(business, extra = {}) {
     image: business.photos[0] || null,
     tier: business.plan?.slug || "free",
     favoritesCount: business._count?.favorites ?? 0,
+    activeJobCount: business._count?.jobs ?? 0,
     showContact: planFeatures.SHOW_CONTACT,
     showWebsite: planFeatures.SHOW_WEBSITE,
     phone: planFeatures.SHOW_CONTACT ? business.phone : null,
@@ -33,6 +34,8 @@ export default async function ResultsPage({ searchParams }) {
   const params = await searchParams;
   const q   = params?.q   ?? "";
   const loc = params?.loc ?? "";
+  const initialBrowseAll = params?.browse === "all";
+  const initialJobsOnly = params?.jobs === "1";
   const [availableTags, activeBusinessCities, publishedEventCities] = await Promise.all([
     prisma.tag.findMany({
       orderBy: { name: "asc" },
@@ -109,7 +112,12 @@ export default async function ResultsPage({ searchParams }) {
               take: 3,
               select: { tag: { select: { name: true, slug: true } } },
             },
-            _count: { select: { favorites: true } },
+            _count: {
+              select: {
+                favorites: true,
+                jobs: { where: { status: "ACTIVE" } },
+              },
+            },
           },
         },
       },
@@ -128,6 +136,8 @@ export default async function ResultsPage({ searchParams }) {
     <ResultsExperience
       initialQuery={q}
       initialLocation={loc}
+      initialBrowseAll={initialBrowseAll}
+      initialJobsOnly={initialJobsOnly}
       user={user}
       dashboardPath={dashboardPath}
       savedIds={savedIds}

@@ -115,7 +115,7 @@ export function OverviewContent({
             Become a top-tier business partner and get featured in our monthly print editorial sent to 50,000 households.
           </p>
 
-          <Link href="/pricing" className={styles.featurePrimary}>
+          <Link href="/about#pricing" className={styles.featurePrimary}>
             Learn More
             <span className="material-icons" aria-hidden="true">
               star_outline

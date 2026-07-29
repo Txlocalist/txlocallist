@@ -1,15 +1,16 @@
-# Graph Report - .  (2026-07-13)
+# Graph Report - txlocallist  (2026-07-29)
 
 ## Corpus Check
-- cluster-only mode — file stats not available
+- 144 files · ~606,885 words
+- Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 584 nodes · 745 edges · 69 communities (53 shown, 16 thin omitted)
+- 624 nodes · 780 edges · 77 communities (60 shown, 17 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 6 edges (avg confidence: 0.75)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `bd9486ba`
+- Built from commit: `e979d9e6`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -60,12 +61,20 @@
 - page.js
 - page.js
 - page.js
+- page.js
 - EventsSection.jsx
 - layout.js
 - page.js
 - EventLandingHeader.jsx
 - blob.js
 - eslint.config.mjs
+- page.js
+- Shared Components
+- Q: Trace the event detail page implementation, event image fields and fallback behavior, save/favorite counting system, and the equivalent real saved-count flow used on business landing pages.
+- Q: Inspect graphify-out for context before redesigning the how it works page.
+- Q: Match the About page to the supplied visual reference
+- Q: How is the how-it-works page composed, which shared components and routes does it depend on, and what must be preserved during a visual redesign?
+- AGENTS.md
 
 ## God Nodes (most connected - your core abstractions)
 1. `scripts` - 19 edges
@@ -94,11 +103,11 @@
 ## Import Cycles
 - None detected.
 
-## Communities (69 total, 16 thin omitted)
+## Communities (77 total, 17 thin omitted)
 
 ### Community 0 - "DashboardShell.jsx"
-Cohesion: 0.05
-Nodes (23): createEventAction(), getTextValue(), slugifyTag(), BillingPage(), getBillingStatusClass(), getNotice(), getSubscriptionDetail(), BusinessHoursEditor() (+15 more)
+Cohesion: 0.07
+Nodes (20): createEventAction(), getTextValue(), slugifyTag(), BillingPage(), getBillingStatusClass(), getNotice(), getSubscriptionDetail(), BusinessHoursEditor() (+12 more)
 
 ### Community 1 - "index.js"
 Cohesion: 0.07
@@ -181,8 +190,8 @@ Cohesion: 0.33
 Nodes (5): adapter, email, hashPassword(), prisma, scrypt
 
 ### Community 21 - "layout.js"
-Cohesion: 0.29
-Nodes (5): bungee, geistMono, metadata, shrikhand, spaceGrotesk
+Cohesion: 0.25
+Nodes (6): bungee, geistMono, metadata, shrikhand, spaceGrotesk, ultra
 
 ### Community 22 - "seed-test-users.mjs"
 Cohesion: 0.40
@@ -240,25 +249,53 @@ Nodes (3): compilerOptions, paths, @/*
 Cohesion: 0.83
 Nodes (3): hashPassword(), scrypt, verifyPassword()
 
+### Community 47 - "page.js"
+Cohesion: 0.29
+Nodes (3): LOCAL_STEPS, metadata, OWNER_STEPS
+
+### Community 69 - "page.js"
+Cohesion: 0.28
+Nodes (3): OverviewContent(), DashboardPage(), titleCase()
+
+### Community 70 - "Shared Components"
+Cohesion: 0.33
+Nodes (5): Accessibility defaults, Conventions, Current inventory, Design tokens, Shared Components
+
+### Community 71 - "Q: Trace the event detail page implementation, event image fields and fallback behavior, save/favorite counting system, and the equivalent real saved-count flow used on business landing pages."
+Cohesion: 0.40
+Nodes (4): Answer, Outcome, Q: Trace the event detail page implementation, event image fields and fallback behavior, save/favorite counting system, and the equivalent real saved-count flow used on business landing pages., Source Nodes
+
+### Community 72 - "Q: Inspect graphify-out for context before redesigning the how it works page."
+Cohesion: 0.40
+Nodes (4): Answer, Outcome, Q: Inspect graphify-out for context before redesigning the how it works page., Source Nodes
+
+### Community 73 - "Q: Match the About page to the supplied visual reference"
+Cohesion: 0.40
+Nodes (4): Answer, Outcome, Q: Match the About page to the supplied visual reference, Source Nodes
+
+### Community 74 - "Q: How is the how-it-works page composed, which shared components and routes does it depend on, and what must be preserved during a visual redesign?"
+Cohesion: 0.40
+Nodes (4): Answer, Outcome, Q: How is the how-it-works page composed, which shared components and routes does it depend on, and what must be preserved during a visual redesign?, Source Nodes
+
 ## Knowledge Gaps
-- **115 isolated node(s):** `eslintConfig`, `@/*`, `__dirname`, `nextConfig`, `name` (+110 more)
+- **136 isolated node(s):** `eslintConfig`, `@/*`, `__dirname`, `nextConfig`, `name` (+131 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **16 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **17 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `dependencies` connect `dependencies` to `scripts`?**
-  _High betweenness centrality (0.005) - this node is a cross-community bridge._
+  _High betweenness centrality (0.004) - this node is a cross-community bridge._
+- **Why does `DashboardLayout()` connect `DashboardShell.jsx` to `page.js`?**
+  _High betweenness centrality (0.003) - this node is a cross-community bridge._
 - **What connects `eslintConfig`, `@/*`, `__dirname` to the rest of the system?**
-  _115 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _136 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `DashboardShell.jsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.05454545454545454 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.0666049953746531 - nodes in this community are weakly interconnected._
 - **Should `index.js` be split into smaller, more focused modules?**
   _Cohesion score 0.07126436781609195 - nodes in this community are weakly interconnected._
 - **Should `scripts` be split into smaller, more focused modules?**
   _Cohesion score 0.06896551724137931 - nodes in this community are weakly interconnected._
 - **Should `ResultsExperience.jsx` be split into smaller, more focused modules?**
   _Cohesion score 0.09971509971509972 - nodes in this community are weakly interconnected._
-- **Should `EventsResults.jsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.14461538461538462 - nodes in this community are weakly interconnected._

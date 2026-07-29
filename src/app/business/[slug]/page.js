@@ -283,7 +283,7 @@ export default async function BusinessDetailPage({ params }) {
                       This business hasn&apos;t upgraded yet. Know the owner?
                     </p>
                   </div>
-                  <Link href="/pricing" className={styles.upgradeNudgeBtn}>
+                  <Link href="/about#pricing" className={styles.upgradeNudgeBtn}>
                     View Plans →
                   </Link>
                 </div>

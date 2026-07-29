@@ -3,16 +3,7 @@ import "dotenv/config";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "@prisma/client";
 
-const DEFAULT_EVENT_TAGS = [
-  "Live Music",
-  "Family Friendly",
-  "Food & Drink",
-  "Networking",
-  "Arts & Culture",
-  "Outdoor",
-  "Wellness",
-  "Community",
-];
+import { EVENT_CATEGORIES } from "../src/lib/event-categories.mjs";
 
 function slugifyTag(name) {
   return name
@@ -37,7 +28,7 @@ const prisma = new PrismaClient({ adapter });
 
 try {
   await Promise.all(
-    DEFAULT_EVENT_TAGS.map((name) =>
+    EVENT_CATEGORIES.map((name) =>
       prisma.tag.upsert({
         where: { slug: slugifyTag(name) },
         update: { name },
@@ -49,7 +40,7 @@ try {
     ),
   );
 
-  console.log(`Seeded ${DEFAULT_EVENT_TAGS.length} default event tags`);
+  console.log(`Seeded ${EVENT_CATEGORIES.length} default event tags`);
 } finally {
   await prisma.$disconnect();
 }

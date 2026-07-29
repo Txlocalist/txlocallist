@@ -1,16 +1,16 @@
 # Graph Report - txlocallist  (2026-07-29)
 
 ## Corpus Check
-- 144 files · ~606,885 words
+- 148 files · ~607,790 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 624 nodes · 780 edges · 77 communities (60 shown, 17 thin omitted)
+- 640 nodes · 800 edges · 79 communities (60 shown, 19 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 6 edges (avg confidence: 0.75)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `e979d9e6`
+- Built from commit: `b9606789`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -75,9 +75,10 @@
 - Q: Match the About page to the supplied visual reference
 - Q: How is the how-it-works page composed, which shared components and routes does it depend on, and what must be preserved during a visual redesign?
 - AGENTS.md
+- directory-demo.js
 
 ## God Nodes (most connected - your core abstractions)
-1. `scripts` - 19 edges
+1. `scripts` - 20 edges
 2. `DashboardLayout()` - 12 edges
 3. `EventsResults()` - 10 edges
 4. `parseFeatures()` - 10 edges
@@ -91,19 +92,19 @@
 ## Surprising Connections (you probably didn't know these)
 - `main()` --references--> `@prisma/client`  [EXTRACTED]
   scripts/seed-event-data.mjs → package.json
+- `main()` --references--> `@prisma/client`  [EXTRACTED]
+  scripts/seed-local-businesses.mjs → package.json
 - `AdminCreateForm()` --indirect_call--> `createAdminAction()`  [INFERRED]
   src/app/admin/AdminCreateForm.jsx → src/app/actions/auth.js
 - `SignupForm()` --indirect_call--> `signUpAction()`  [INFERRED]
   src/app/signup/SignupForm.jsx → src/app/actions/auth.js
 - `LoginForm()` --indirect_call--> `loginAction()`  [INFERRED]
   src/app/login/LoginForm.jsx → src/app/actions/auth.js
-- `CreateEventForm()` --indirect_call--> `createEventAction()`  [INFERRED]
-  src/app/dashboard/events/new/CreateEventForm.jsx → src/app/actions/events.js
 
 ## Import Cycles
 - None detected.
 
-## Communities (77 total, 17 thin omitted)
+## Communities (79 total, 19 thin omitted)
 
 ### Community 0 - "DashboardShell.jsx"
 Cohesion: 0.07
@@ -115,7 +116,7 @@ Nodes (6): BADGE_TONES, BUSINESS_CATEGORIES, EVENT_CATEGORIES, DEFAULT_LINKS, Na
 
 ### Community 2 - "scripts"
 Cohesion: 0.07
-Nodes (26): devDependencies, eslint, eslint-config-next, prisma, name, private, scripts, build (+18 more)
+Nodes (27): devDependencies, eslint, eslint-config-next, prisma, name, private, scripts, build (+19 more)
 
 ### Community 3 - "ResultsExperience.jsx"
 Cohesion: 0.10
@@ -134,8 +135,8 @@ Cohesion: 0.16
 Nodes (20): ACTIVE_SUBSCRIPTION_STATUSES, createStripeCheckoutSession(), createStripePortalSession(), ensureStripeCustomerForUser(), FEATURE_ACCESS_SUBSCRIPTION_STATUSES, getBillingDates(), getBillingPath(), getFreePlan() (+12 more)
 
 ### Community 7 - "dependencies"
-Cohesion: 0.10
-Nodes (17): dependencies, dotenv, @neondatabase/serverless, next, @prisma/adapter-neon, @prisma/client, react, react-dom (+9 more)
+Cohesion: 0.08
+Nodes (23): dependencies, dotenv, @neondatabase/serverless, next, @prisma/adapter-neon, @prisma/client, react, react-dom (+15 more)
 
 ### Community 8 - "events.js"
 Cohesion: 0.19
@@ -155,7 +156,7 @@ Nodes (17): archiveBusinessAction(), buildErrorState(), createBusinessAction(), 
 
 ### Community 12 - "HomeExperience.jsx"
 Cohesion: 0.14
-Nodes (10): metadata, EVENT_CHIPS, EVENT_STEPS, FEATURED_BUSINESSES, FEATURED_EVENTS, FEATURES, HomeExperience(), STEPS (+2 more)
+Nodes (10): metadata, EVENT_CHIPS, EVENT_STEPS, FEATURED_EVENTS, FEATURES, HOME_QUICK_LINKS, HomeExperience(), STEPS (+2 more)
 
 ### Community 13 - "tiers.ts"
 Cohesion: 0.18
@@ -214,8 +215,8 @@ Cohesion: 0.40
 Nodes (3): adapter, prisma, TEXAS_CITIES
 
 ### Community 28 - "seed-event-tags.mjs"
-Cohesion: 0.40
-Nodes (3): adapter, DEFAULT_EVENT_TAGS, prisma
+Cohesion: 0.25
+Nodes (7): adapter, prisma, EVENT_CATEGORIES, EVENT_CATEGORY_SET, fromEventCategoryTagName(), isEventCategory(), isEventCategoryTagName()
 
 ### Community 29 - "seed-italian-test.mjs"
 Cohesion: 0.40
@@ -236,10 +237,6 @@ Nodes (4): ALLOWED_EXTENSIONS, hasAllowedExtension(), POST(), sanitizeFileName()
 ### Community 33 - "page.js"
 Cohesion: 0.40
 Nodes (3): BENEFITS, metadata, STEPS
-
-### Community 34 - "page.js"
-Cohesion: 0.40
-Nodes (3): FAQ, metadata, PLANS
 
 ### Community 35 - "compilerOptions"
 Cohesion: 0.50
@@ -278,24 +275,24 @@ Cohesion: 0.40
 Nodes (4): Answer, Outcome, Q: How is the how-it-works page composed, which shared components and routes does it depend on, and what must be preserved during a visual redesign?, Source Nodes
 
 ## Knowledge Gaps
-- **136 isolated node(s):** `eslintConfig`, `@/*`, `__dirname`, `nextConfig`, `name` (+131 more)
+- **138 isolated node(s):** `eslintConfig`, `@/*`, `__dirname`, `nextConfig`, `name` (+133 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **17 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **19 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `dependencies` connect `dependencies` to `scripts`?**
-  _High betweenness centrality (0.004) - this node is a cross-community bridge._
+  _High betweenness centrality (0.006) - this node is a cross-community bridge._
 - **Why does `DashboardLayout()` connect `DashboardShell.jsx` to `page.js`?**
   _High betweenness centrality (0.003) - this node is a cross-community bridge._
 - **What connects `eslintConfig`, `@/*`, `__dirname` to the rest of the system?**
-  _136 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _138 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `DashboardShell.jsx` be split into smaller, more focused modules?**
   _Cohesion score 0.0666049953746531 - nodes in this community are weakly interconnected._
 - **Should `index.js` be split into smaller, more focused modules?**
   _Cohesion score 0.07126436781609195 - nodes in this community are weakly interconnected._
 - **Should `scripts` be split into smaller, more focused modules?**
-  _Cohesion score 0.06896551724137931 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06666666666666667 - nodes in this community are weakly interconnected._
 - **Should `ResultsExperience.jsx` be split into smaller, more focused modules?**
   _Cohesion score 0.09971509971509972 - nodes in this community are weakly interconnected._

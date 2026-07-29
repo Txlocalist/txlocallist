@@ -1,5 +1,5 @@
 /**
- * GET /api/search?q=keyword&loc=city&category=slug&page=1
+ * GET /api/search?q=keyword&loc=city&category=slug&jobs=1&page=1
  *
  * Search for businesses in the directory.
  *
@@ -7,6 +7,7 @@
  *   - q (optional): keyword search (searched in name, description, tags)
  *   - loc (optional): city slug or name (searched in city.slug or city.name)
  *   - category (optional): category slug
+ *   - jobs (optional): set to 1 to require at least one active job
  *   - page (optional): page number (default 1, 10 results per page)
  *
  * Response:
@@ -34,6 +35,7 @@ export async function GET(request) {
     const loc      = searchParams.get("loc")?.trim()      || "";
     const category = searchParams.get("category")?.trim() || "";
     const sort     = searchParams.get("sort")?.trim()     || "";
+    const jobsOnly = searchParams.get("jobs") === "1";
     const page     = Math.max(1, parseInt(searchParams.get("page")) || 1);
 
     // Build the where clause
@@ -75,6 +77,12 @@ export async function GET(request) {
       };
     }
 
+    if (jobsOnly) {
+      where.jobs = {
+        some: { status: "ACTIVE" },
+      };
+    }
+
     // Get total count for pagination
     const total = await prisma.business.count({ where });
 
@@ -82,11 +90,9 @@ export async function GET(request) {
     const orderBy = sort === "popular"
       ? [
           { favorites: { _count: "desc" } },
-          { plan: { tier: "desc" } },
           { publishedAt: "desc" },
         ]
       : [
-          { plan: { tier: "desc" } },
           { publishedAt: "desc" },
         ];
 
@@ -104,7 +110,12 @@ export async function GET(request) {
           take: 3,
           select: { tag: { select: { name: true, slug: true } } },
         },
-        _count: { select: { favorites: true } },
+        _count: {
+          select: {
+            favorites: true,
+            jobs: { where: { status: "ACTIVE" } },
+          },
+        },
       },
       orderBy,
       skip: (page - 1) * PAGE_SIZE,
@@ -123,6 +134,7 @@ export async function GET(request) {
       image: business.photos[0] || null,
       tier: business.plan?.slug || "free",
       favoritesCount: business._count?.favorites ?? 0,
+      activeJobCount: business._count?.jobs ?? 0,
       // Tier-gated fields
       showContact: JSON.parse(business.plan?.features || "{}").SHOW_CONTACT,
       showWebsite: JSON.parse(business.plan?.features || "{}").SHOW_WEBSITE,

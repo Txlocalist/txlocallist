@@ -1,0 +1,57 @@
+.section {
+  width: min(100%, 72.5rem);
+  margin: 1.1rem auto 1.4rem;
+  padding: clamp(2rem, 4vw, 3.25rem);
+  border: 2px solid var(--about-line);
+  border-radius: 1.35rem;
+  background:
+    radial-gradient(circle at 86% 12%, rgba(17, 102, 109, 0.1), transparent 20rem),
+    rgba(255, 248, 232, 0.76);
+  box-shadow: 0.25rem 0.3rem 0 rgba(74, 45, 28, 0.18);
+  scroll-margin-top: 2rem;
+}
+
+.intro {
+  display: grid;
+  gap: 0.7rem;
+  max-width: 46rem;
+  margin: 0 auto 2.5rem;
+  text-align: center;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--about-rust);
+  font-family: var(--font-accent), sans-serif;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.intro h2 {
+  margin: 0;
+  color: var(--about-ink);
+  font-family: var(--font-editorial), Georgia, serif;
+  font-size: clamp(2.65rem, 4.2vw, 4rem);
+  font-weight: 400;
+  line-height: 1;
+  text-wrap: balance;
+}
+
+.intro > p:last-child {
+  margin: 0;
+  color: rgba(44, 30, 23, 0.82);
+  line-height: 1.6;
+}
+
+@media (max-width: 767px) {
+  .section {
+    padding: 1.6rem 1.1rem;
+    border-radius: 1rem;
+  }
+
+  .intro {
+    margin-bottom: 2rem;
+    text-align: left;
+  }
+}

@@ -38,7 +38,7 @@ const PLANS = [
     billingPeriod: "monthly",
     stripePriceId: null,
     features: {
-      MAX_PHOTOS: 1,
+      MAX_PHOTOS: 0,
       SHOW_CONTACT: false,
       SHOW_WEBSITE: false,
       SHOW_SOCIALS: false,
@@ -51,7 +51,7 @@ const PLANS = [
     name: "Paid",
     slug: "starter",
     tier: 1,
-    priceCents: 2000, // $20.00/month
+    priceCents: 1000, // $10.00/month
     billingPeriod: "monthly",
     stripePriceId: process.env.STRIPE_PRICE_STARTER || null,
     features: {
@@ -60,8 +60,8 @@ const PLANS = [
       SHOW_WEBSITE: true,
       SHOW_SOCIALS: true,
       JOB_POSTINGS: 3,
-      FEATURED: true,
-      PRIORITY_SEARCH: true,
+      FEATURED: false,
+      PRIORITY_SEARCH: false,
     },
   },
 ];

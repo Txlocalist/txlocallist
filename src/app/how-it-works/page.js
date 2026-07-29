@@ -183,7 +183,7 @@ export default function HowItWorksPage() {
               <span className={styles.dividerRule} aria-hidden="true" />
               <p>
                 You can compare plan levels on the{" "}
-                <Link href="/pricing" className={styles.inlineLink}>
+                <Link href="/about#pricing" className={styles.inlineLink}>
                   pricing page
                 </Link>
                 .

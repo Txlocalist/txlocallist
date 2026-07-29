@@ -5,6 +5,11 @@ import { redirect } from "next/navigation";
 
 import { requireUser } from "@/lib/auth/session";
 import { getOwnerBillingState } from "@/lib/billing";
+import {
+  isEventCategory,
+  isEventCategoryTagName,
+  toEventCategoryTagName,
+} from "@/lib/event-categories.mjs";
 import { prisma } from "@/lib/prisma";
 
 function getTextValue(formData, key) {
@@ -30,6 +35,7 @@ export async function createEventAction(prevState, formData) {
   }
 
   const title        = getTextValue(formData, "title");
+  const category     = getTextValue(formData, "category");
   const description  = getTextValue(formData, "description");
   const imageUrl     = getTextValue(formData, "imageUrl");
   const addressName  = getTextValue(formData, "addressName");
@@ -45,8 +51,10 @@ export async function createEventAction(prevState, formData) {
 
   // Validation
   const fieldErrors = {};
+  if (!isEventCategory(category)) fieldErrors.category = "Choose a valid event category.";
   if (!title || title.length < 3)       fieldErrors.title       = "Title must be at least 3 characters.";
   if (!description || description.length < 20) fieldErrors.description = "Description must be at least 20 characters.";
+  if (description.length > 300) fieldErrors.description = "Description must be 300 characters or fewer.";
   if (!address)     fieldErrors.address     = "Street address is required.";
   if (!city)        fieldErrors.city        = "City is required.";
   if (!zipCode)     fieldErrors.zipCode     = "ZIP code is required.";
@@ -71,9 +79,19 @@ export async function createEventAction(prevState, formData) {
   }
 
   // Parse tags (comma-separated names) — optional
-  const tagNames = tagsRaw
-    ? tagsRaw.split(",").map((t) => t.trim()).filter(Boolean)
+  const optionalTagNames = tagsRaw
+    ? tagsRaw
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter((tag) => tag && !isEventCategoryTagName(tag))
     : [];
+  const tagNames = [
+    toEventCategoryTagName(category),
+    ...optionalTagNames,
+  ].filter((name, index, names) => {
+    const normalized = name.toLowerCase();
+    return names.findIndex((candidate) => candidate.toLowerCase() === normalized) === index;
+  });
 
   const tagConnects = [];
   for (const name of tagNames) {
