@@ -6,7 +6,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { getBlobImageUrl } from "@/lib/blob";
 import { getBusinessHoursDisplayRows } from "@/lib/business-hours";
 import { isMissingPrismaTableError } from "@/lib/prisma-errors";
-import { Navbar, Footer, SaveButton } from "@/components";
+import { Navbar, Footer, LikeCount, SaveButton } from "@/components";
 import { getFeatures } from "@/lib/tiers";
 
 import ShareButton from "./ShareButton";
@@ -109,6 +109,19 @@ export default async function BusinessDetailPage({ params }) {
         })
       : Promise.resolve(null),
   ]);
+
+  let likesCount = 0;
+  try {
+    const engagementCounts = await prisma.business.findUnique({
+      where: { id: business.id },
+      select: { _count: { select: { likes: true } } },
+    });
+    likesCount = engagementCounts?._count.likes ?? 0;
+  } catch (error) {
+    if (!isMissingPrismaTableError(error)) {
+      throw error;
+    }
+  }
   const isSaved = !!userFavorite;
 
   const features    = getFeatures(business.plan?.slug ?? "free");
@@ -165,8 +178,10 @@ export default async function BusinessDetailPage({ params }) {
                     iconOnly
                     className={styles.heroShareBtn}
                   />
+                  <LikeCount count={likesCount} size="hero" />
                   <SaveButton
                     businessId={business.id}
+                    businessName={business.name}
                     initialSaved={isSaved}
                     initialCount={favoritesCount}
                     isLoggedIn={!!user}
@@ -177,24 +192,9 @@ export default async function BusinessDetailPage({ params }) {
             </div>
           </div>
 
-          {/* Stats bar */}
-          <div className={styles.statsBar}>
-            <div className={styles.statsLeft}>
-              <div className={styles.avatarStack}>
-                <div className={styles.avatarA}>TX</div>
-                <div className={styles.avatarB}>L</div>
-                <div className={styles.avatarC}>
-                  {favoritesCount > 2 ? `+${favoritesCount - 2}` : "+"}
-                </div>
-              </div>
-              <span className={styles.savedLabel}>
-                {favoritesCount > 0
-                  ? `Saved by ${favoritesCount.toLocaleString()} ${favoritesCount === 1 ? "local" : "locals"}`
-                  : "Be the first to save this spot"}
-              </span>
-            </div>
-
-            {showContact && (business.phone || (showWebsite && business.website)) && (
+          {/* Contact stats bar */}
+          {showContact && (business.phone || (showWebsite && business.website)) && (
+            <div className={styles.statsBar}>
               <div className={styles.statsRight}>
                 {business.phone && (
                   <a href={`tel:${business.phone}`} className={styles.statLink}>
@@ -217,8 +217,8 @@ export default async function BusinessDetailPage({ params }) {
                   </a>
                 )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </section>
 
         {/* ── PHOTO GALLERY ── */}

@@ -1,0 +1,60 @@
+.metric {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  color: var(--retro-red-ink);
+  font-family: var(--font-accent), cursive;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+}
+
+.icon {
+  flex-shrink: 0;
+  color: var(--retro-red);
+}
+
+.count {
+  font-variant-numeric: tabular-nums;
+}
+
+.sm {
+  font-size: 0.75rem;
+}
+
+.sm .icon {
+  font-size: 1rem !important;
+}
+
+.md {
+  font-size: 0.8rem;
+}
+
+.md .icon {
+  font-size: 1.15rem !important;
+}
+
+.lg {
+  font-size: 0.9rem;
+}
+
+.lg .icon {
+  font-size: 1.3rem !important;
+}
+
+.hero {
+  min-height: 44px;
+  padding: 0.65rem 1rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--retro-red-ink);
+  font-size: 0.82rem;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+}
+
+.hero .icon {
+  font-size: 1.1rem !important;
+}

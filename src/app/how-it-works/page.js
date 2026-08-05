@@ -25,8 +25,8 @@ const LOCAL_STEPS = [
     copy: "Open any listing to see the description, location, photos, categories, and business hours.",
   },
   {
-    icon: "favorite_border",
-    copy: "Save your favorites to your dashboard so you can revisit them without searching again.",
+    icon: "bookmark_border",
+    copy: "Save businesses to your dashboard so you can revisit them without searching again.",
   },
 ];
 

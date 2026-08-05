@@ -4,11 +4,22 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./SaveButton.module.css";
 
+const numberFormatter = new Intl.NumberFormat("en-US");
+
+function normalizeCount(count) {
+  const numericCount = Number(count);
+
+  return Number.isFinite(numericCount)
+    ? Math.max(0, Math.trunc(numericCount))
+    : 0;
+}
+
 /**
- * Reusable save/unsave heart button.
+ * Reusable save/unsave bookmark button.
  *
  * Props:
  *   businessId    – string
+ *   businessName  – string (optional, used in the accessible name)
  *   initialSaved  – boolean
  *   initialCount  – number
  *   isLoggedIn    – boolean
@@ -16,6 +27,7 @@ import styles from "./SaveButton.module.css";
  */
 export default function SaveButton({
   businessId,
+  businessName,
   initialSaved  = false,
   initialCount  = 0,
   isLoggedIn    = false,
@@ -23,7 +35,7 @@ export default function SaveButton({
 }) {
   const router  = useRouter();
   const [saved,   setSaved]   = useState(initialSaved);
-  const [count,   setCount]   = useState(initialCount);
+  const [count,   setCount]   = useState(() => normalizeCount(initialCount));
   const [loading, setLoading] = useState(false);
 
   async function toggle() {
@@ -48,7 +60,7 @@ export default function SaveButton({
       if (res.ok) {
         const data = await res.json();
         setSaved(data.saved);
-        setCount(data.count);
+        setCount(normalizeCount(data.count));
       } else {
         setSaved((s) => !s);
         setCount((c) => saved ? c + 1 : Math.max(0, c - 1));
@@ -61,19 +73,21 @@ export default function SaveButton({
     }
   }
 
-  // Hero size shows compact label; other sizes show the count
-  const label = size === "hero"
-    ? (saved ? "SAVED" : "SAVE")
-    : count === 0
-      ? "Be the first to save this"
-      : `Saved by ${count} ${count === 1 ? "local" : "locals"}`;
+  const normalizedCount = normalizeCount(count);
+  const formattedCount = numberFormatter.format(normalizedCount);
+  const businessLabel = businessName?.trim() || "this business";
+  const accessibleLabel = saved
+    ? `Remove ${businessLabel} from your saved businesses. ${formattedCount} ${normalizedCount === 1 ? "save" : "saves"}.`
+    : `Save ${businessLabel} to your saved businesses. ${formattedCount} ${normalizedCount === 1 ? "save" : "saves"}.`;
 
   return (
     <button
       type="button"
       onClick={toggle}
       disabled={loading}
-      aria-label={saved ? "Remove from your list" : "Save to your list"}
+      aria-label={accessibleLabel}
+      aria-pressed={saved}
+      aria-busy={loading}
       className={[
         styles.btn,
         styles[size],
@@ -81,10 +95,12 @@ export default function SaveButton({
         loading ? styles.loading : "",
       ].filter(Boolean).join(" ")}
     >
-      <span className={"material-icons " + styles.icon}>
-        {saved ? "favorite" : "favorite_border"}
+      <span className={"material-icons " + styles.icon} aria-hidden="true">
+        {saved ? "bookmark" : "bookmark_border"}
       </span>
-      <span className={styles.label}>{label}</span>
+      <span className={styles.label} aria-live="polite">
+        {formattedCount}
+      </span>
     </button>
   );
 }

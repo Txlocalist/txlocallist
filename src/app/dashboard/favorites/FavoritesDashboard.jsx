@@ -24,7 +24,7 @@ function formatSavedDate(dateValue) {
 export function FavoritesDashboard({
   favorites,
   emptyTitle = "No saved businesses yet",
-  emptyDescription = "Tap the heart on any listing to build your own shortlist of saved businesses.",
+  emptyDescription = "Tap the bookmark on any listing to build your own shortlist of saved businesses.",
   emptyActionLabel = "Explore Businesses",
   statsLabel = "Saved Businesses",
 }) {
@@ -87,7 +87,7 @@ export function FavoritesDashboard({
       });
 
       if (!response.ok) {
-        throw new Error("Unable to remove favorite");
+        throw new Error("Unable to remove saved business");
       }
     } catch {
       setItems((current) => [itemToRemove, ...current].sort((left, right) => new Date(right.createdAt) - new Date(left.createdAt)));
@@ -128,7 +128,7 @@ export function FavoritesDashboard({
 
       <section className={styles.filterBar}>
         <label className={styles.filterField}>
-          <span className={styles.filterLabel}>Search favorites</span>
+          <span className={styles.filterLabel}>Search saved businesses</span>
           <input
             type="search"
             value={query}

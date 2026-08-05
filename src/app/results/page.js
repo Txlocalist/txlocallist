@@ -1,5 +1,6 @@
 import { getCurrentUser, getDashboardPath } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { isMissingPrismaTableError } from "@/lib/prisma-errors";
 import ResultsExperience from "./ResultsExperience";
 
 export const metadata = {
@@ -21,12 +22,39 @@ function toBusinessResult(business, extra = {}) {
     image: business.photos[0] || null,
     tier: business.plan?.slug || "free",
     favoritesCount: business._count?.favorites ?? 0,
+    likesCount: business._count?.likes ?? 0,
     activeJobCount: business._count?.jobs ?? 0,
     showContact: planFeatures.SHOW_CONTACT,
     showWebsite: planFeatures.SHOW_WEBSITE,
     phone: planFeatures.SHOW_CONTACT ? business.phone : null,
     website: planFeatures.SHOW_WEBSITE ? business.website : null,
     ...extra,
+  };
+}
+
+function getFavoriteBusinessInclude(includeLikes = true) {
+  return {
+    business: {
+      include: {
+        city: { select: { id: true, name: true, slug: true } },
+        plan: { select: { slug: true, features: true } },
+        photos: { take: 1, orderBy: { order: "asc" } },
+        categories: {
+          select: { category: { select: { name: true, slug: true } } },
+        },
+        tags: {
+          take: 3,
+          select: { tag: { select: { name: true, slug: true } } },
+        },
+        _count: {
+          select: {
+            favorites: true,
+            ...(includeLikes ? { likes: true } : {}),
+            jobs: { where: { status: "ACTIVE" } },
+          },
+        },
+      },
+    },
   };
 }
 
@@ -86,11 +114,11 @@ export default async function ResultsPage({ searchParams }) {
   const dashboardPath = user ? getDashboardPath(user.role) : null;
 
   // Fetch the current user's saved business IDs so the client
-  // can render heart buttons in the correct state on first load.
+  // can render bookmark buttons in the correct state on first load.
   let savedIds = [];
   let favoriteBusinesses = [];
   if (user) {
-    const favorites = await prisma.favorite.findMany({
+    const findFavorites = (includeLikes) => prisma.favorite.findMany({
       where: {
         userId: user.id,
         business: {
@@ -99,29 +127,18 @@ export default async function ResultsPage({ searchParams }) {
         },
       },
       orderBy: { createdAt: "desc" },
-      include: {
-        business: {
-          include: {
-            city: { select: { id: true, name: true, slug: true } },
-            plan: { select: { slug: true, features: true } },
-            photos: { take: 1, orderBy: { order: "asc" } },
-            categories: {
-              select: { category: { select: { name: true, slug: true } } },
-            },
-            tags: {
-              take: 3,
-              select: { tag: { select: { name: true, slug: true } } },
-            },
-            _count: {
-              select: {
-                favorites: true,
-                jobs: { where: { status: "ACTIVE" } },
-              },
-            },
-          },
-        },
-      },
+      include: getFavoriteBusinessInclude(includeLikes),
     });
+
+    let favorites;
+    try {
+      favorites = await findFavorites(true);
+    } catch (error) {
+      if (!isMissingPrismaTableError(error)) {
+        throw error;
+      }
+      favorites = await findFavorites(false);
+    }
     savedIds = favorites.map((f) => f.businessId);
     favoriteBusinesses = favorites
       .filter((favorite) => favorite.business)

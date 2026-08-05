@@ -6,3 +6,4 @@ export { default as Button } from "./Button";
 export { PhotoUploader } from "./PhotoUploader";
 export { default as CategoryPills } from "./CategoryPills/CategoryPills";
 export { SaveButton } from "./SaveButton";
+export { LikeCount } from "./LikeCount";

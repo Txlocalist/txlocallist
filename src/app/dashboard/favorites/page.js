@@ -110,7 +110,7 @@ export default async function FavoritesPage() {
       {schemaNotice ? (
         <div className={styles.card}>
           <div className={styles.emptyState}>
-            <h2 className={styles.emptyStateTitle}>Favorites Unavailable</h2>
+            <h2 className={styles.emptyStateTitle}>Saved Businesses Unavailable</h2>
             <p className={styles.emptyStateDescription}>
               {schemaNotice} Apply the schema update and saved places will load here.
             </p>
@@ -120,7 +120,7 @@ export default async function FavoritesPage() {
         <FavoritesDashboard
           favorites={favoriteItems}
           emptyTitle="No saved businesses yet"
-          emptyDescription="Tap the heart on any listing to build your own shortlist of saved businesses."
+          emptyDescription="Tap the bookmark on any listing to build your own shortlist of saved businesses."
           emptyActionLabel="Explore Businesses"
           statsLabel="Saved Businesses"
         />

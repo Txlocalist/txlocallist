@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import logoImage from "@/app/assets/Tx-Localist-01.png";
+import { LikeCount } from "@/components/LikeCount";
 import SearchBar from "@/components/SearchBar";
 import { getBlobImageUrl } from "@/lib/blob";
 
@@ -13,10 +14,11 @@ import {
   ArrowRightIcon,
   CameraIcon,
   LoaderIcon,
-  MapPinIcon,
   PlusCircleIcon,
   ShareIcon,
 } from "./icons";
+
+const numberFormatter = new Intl.NumberFormat("en-US");
 
 function buildSuggestBusinessHref({ query = "", location = "" } = {}) {
   const params = new URLSearchParams();
@@ -27,7 +29,40 @@ function buildSuggestBusinessHref({ query = "", location = "" } = {}) {
 }
 
 /* ─── Card views ──────────────────────────────────────────── */
-function BusinessCard({ biz, saved, count, onSave }) {
+function BusinessEngagement({ biz, saved, count, saving, onSave, list = false }) {
+  const numericSaveCount = Number(count);
+  const saveCount = Number.isFinite(numericSaveCount)
+    ? Math.max(0, Math.trunc(numericSaveCount))
+    : 0;
+  const formattedSaveCount = numberFormatter.format(saveCount);
+  const saveLabel = saving
+    ? `Updating saved status for ${biz.name}. ${formattedSaveCount} ${saveCount === 1 ? "save" : "saves"}.`
+    : saved
+      ? `Remove ${biz.name} from saved businesses. ${formattedSaveCount} ${saveCount === 1 ? "save" : "saves"}.`
+      : `Save ${biz.name} to saved businesses. ${formattedSaveCount} ${saveCount === 1 ? "save" : "saves"}.`;
+
+  return (
+    <div className={"business-engagement" + (list ? " business-engagement-list" : "")}>
+      <LikeCount count={biz.likesCount ?? 0} size="sm" />
+      <button
+        type="button"
+        onClick={onSave}
+        disabled={saving}
+        aria-busy={saving}
+        aria-pressed={saved}
+        aria-label={saveLabel}
+        className={"save-btn font-accent" + (saved ? " save-btn-saved" : "")}
+      >
+        <span className="material-icons save-btn-icon" aria-hidden="true">
+          {saved ? "bookmark" : "bookmark_border"}
+        </span>
+        <span className="save-btn-count" aria-hidden="true">{formattedSaveCount}</span>
+      </button>
+    </div>
+  );
+}
+
+function BusinessCard({ biz, saved, count, saving, onSave }) {
   return (
     <article className="gem-card card-stack-effect">
       {biz.image?.url && biz.image.url !== "/placeholder.jpg" && (
@@ -48,10 +83,13 @@ function BusinessCard({ biz, saved, count, onSave }) {
         {biz.description?.slice(0, 120)}{biz.description?.length > 120 ? "..." : ""}
       </p>
       <div className="gem-footer">
-        <button type="button" onClick={onSave} className={"save-btn font-accent" + (saved ? " save-btn-saved" : "")}>
-          <span className="material-icons save-btn-icon">{saved ? "favorite" : "favorite_border"}</span>
-          {count > 0 ? `${count} saved` : "Save"}
-        </button>
+        <BusinessEngagement
+          biz={biz}
+          saved={saved}
+          count={count}
+          saving={saving}
+          onSave={onSave}
+        />
         <Link href={"/business/" + biz.slug} className="gem-action-btn">
           <ArrowRightIcon size={16} />
         </Link>
@@ -91,7 +129,7 @@ function EventCard({ event }) {
 }
 
 /* ─── List-row views ──────────────────────────────────────── */
-function BusinessRow({ biz, saved, count, onSave }) {
+function BusinessRow({ biz, saved, count, saving, onSave }) {
   return (
     <article className="list-item">
       <div className="list-item-thumb">
@@ -116,10 +154,14 @@ function BusinessRow({ biz, saved, count, onSave }) {
         <p className="list-item-desc">
           {biz.description?.slice(0, 160)}{biz.description?.length > 160 ? "..." : ""}
         </p>
-        <button type="button" onClick={onSave} className={"save-btn save-btn-sm font-accent" + (saved ? " save-btn-saved" : "")}>
-          <span className="material-icons save-btn-icon">{saved ? "favorite" : "favorite_border"}</span>
-          {count > 0 ? `${count} saved` : "Save"}
-        </button>
+        <BusinessEngagement
+          biz={biz}
+          saved={saved}
+          count={count}
+          saving={saving}
+          onSave={onSave}
+          list
+        />
       </div>
       <Link href={"/business/" + biz.slug} className="gem-action-btn list-item-arrow">
         <ArrowRightIcon size={16} />
@@ -243,7 +285,7 @@ export default function ResultsExperience({
   const [events,      setEvents]      = useState([]);
   const [hasSearched, setHasSearched] = useState(false);
   const [lastSearch,  setLastSearch]  = useState({ q: initialQuery, loc: initialLocation });
-  const [viewMode,         setViewMode]         = useState("card"); // "card" | "list" | "map"
+  const [viewMode,         setViewMode]         = useState("card"); // "card" | "list"
   const [showCities,       setShowCities]       = useState(false);
   const [showCategories,   setShowCategories]   = useState(false);
   const [showMobileCities, setShowMobileCities] = useState(false);
@@ -258,9 +300,9 @@ export default function ResultsExperience({
   const [savedMap, setSavedMap] = useState(() =>
     Object.fromEntries(savedIds.map((id) => [id, { saved: true }]))
   );
+  const [savingIds, setSavingIds] = useState(() => new Set());
 
   const currentYear = new Date().getFullYear();
-  const mapsApiKey  = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const suggestBusinessHref = buildSuggestBusinessHref({
     query: lastSearch.q,
     location: lastSearch.loc,
@@ -506,6 +548,14 @@ export default function ResultsExperience({
       router.push("/login?next=/results");
       return;
     }
+    if (savingIds.has(biz.id)) return;
+
+    setSavingIds((prev) => {
+      const next = new Set(prev);
+      next.add(biz.id);
+      return next;
+    });
+
     // Optimistic update
     const current = savedMap[biz.id];
     const wasSaved = current?.saved ?? false;
@@ -535,6 +585,12 @@ export default function ResultsExperience({
     } catch {
       setSavedMap((prev) => ({ ...prev, [biz.id]: { saved: wasSaved, count: oldCount } }));
       syncFavoriteBusinesses(biz, wasSaved, oldCount);
+    } finally {
+      setSavingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(biz.id);
+        return next;
+      });
     }
   }
 
@@ -577,7 +633,7 @@ export default function ResultsExperience({
   if (hasSearched && activeBrowseTab === "favorites") {
     activeFilterChips.push({
       key: "favorites",
-      label: "My Favorites",
+      label: "Saved Businesses",
       tone: "favorites",
       onRemove: removeBrowseFilter,
     });
@@ -621,21 +677,6 @@ export default function ResultsExperience({
       );
     }
 
-    /* ── Map view placeholder ── */
-    if (viewMode === "map") {
-      return (
-        <div className="results-map-placeholder">
-          <MapPinIcon size={52} style={{ color: "var(--retro-red)", marginBottom: "1rem" }} />
-          <h4 className="font-display results-map-title">Map View</h4>
-          <p className="results-map-desc">
-            Interactive map results are coming soon.<br />
-            Drop a pin on your city and explore what&apos;s nearby.
-          </p>
-          <div className="font-accent results-map-badge">COMING SOON</div>
-        </div>
-      );
-    }
-
     /* ── Business results ── */
     if (activeTab === "businesses") {
       const visibleBusinesses = activeBrowseTab === "favorites" ? favoriteBusinesses : businesses;
@@ -645,8 +686,8 @@ export default function ResultsExperience({
           ? (
               <EmptyResultsState
                 eyebrow="Saved list"
-                title="Your favorites list is still empty."
-                description="Tap the heart on any listing and it will land here for quick revisits."
+                title="Your saved businesses list is still empty."
+                description="Tap the bookmark on any listing and it will land here for quick revisits."
                 primaryLabel="Explore Businesses"
                 primaryAction={clearSearch}
                 secondaryLabel="Suggest a Business"
@@ -667,13 +708,31 @@ export default function ResultsExperience({
       }
 
       return viewMode === "list"
-        ? <div className="list-container">{visibleBusinesses.map((b) => {
+          ? <div className="list-container">{visibleBusinesses.map((b) => {
             const { saved, count } = getSaveState(b);
-            return <BusinessRow key={b.id} biz={b} saved={saved} count={count} onSave={() => toggleSave(b)} />;
+            return (
+              <BusinessRow
+                key={b.id}
+                biz={b}
+                saved={saved}
+                count={count}
+                saving={savingIds.has(b.id)}
+                onSave={() => toggleSave(b)}
+              />
+            );
           })}</div>
         : <div className="grid-container">{visibleBusinesses.map((b) => {
             const { saved, count } = getSaveState(b);
-            return <BusinessCard key={b.id} biz={b} saved={saved} count={count} onSave={() => toggleSave(b)} />;
+            return (
+              <BusinessCard
+                key={b.id}
+                biz={b}
+                saved={saved}
+                count={count}
+                saving={savingIds.has(b.id)}
+                onSave={() => toggleSave(b)}
+              />
+            );
           })}</div>;
     }
 
@@ -841,9 +900,9 @@ export default function ResultsExperience({
                 onClick={openFavorites}
               >
                 <span className="sidebar-browse-icon sidebar-browse-icon-favorites">
-                  <span className="material-icons">favorite</span>
+                  <span className="material-icons">bookmark</span>
                 </span>
-                <span className="sidebar-browse-label">MY FAVORITES</span>
+                <span className="sidebar-browse-label">SAVED BUSINESSES</span>
               </button>
             </div>
           </nav>
@@ -902,7 +961,7 @@ export default function ResultsExperience({
                           jobsOnly
                             ? " · HIRING NOW"
                             : activeBrowseTab === "favorites"
-                            ? " · MY FAVORITES"
+                            ? " · SAVED BUSINESSES"
                             : activeSort === "popular"
                               ? " · MOST SAVED"
                               : activeBrowseTab === "new"
@@ -919,7 +978,6 @@ export default function ResultsExperience({
                     {[
                       { mode: "card", icon: "grid_view",  label: "Card view" },
                       { mode: "list", icon: "view_list",  label: "List view" },
-                      { mode: "map",  icon: "map",        label: "Map view"  },
                     ].map(({ mode, icon, label }) => (
                       <button
                         key={mode}
@@ -970,39 +1028,6 @@ export default function ResultsExperience({
                     Add Your Listing
                   </Link>
                 </div>
-              </div>
-            </section>
-          )}
-
-          {/* ── Default browse state — full-width map ── */}
-          {!hasSearched && (
-            <section className="map-section-full" aria-label="Explore Texas">
-              <div className="map-header">
-                <h3 className="map-title">Explore the <span className="text-retro-orange">Map</span></h3>
-                <span className="font-accent map-subtitle">INTERACTIVE VIEW</span>
-              </div>
-              <div className="map-container-full card-stack-effect">
-                {mapsApiKey && (
-                  <iframe
-                    width="100%"
-                    height="100%"
-                    frameBorder="0"
-                    style={{ border: 0, display: "block" }}
-                    src={"https://www.google.com/maps/embed/v1/search?key=" + mapsApiKey + "&q=local+gems+Texas&center=31.9686,-99.9018&zoom=6"}
-                    allowFullScreen
-                    title="Texas Localist Map"
-                  />
-                )}
-                {!mapsApiKey && (
-                  <div className="map-overlay">
-                    <div className="map-overlay-content">
-                      <MapPinIcon size={48} className="map-pin-icon" style={{ color: "var(--retro-red)" }} />
-                      <h4 className="map-overlay-title">Map Preview</h4>
-                      <p className="map-overlay-desc">Add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to enable the live map.</p>
-                      <div className="font-accent demo-badge">DEMO MODE</div>
-                    </div>
-                  </div>
-                )}
               </div>
             </section>
           )}

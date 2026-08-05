@@ -25,8 +25,31 @@
  */
 
 import { prisma } from "@/lib/prisma";
+import { isMissingPrismaTableError } from "@/lib/prisma-errors";
 
 const PAGE_SIZE = 12;
+
+function getBusinessInclude(includeLikes = true) {
+  return {
+    city: { select: { id: true, name: true, slug: true } },
+    plan: { select: { slug: true, features: true } },
+    photos: { take: 1, orderBy: { order: "asc" } },
+    categories: {
+      select: { category: { select: { name: true, slug: true } } },
+    },
+    tags: {
+      take: 3,
+      select: { tag: { select: { name: true, slug: true } } },
+    },
+    _count: {
+      select: {
+        favorites: true,
+        ...(includeLikes ? { likes: true } : {}),
+        jobs: { where: { status: "ACTIVE" } },
+      },
+    },
+  };
+}
 
 export async function GET(request) {
   try {
@@ -96,31 +119,25 @@ export async function GET(request) {
           { publishedAt: "desc" },
         ];
 
-    // Fetch results with pagination
-    const results = await prisma.business.findMany({
+    // Fetch results with pagination. Until the manually-applied Like migration
+    // lands, preserve public search and report zero likes instead of returning 500.
+    const findBusinesses = (includeLikes) => prisma.business.findMany({
       where,
-      include: {
-        city: { select: { id: true, name: true, slug: true } },
-        plan: { select: { slug: true, features: true } },
-        photos: { take: 1, orderBy: { order: "asc" } },
-        categories: {
-          select: { category: { select: { name: true, slug: true } } },
-        },
-        tags: {
-          take: 3,
-          select: { tag: { select: { name: true, slug: true } } },
-        },
-        _count: {
-          select: {
-            favorites: true,
-            jobs: { where: { status: "ACTIVE" } },
-          },
-        },
-      },
+      include: getBusinessInclude(includeLikes),
       orderBy,
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
     });
+
+    let results;
+    try {
+      results = await findBusinesses(true);
+    } catch (error) {
+      if (!isMissingPrismaTableError(error)) {
+        throw error;
+      }
+      results = await findBusinesses(false);
+    }
 
     // Transform results for the frontend
     const transformedResults = results.map((business) => ({
@@ -134,6 +151,7 @@ export async function GET(request) {
       image: business.photos[0] || null,
       tier: business.plan?.slug || "free",
       favoritesCount: business._count?.favorites ?? 0,
+      likesCount: business._count?.likes ?? 0,
       activeJobCount: business._count?.jobs ?? 0,
       // Tier-gated fields
       showContact: JSON.parse(business.plan?.features || "{}").SHOW_CONTACT,
