@@ -6,6 +6,7 @@ import { Footer, Navbar } from "@/components";
 import PricingComparison from "@/components/PricingComparison/PricingComparison";
 import {
   EVENT_MAX_CALENDAR_DAYS,
+  EVENT_POST_CHECKOUT_DISCLOSURE,
   EVENT_POST_PRICE_CENTS,
   MEMBERSHIP_PRICE_CENTS,
   formatWholeDollarPrice,
@@ -39,8 +40,7 @@ const FAQ = [
   },
   {
     question: "When is the event fee refunded?",
-    answer:
-      `The ${EVENT_POST_PRICE} payment is collected before review. First-time submissions denied before publication and duplicate charges receive a full refund. Cancellations by the organizer do not trigger an automatic refund.`,
+    answer: EVENT_POST_CHECKOUT_DISCLOSURE,
   },
   {
     question: "What happens if I edit a published event?",

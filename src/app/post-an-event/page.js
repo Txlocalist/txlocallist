@@ -3,8 +3,10 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import {
   EVENT_MAX_CALENDAR_DAYS,
+  EVENT_POST_REFUND_DISCLOSURE,
+  EVENT_POST_REVIEW_DISCLOSURE,
+  EVENT_POST_TAX_DISCLOSURE,
   EVENT_POST_PRICE_CENTS,
-  PRICING_OFFERS,
   formatWholeDollarPrice,
   isEventPostingEnabled,
 } from "@/lib/pricing";
@@ -55,13 +57,14 @@ export default async function PostAnEventPage() {
             <p className={styles.priceDetail}>
               Covers 1-{EVENT_MAX_CALENDAR_DAYS} consecutive calendar days.
             </p>
+            <p className={styles.priceDetail}>{EVENT_POST_TAX_DISCLOSURE}</p>
           </aside>
         </section>
 
         <section className={styles.details}>
           <div>
             <h2>Submit, pay, then review</h2>
-            <p>Your event enters admin review only after Stripe confirms payment.</p>
+            <p>{EVENT_POST_REVIEW_DISCLOSURE}</p>
           </div>
           <div>
             <h2>One event per purchase</h2>
@@ -69,7 +72,9 @@ export default async function PostAnEventPage() {
           </div>
           <div>
             <h2>Clear refund policy</h2>
-            <p>First-time posts denied before publication and duplicate charges receive a full refund. Organizer cancellations do not trigger an automatic refund.</p>
+            <p>
+              {EVENT_POST_REFUND_DISCLOSURE} <Link href="/terms">Review the event payment terms.</Link>
+            </p>
           </div>
           <div>
             <h2>Membership option</h2>

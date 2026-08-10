@@ -10,7 +10,10 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["tests/unit/**/*.test.js"],
+    include: [
+      "tests/unit/**/*.test.js",
+      "tests/integration/**/*.test.js",
+    ],
     clearMocks: true,
     restoreMocks: true,
   },

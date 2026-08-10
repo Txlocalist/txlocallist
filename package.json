@@ -25,6 +25,7 @@
     "db:seed-local-businesses": "node scripts/seed-local-businesses.mjs",
     "db:seed-all": "npm run db:seed-cities && npm run db:seed-categories && npm run db:seed-plans && npm run db:seed-events && npm run db:seed-local-businesses",
     "stripe:setup-catalog": "node scripts/setup-stripe-catalog.mjs",
+    "event-posting:verify-readiness": "node scripts/verify-event-posting-readiness.mjs",
     "postinstall": "prisma generate"
   },
   "dependencies": {

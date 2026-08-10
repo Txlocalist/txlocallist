@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import {
   EVENT_MAX_CALENDAR_DAYS,
+  EVENT_POST_CHECKOUT_DISCLOSURE,
   PRICING_OFFERS,
   formatWholeDollarPrice,
   isEventPostingEnabled,
@@ -73,8 +74,7 @@ const PLANS = [
       { label: "Optional event or ticket link" },
       { label: "No business membership required", preview: true },
     ],
-    finePrint:
-      "Payment is collected before review. First-time submissions denied before publication and duplicate charges receive a full refund. Organizer cancellations are not automatically refunded.",
+    finePrint: EVENT_POST_CHECKOUT_DISCLOSURE,
   },
 ];
 

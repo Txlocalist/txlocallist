@@ -50,7 +50,7 @@ export default async function DashboardEventsPage({ searchParams }) {
         business: { select: { name: true } },
         payments: {
           orderBy: { createdAt: "desc" },
-          select: { status: true },
+          select: { status: true, failureReason: true },
         },
       },
     });
@@ -142,6 +142,10 @@ export default async function DashboardEventsPage({ searchParams }) {
               const hasUnresolvedRefund = event.payments.some((payment) =>
                 ["REFUND_PENDING", "REFUND_FAILED"].includes(payment.status)
               );
+              const paymentIsStillProcessing = event.payments.some((payment) =>
+                payment.status === "PROCESSING" &&
+                payment.failureReason === "Stripe is still processing this event payment."
+              );
 
               return (
               <div key={event.id} className={styles.tableRow}>
@@ -156,6 +160,11 @@ export default async function DashboardEventsPage({ searchParams }) {
                     {hasUnresolvedRefund ? (
                       <p className={styles.businessMeta}>
                         Payment support is resolving a refund. Do not pay again.
+                      </p>
+                    ) : null}
+                    {paymentIsStillProcessing ? (
+                      <p className={styles.businessMeta}>
+                        Stripe is still processing this payment. Do not pay again.
                       </p>
                     ) : null}
                   </div>
@@ -191,6 +200,7 @@ export default async function DashboardEventsPage({ searchParams }) {
                     event.endDate &&
                     eventPostingEnabled &&
                     !hasUnresolvedRefund &&
+                    !paymentIsStillProcessing &&
                     !isEventPast(event) ? (
                       <form action={retryEventCheckoutAction}>
                         <input type="hidden" name="eventId" value={event.id} />

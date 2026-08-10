@@ -24,7 +24,19 @@ export default async function NewEventPage() {
   if (!session?.user) redirect("/login?next=/dashboard/events/new");
 
   const user = session.user;
-  const billingState = await getOwnerBillingState(user.id).catch(() => null);
+  let billingState = null;
+  let billingUnavailable = false;
+
+  if (user.role !== "ADMIN") {
+    try {
+      billingState = await getOwnerBillingState(user.id);
+      billingUnavailable = !billingState;
+    } catch (error) {
+      console.error("[events] billing entitlement lookup failed:", error);
+      billingUnavailable = true;
+    }
+  }
+
   const oneTimePostingEnabled = isEventPostingEnabled();
   const eventPostPrice = formatWholeDollarPrice(EVENT_POST_PRICE_CENTS);
   let businesses = [];
@@ -56,6 +68,7 @@ export default async function NewEventPage() {
       </div>
 
       {schemaNotice ||
+      billingUnavailable ||
       (!oneTimePostingEnabled &&
         !(billingState?.hasPaidAccess && businesses.length > 0) &&
         user.role !== "ADMIN") ? (
@@ -63,7 +76,10 @@ export default async function NewEventPage() {
           <div className={styles.emptyState}>
             <h2 className={styles.emptyStateTitle}>Posting Unavailable</h2>
             <p className={styles.emptyStateDescription}>
-              {schemaNotice ?? "One-time event posting is being configured. Please check back soon."}
+              {schemaNotice ??
+                (billingUnavailable
+                  ? "We could not verify your membership right now. Please try again before posting."
+                  : "One-time event posting is being configured. Please check back soon.")}
             </p>
           </div>
         </div>

@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 import {
+  EVENT_POST_CHECKOUT_DISCLOSURE,
+  EVENT_POST_REFUND_DISCLOSURE,
+  EVENT_POST_REVIEW_DISCLOSURE,
+  EVENT_POST_TAX_DISCLOSURE,
   isEventPostingEnabled,
   validateStripePriceObject,
 } from "@/lib/pricing";
@@ -74,5 +78,22 @@ describe("isEventPostingEnabled", () => {
   test("is case-insensitive and trims whitespace", () => {
     vi.stubEnv("EVENT_POSTING_ENABLED", "  TRUE  ");
     expect(isEventPostingEnabled()).toBe(true);
+  });
+});
+
+describe("event posting payment disclosure", () => {
+  test("states the fee, review, refund, cancellation, and tax rules", () => {
+    expect(EVENT_POST_REVIEW_DISCLOSURE).toContain("one-time $10 event fee");
+    expect(EVENT_POST_REVIEW_DISCLOSURE).toContain("before admin review");
+    expect(EVENT_POST_REVIEW_DISCLOSURE).toContain("does not guarantee publication");
+    expect(EVENT_POST_REFUND_DISCLOSURE).toContain("denied by an admin");
+    expect(EVENT_POST_REFUND_DISCLOSURE).toContain("duplicate charges");
+    expect(EVENT_POST_REFUND_DISCLOSURE).toContain(
+      "Organizer cancellations are not automatically refunded",
+    );
+    expect(EVENT_POST_TAX_DISCLOSURE).toBe(
+      "Tax is not automatically calculated or collected in Checkout.",
+    );
+    expect(EVENT_POST_CHECKOUT_DISCLOSURE.length).toBeLessThanOrEqual(1200);
   });
 });

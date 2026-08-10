@@ -21,7 +21,7 @@ export function shouldKeepSettledPaymentForCancelledEvent(event, payment) {
 
 export function canAdminRefundPaidEvent(event) {
   return Boolean(
-    (event?.status === "DENIED" && !event.publishedAt) ||
+    event?.status === "DENIED" ||
     (
       event?.status === "CANCELLED" &&
       event.cancellationReason === "PAYMENT_DISPUTE"

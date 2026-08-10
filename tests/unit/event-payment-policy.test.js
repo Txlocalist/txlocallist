@@ -67,13 +67,13 @@ describe("one-time event payment policy", () => {
     ).toBe(true);
   });
 
-  it("does not refund a previously published denial automatically", () => {
+  it("allows an admin refund when a previously published event is denied during re-review", () => {
     expect(
       canAdminRefundPaidEvent({
         status: "DENIED",
         publishedAt: new Date("2026-09-01T00:00:00.000Z"),
       }),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it("allows an explicit refund for a dispute-cancelled event", () => {

@@ -104,6 +104,7 @@ model User {
   events            Event[]
   eventPayments     EventPayment[]
   eventImageUploads EventImageUpload[]
+  eventImageUploadRateLimit EventImageUploadRateLimit?
 
   // Session management
   lastLoginAt DateTime?
@@ -536,6 +537,8 @@ model Event {
 }
 
 model EventPayment {
+  /// CREATED/PROCESSING rows are unique per event through the partial index in
+  /// migration 20260810001000_one_active_event_checkout.
   id      String             @id @default(cuid())
   eventId String
   event   Event              @relation(fields: [eventId], references: [id], onDelete: Restrict)
@@ -559,6 +562,7 @@ model EventPayment {
   refundedAt              DateTime?
   refundedAmountCents     Int       @default(0)
   stripeRefundCreatedAt   DateTime?
+  stripeRefundStatus      String?
   failureReason           String?
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
@@ -570,20 +574,35 @@ model EventPayment {
 }
 
 model EventImageUpload {
-  id          String    @id @default(cuid())
-  userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  eventId     String?
-  event       Event?    @relation(fields: [eventId], references: [id], onDelete: SetNull)
-  url         String    @unique
-  pathname    String    @unique
-  contentType String
-  sizeBytes   Int
-  createdAt   DateTime  @default(now())
-  claimedAt   DateTime?
+  id               String    @id @default(cuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventId          String?
+  event            Event?    @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  url              String    @unique
+  pathname         String    @unique
+  contentType      String
+  sizeBytes        Int
+  createdAt        DateTime  @default(now())
+  readyAt          DateTime?
+  claimedAt        DateTime?
+  cleanupStartedAt DateTime?
+  cleanupAttempts  Int       @default(0)
+  cleanupError     String?
 
   @@index([userId, createdAt])
   @@index([eventId])
+  @@index([eventId, createdAt, cleanupStartedAt])
+}
+
+model EventImageUploadRateLimit {
+  userId          String   @id
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  windowStartedAt DateTime
+  attempts        Int      @default(0)
+  updatedAt       DateTime @updatedAt
+
+  @@index([windowStartedAt])
 }
 
 model StripeWebhookEvent {

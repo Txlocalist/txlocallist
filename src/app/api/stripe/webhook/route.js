@@ -7,6 +7,7 @@ import {
   handleEventChargeDisputeClosed,
   handleEventChargeRefunded,
   handleEventCheckoutSessionFailure,
+  handleEventCheckoutSessionProcessing,
   handleEventRefundUpdated,
   syncEventPaymentFromCheckoutSession,
 } from "@/lib/event-payments";
@@ -76,11 +77,12 @@ export async function POST(request) {
 
       switch (stripeEvent.type) {
         case "checkout.session.completed":
-          if (
-            object.metadata?.scope === "event_post" &&
-            object.payment_status === "paid"
-          ) {
-            await syncEventPaymentFromCheckoutSession(object.id);
+          if (object.metadata?.scope === "event_post") {
+            if (object.payment_status === "paid") {
+              await syncEventPaymentFromCheckoutSession(object.id);
+            } else {
+              await handleEventCheckoutSessionProcessing(object);
+            }
           } else if (object.metadata?.scope === "account") {
             await syncSubscriptionFromCheckoutSessionId(object.id);
           }

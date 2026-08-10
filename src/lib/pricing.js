@@ -10,6 +10,20 @@ export function formatWholeDollarPrice(priceCents) {
   return `$${(priceCents / 100).toFixed(0)}`;
 }
 
+const EVENT_POST_PRICE_LABEL = formatWholeDollarPrice(EVENT_POST_PRICE_CENTS);
+
+export const EVENT_POST_REVIEW_DISCLOSURE =
+  `Stripe collects the one-time ${EVENT_POST_PRICE_LABEL} event fee after form validation and before admin review. Payment submits the event for review and does not guarantee publication.`;
+export const EVENT_POST_REFUND_DISCLOSURE =
+  "Full refunds are automatically initiated for submissions denied by an admin and duplicate charges. Organizer cancellations are not automatically refunded.";
+export const EVENT_POST_TAX_DISCLOSURE =
+  "Tax is not automatically calculated or collected in Checkout.";
+export const EVENT_POST_CHECKOUT_DISCLOSURE = [
+  EVENT_POST_REVIEW_DISCLOSURE,
+  EVENT_POST_REFUND_DISCLOSURE,
+  EVENT_POST_TAX_DISCLOSURE,
+].join(" ");
+
 export const PRICING_OFFERS = Object.freeze({
   free: {
     name: "Localist",

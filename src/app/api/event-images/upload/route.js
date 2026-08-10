@@ -1,6 +1,12 @@
+import { randomUUID } from "node:crypto";
+
 import { del, put } from "@vercel/blob";
 
 import { getCurrentUser } from "@/lib/auth/session";
+import {
+  consumeEventImageUploadRateLimit,
+  hasValidEventImageSignature,
+} from "@/lib/event-image-uploads";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -20,25 +26,26 @@ function sanitizeFileName(fileName) {
     .replace(/^-|-$/g, "") || "event-image";
 }
 
-async function cleanOldUnclaimedUploads(userId) {
-  const staleBefore = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  const staleUploads = await prisma.eventImageUpload.findMany({
-    where: {
-      userId,
-      eventId: null,
-      createdAt: { lt: staleBefore },
-    },
-    select: { id: true, url: true },
-    take: 20,
-  });
+function compactError(error) {
+  return error instanceof Error
+    ? error.message.slice(0, 500)
+    : "Unknown upload cleanup error";
+}
 
-  for (const upload of staleUploads) {
-    try {
-      await del(upload.url, { token: process.env.BLOB_READ_WRITE_TOKEN });
-      await prisma.eventImageUpload.delete({ where: { id: upload.id } });
-    } catch (error) {
-      console.error("[event-image-upload] stale upload cleanup failed:", error);
-    }
+async function discardReservedUpload(uploadId, pathname, error) {
+  try {
+    await del(pathname, { token: process.env.BLOB_READ_WRITE_TOKEN });
+    await prisma.eventImageUpload.deleteMany({
+      where: { id: uploadId, eventId: null },
+    });
+  } catch (cleanupError) {
+    await prisma.eventImageUpload.updateMany({
+      where: { id: uploadId, eventId: null },
+      data: {
+        cleanupError: compactError(cleanupError ?? error),
+        cleanupStartedAt: null,
+      },
+    }).catch(() => null);
   }
 }
 
@@ -59,6 +66,20 @@ export async function POST(request) {
   }
 
   try {
+    const rateLimit = await consumeEventImageUploadRateLimit(user.id);
+    if (!rateLimit.allowed) {
+      return Response.json(
+        {
+          success: false,
+          message: "Too many event image uploads. Wait before trying again.",
+        },
+        {
+          status: 429,
+          headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+        },
+      );
+    }
+
     const formData = await request.formData();
     const files = formData.getAll("files").filter((value) => value instanceof File);
 
@@ -82,29 +103,60 @@ export async function POST(request) {
         { status: 400 },
       );
     }
+    if (!(await hasValidEventImageSignature(file))) {
+      return Response.json(
+        { success: false, message: "The selected file is not a valid JPG, PNG, or WEBP image." },
+        { status: 400 },
+      );
+    }
 
-    await cleanOldUnclaimedUploads(user.id);
     const safeFileName = sanitizeFileName(file.name || "event-image");
-    const blobPath = `event-images/${user.id}/${Date.now()}-${safeFileName}`;
-    const uploadedBlob = await put(blobPath, file, {
-      access: "private",
-      addRandomSuffix: true,
-      token: process.env.BLOB_READ_WRITE_TOKEN,
-      contentType: file.type,
+    const uploadId = randomUUID();
+    const blobPath = `event-images/${user.id}/${uploadId}-${safeFileName}`;
+    const pendingUrl = `pending:event-image:${uploadId}`;
+    await prisma.eventImageUpload.create({
+      data: {
+        id: uploadId,
+        userId: user.id,
+        url: pendingUrl,
+        pathname: blobPath,
+        contentType: file.type,
+        sizeBytes: file.size,
+      },
     });
 
+    let uploadedBlob;
     try {
-      await prisma.eventImageUpload.create({
-        data: {
+      uploadedBlob = await put(blobPath, file, {
+        access: "private",
+        addRandomSuffix: false,
+        token: process.env.BLOB_READ_WRITE_TOKEN,
+        contentType: file.type,
+      });
+      const ready = await prisma.eventImageUpload.updateMany({
+        where: {
+          id: uploadId,
           userId: user.id,
+          eventId: null,
+          url: pendingUrl,
+          readyAt: null,
+          cleanupStartedAt: null,
+        },
+        data: {
           url: uploadedBlob.url,
           pathname: uploadedBlob.pathname,
-          contentType: file.type,
-          sizeBytes: file.size,
+          readyAt: new Date(),
         },
       });
+      if (ready.count !== 1) {
+        throw new Error("The event image upload reservation changed before it was ready.");
+      }
     } catch (error) {
-      await del(uploadedBlob.url, { token: process.env.BLOB_READ_WRITE_TOKEN }).catch(() => null);
+      await discardReservedUpload(
+        uploadId,
+        uploadedBlob?.pathname ?? blobPath,
+        error,
+      );
       throw error;
     }
 

@@ -16,6 +16,12 @@ import {
   validateOrganizerEventDateRange,
 } from "@/lib/event-dates.server";
 import {
+  claimEventImageUpload,
+  cleanupEventImageUploadsByIds,
+  isEventImageUploadClaimError,
+  replaceEventImageUpload,
+} from "@/lib/event-image-uploads";
+import {
   cancelEventPosting,
   createEventCheckoutSession,
   expireOpenEventCheckoutSessions,
@@ -118,16 +124,25 @@ async function getValidatedEventInput(formData, user, existingEvent = null) {
     }
   }
 
+  const imageChanged = values.imageUrl !== (existingEvent?.imageUrl ?? "");
   let imageUpload = null;
-  if (values.imageUrl && values.imageUrl !== existingEvent?.imageUrl) {
+  if (values.imageUrl && imageChanged) {
     imageUpload = await prisma.eventImageUpload.findUnique({
       where: { url: values.imageUrl },
-      select: { id: true, userId: true, eventId: true },
+      select: {
+        id: true,
+        userId: true,
+        eventId: true,
+        readyAt: true,
+        cleanupStartedAt: true,
+      },
     });
 
     if (
       !imageUpload ||
       imageUpload.userId !== user.id ||
+      !imageUpload.readyAt ||
+      imageUpload.cleanupStartedAt ||
       (imageUpload.eventId && imageUpload.eventId !== existingEvent?.id)
     ) {
       fieldErrors.imageUrl = "Upload the event image from this form.";
@@ -156,6 +171,7 @@ async function getValidatedEventInput(formData, user, existingEvent = null) {
     schedule,
     business,
     imageUpload,
+    imageChanged,
     tagNames,
     fieldErrors: {},
   };
@@ -182,9 +198,26 @@ export async function createEventAction(prevState, formData) {
   const input = await getValidatedEventInput(formData, user);
   if (input.error) return input;
 
-  const billingState = user.role === "ADMIN"
-    ? null
-    : await getOwnerBillingState(user.id).catch(() => null);
+  let billingState = null;
+  if (user.role !== "ADMIN") {
+    try {
+      billingState = await getOwnerBillingState(user.id);
+    } catch (error) {
+      console.error("[events] billing entitlement lookup failed:", error);
+      return {
+        error: "We could not verify your membership right now. Please try again before posting.",
+        fieldErrors: {},
+      };
+    }
+
+    if (!billingState) {
+      console.error(`[events] billing entitlement lookup returned no user for ${user.id}.`);
+      return {
+        error: "We could not verify your membership right now. Please try again before posting.",
+        fieldErrors: {},
+      };
+    }
+  }
   const usesMembership = Boolean(
     user.role !== "ADMIN" &&
     billingState?.hasPaidAccess &&
@@ -231,9 +264,10 @@ export async function createEventAction(prevState, formData) {
       });
 
       if (input.imageUpload) {
-        await tx.eventImageUpload.update({
-          where: { id: input.imageUpload.id },
-          data: { eventId: created.id, claimedAt: new Date() },
+        await claimEventImageUpload(tx, {
+          uploadId: input.imageUpload.id,
+          userId: user.id,
+          eventId: created.id,
         });
       }
 
@@ -241,6 +275,12 @@ export async function createEventAction(prevState, formData) {
     });
   } catch (error) {
     console.error("[events] event creation failed:", error);
+    if (isEventImageUploadClaimError(error)) {
+      return {
+        error: "Please upload the event image again.",
+        fieldErrors: { imageUrl: error.message },
+      };
+    }
     return { error: "Failed to create the event. Please try again.", fieldErrors: {} };
   }
 
@@ -345,8 +385,21 @@ export async function updateEventAction(prevState, formData) {
     }
   }
 
+  if (event.postingMethod === "ONE_TIME" && event.status === "DRAFT") {
+    try {
+      await expireOpenEventCheckoutSessions(event.id);
+    } catch (error) {
+      console.error("[events] active Checkout could not be closed before edit:", error);
+      return {
+        error: "Stripe is still processing this event payment. Wait for it to finish before editing.",
+        fieldErrors: {},
+      };
+    }
+  }
+
+  let replacedUploadIds = [];
   try {
-    await prisma.$transaction(async (tx) => {
+    replacedUploadIds = await prisma.$transaction(async (tx) => {
       const tagConnects = await upsertEventTags(tx, input.tagNames);
       const updated = await tx.event.updateMany({
         where: {
@@ -386,15 +439,24 @@ export async function updateEventAction(prevState, formData) {
         data: { tags: { set: tagConnects } },
       });
 
-      if (input.imageUpload) {
-        await tx.eventImageUpload.update({
-          where: { id: input.imageUpload.id },
-          data: { eventId: event.id, claimedAt: new Date() },
+      if (input.imageChanged) {
+        return replaceEventImageUpload(tx, {
+          eventId: event.id,
+          userId: user.id,
+          uploadId: input.imageUpload?.id ?? null,
         });
       }
+
+      return [];
     });
   } catch (error) {
     console.error("[events] event update failed:", error);
+    if (isEventImageUploadClaimError(error)) {
+      return {
+        error: "Please upload the event image again.",
+        fieldErrors: { imageUrl: error.message },
+      };
+    }
     if (error?.code === "EVENT_EDIT_CONFLICT") {
       return {
         error: "This event changed in another request. Reload the page before editing again.",
@@ -404,8 +466,17 @@ export async function updateEventAction(prevState, formData) {
     return { error: "Failed to update the event. Please try again.", fieldErrors: {} };
   }
 
-  if (event.postingMethod === "ONE_TIME" && event.status === "DRAFT") {
-    await expireOpenEventCheckoutSessions(event.id);
+  if (replacedUploadIds.length > 0) {
+    try {
+      const cleanup = await cleanupEventImageUploadsByIds(replacedUploadIds);
+      if (cleanup.failed > 0) {
+        console.error(
+          `[events] ${cleanup.failed} replaced event image(s) remain queued for cleanup.`,
+        );
+      }
+    } catch (error) {
+      console.error("[events] replaced event image cleanup deferred:", error);
+    }
   }
 
   revalidateEventPaths(event.id);

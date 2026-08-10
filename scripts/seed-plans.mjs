@@ -1,6 +1,7 @@
 /**
  * Seed TX Localist database with subscription plans.
  * Run: node scripts/seed-plans.mjs
+ * Production: node scripts/seed-plans.mjs --require-stripe-prices
  *
  * Feature flags are JSON strings. Each tier includes different capabilities:
  * - MAX_PHOTOS: max photo uploads
@@ -28,6 +29,8 @@ const adapter = new PrismaNeon({
 });
 
 const prisma = new PrismaClient({ adapter });
+const requireStripePrices = process.argv.includes("--require-stripe-prices");
+const starterStripePriceId = process.env.STRIPE_PRICE_STARTER?.trim() || null;
 
 const PLANS = [
   {
@@ -53,7 +56,7 @@ const PLANS = [
     tier: 1,
     priceCents: 1000, // $10.00/month
     billingPeriod: "monthly",
-    stripePriceId: process.env.STRIPE_PRICE_STARTER || null,
+    stripePriceId: starterStripePriceId,
     features: {
       MAX_PHOTOS: 20,
       SHOW_CONTACT: true,
@@ -67,20 +70,32 @@ const PLANS = [
 ];
 
 async function main() {
+  if (requireStripePrices && !starterStripePriceId?.startsWith("price_")) {
+    throw new Error(
+      "STRIPE_PRICE_STARTER must be set to the $10 recurring Stripe Price before running with --require-stripe-prices.",
+    );
+  }
+
   console.log("💳 Seeding subscription plans...");
 
   let created = 0;
   let skipped = 0;
+  const failures = [];
 
   for (const planData of PLANS) {
     try {
+      const stripePriceUpdate =
+        planData.slug === "starter" && !planData.stripePriceId
+          ? {}
+          : { stripePriceId: planData.stripePriceId };
       const plan = await prisma.plan.upsert({
         where: { slug: planData.slug },
         update: {
           name: planData.name,
+          tier: planData.tier,
           billingPeriod: planData.billingPeriod,
           priceCents: planData.priceCents,
-          stripePriceId: planData.stripePriceId,
+          ...stripePriceUpdate,
           features: JSON.stringify(planData.features),
         },
         create: {
@@ -100,7 +115,33 @@ async function main() {
       console.log(`⊘ ${planData.name} (already exists or error)`);
       console.error(error.message);
       skipped++;
+      failures.push(planData.slug);
     }
+  }
+
+  if (failures.length > 0) {
+    throw new Error(`Failed to synchronize plan rows: ${failures.join(", ")}.`);
+  }
+
+  if (requireStripePrices) {
+    const starterPlan = await prisma.plan.findUnique({
+      where: { slug: "starter" },
+      select: {
+        priceCents: true,
+        billingPeriod: true,
+        stripePriceId: true,
+      },
+    });
+
+    if (
+      starterPlan?.priceCents !== 1000 ||
+      starterPlan.billingPeriod !== "monthly" ||
+      starterPlan.stripePriceId !== starterStripePriceId
+    ) {
+      throw new Error("Starter Plan verification failed after synchronization.");
+    }
+
+    console.log(`Verified starter -> $10.00/month -> ${starterStripePriceId}`);
   }
 
   console.log(`\n✨ Seeded ${created} new plans, skipped ${skipped}`);

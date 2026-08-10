@@ -1,6 +1,12 @@
 import Link from "next/link";
 
 import { StaticPageLayout } from "@/components/StaticPageLayout/StaticPageLayout";
+import {
+  EVENT_MAX_CALENDAR_DAYS,
+  EVENT_POST_REFUND_DISCLOSURE,
+  EVENT_POST_REVIEW_DISCLOSURE,
+  EVENT_POST_TAX_DISCLOSURE,
+} from "@/lib/pricing";
 import styles from "@/components/StaticPageLayout/StaticPageLayout.module.css";
 
 export const metadata = {
@@ -13,7 +19,7 @@ export default function TermsPage() {
     <StaticPageLayout
       eyebrow="TX Localist // Terms"
       title="Terms of Service"
-      lede="These terms govern your access to and use of TX Localist. By using the site, creating an account, or submitting a listing, you agree to follow them."
+      lede="These terms govern your access to and use of TX Localist. By using the site, creating an account, or submitting a listing or event, you agree to follow them."
       ctaTitle="Questions about these terms?"
       ctaCopy="If something here is unclear, reach out and we can point you in the right direction."
       ctaHref="/contact"
@@ -30,6 +36,24 @@ export default function TermsPage() {
             We may suspend or remove accounts, listings, events, or submissions that violate these
             terms or create risk for the platform or other users.
           </p>
+        </div>
+      </div>
+
+      <div className={styles.sectionCard}>
+        <h2 className={styles.sectionTitle}>One-time event posts and refunds</h2>
+        <div className={styles.sectionBody}>
+          <p>
+            A standalone Event Calendar Post costs exactly $10. One purchase covers one continuous
+            event lasting from 1 to {EVENT_MAX_CALENDAR_DAYS} consecutive calendar days. Recurring
+            dates or separate occurrences require separate event posts and payments.
+          </p>
+          <p>{EVENT_POST_REVIEW_DISCLOSURE}</p>
+          <p>
+            Only submissions approved by an admin are published. Material changes to a published
+            event return it to review and temporarily remove it from public results until approval.
+          </p>
+          <p>{EVENT_POST_REFUND_DISCLOSURE}</p>
+          <p>{EVENT_POST_TAX_DISCLOSURE}</p>
         </div>
       </div>
 
