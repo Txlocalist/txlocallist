@@ -25,11 +25,12 @@ function SubmitButton() {
   );
 }
 
-export function LoginForm() {
+export function LoginForm({ nextPath = "" }) {
   const [state, formAction] = useActionState(loginAction, INITIAL_STATE);
 
   return (
     <form action={formAction} className={styles.form} noValidate>
+      {nextPath ? <input type="hidden" name="next" value={nextPath} /> : null}
       {state.error ? (
         <p className={styles.errorBanner} aria-live="polite">
           {state.error}

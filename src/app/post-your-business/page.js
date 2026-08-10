@@ -28,13 +28,13 @@ const STEPS = [
   {
     number: "04",
     title: "Go Live",
-    description: "Publish your listing and start appearing in local search results instantly.",
+    description: "Submit your listing for review, then appear in local search after approval.",
   },
 ];
 
 const BENEFITS = [
   { icon: "📍", title: "Local Visibility", description: "Appear in city and keyword searches across Texas." },
-  { icon: "📞", title: "Direct Contact", description: "Let customers reach you directly — no middleman." },
+  { icon: "📞", title: "Direct Contact", description: "Let customers reach you directly with no middleman." },
   { icon: "📸", title: "Photo Gallery", description: "Showcase your space, products, or team with photos." },
   { icon: "💼", title: "Job Postings", description: "Post open positions and find local talent fast." },
   { icon: "🔗", title: "Website & Socials", description: "Link your website and social profiles to your listing." },
@@ -64,7 +64,7 @@ export default async function PostYourBusinessPage() {
             >
               {user ? "Upgrade To Post →" : "Create Account →"}
             </Link>
-            <Link href="/about#pricing" className={styles.heroSecondary}>
+            <Link href="/pricing" className={styles.heroSecondary}>
               View Plans & Pricing
             </Link>
           </div>
@@ -115,17 +115,17 @@ export default async function PostYourBusinessPage() {
           </p>
           <div className={styles.teaseGrid}>
             <div className={styles.teaseCard}>
-              <p className={styles.teasePlan}>Free</p>
+              <p className={styles.teasePlan}>Localist</p>
               <p className={styles.teasePrice}>$0<span>/mo</span></p>
-              <p className={styles.teaseDesc}>Name in the directory. Great for getting started.</p>
+              <p className={styles.teaseDesc}>Browse local businesses and save favorites.</p>
             </div>
             <div className={`${styles.teaseCard} ${styles.teaseCardHighlight}`}>
-              <p className={styles.teasePlan}>Paid</p>
+              <p className={styles.teasePlan}>Local Business Membership</p>
               <p className={styles.teasePrice}>$10<span>/mo</span></p>
               <p className={styles.teaseDesc}>Contact info, socials, more photos, and job postings.</p>
             </div>
           </div>
-          <Link href="/about#pricing" className={styles.teaseLink}>
+          <Link href="/pricing" className={styles.teaseLink}>
             See Full Feature Comparison →
           </Link>
         </div>

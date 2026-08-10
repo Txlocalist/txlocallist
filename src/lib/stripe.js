@@ -23,10 +23,13 @@ export function isStripeWebhookConfigured() {
 export function getSiteUrl() {
   const configuredUrl =
     process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "") ||
-    "http://localhost:3000";
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
 
-  return configuredUrl.replace(/\/$/, "");
+  if (!configuredUrl && process.env.NODE_ENV === "production") {
+    throw new Error("NEXT_PUBLIC_SITE_URL is required in production.");
+  }
+
+  return (configuredUrl || "http://localhost:3000").replace(/\/$/, "");
 }
 
 export function getStripe() {

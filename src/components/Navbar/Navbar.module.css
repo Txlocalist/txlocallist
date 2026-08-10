@@ -53,7 +53,7 @@
   text-transform: uppercase;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 900px) {
   .navLinks {
     display: flex;
   }
@@ -120,7 +120,7 @@
   box-shadow: 0 7px 0 rgba(0, 0, 0, 0.48), inset 0 1px 0 rgba(255, 255, 255, 0.34);
 }
 
-/* Shown when user is logged in — warm amber instead of teal */
+/* Shown when user is logged in, with warm amber instead of teal. */
 .navDashboardButton {
   background: linear-gradient(180deg, #ff8d24 0%, var(--retro-orange) 100%);
   color: #fff;
@@ -232,7 +232,7 @@
   box-shadow: 4px 4px 0 var(--retro-brown);
 }
 
-@media (min-width: 768px) {
+@media (min-width: 900px) {
   .mobileMenuWrap {
     display: none;
   }

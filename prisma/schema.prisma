@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
   engineType = "client"
 }
 
@@ -12,30 +12,49 @@ datasource db {
 // =============================================================================
 
 enum Role {
-  USER       // Standard Localist (consumer browsing directory + jobs)
-  OWNER      // Business owner who can create/manage listings + post jobs
-  ADMIN      // Staff who can moderate and manage the platform
+  USER // Standard Localist (consumer browsing directory + jobs)
+  OWNER // Business owner who can create/manage listings + post jobs
+  ADMIN // Staff who can moderate and manage the platform
 }
 
 enum BusinessStatus {
-  DRAFT      // Not yet published
-  PENDING    // Submitted and waiting for admin approval
-  DENIED     // Reviewed and rejected by admin
-  ACTIVE     // Live on the directory
-  PAUSED     // Temporarily hidden by owner
-  SUSPENDED  // Removed by admin
-  ARCHIVED   // Soft-deleted
+  DRAFT // Not yet published
+  PENDING // Submitted and waiting for admin approval
+  DENIED // Reviewed and rejected by admin
+  ACTIVE // Live on the directory
+  PAUSED // Temporarily hidden by owner
+  SUSPENDED // Removed by admin
+  ARCHIVED // Soft-deleted
 }
 
 enum SubscriptionStatus {
-  ACTIVE       // Currently paying
-  TRIALING     // Trial access before the first recurring charge
-  PAST_DUE     // Payment failed, grace period
-  CANCELED     // Ended, downgrading to free
-  EXPIRED      // Trial ended without converting
-  INCOMPLETE   // Checkout completed but payment/auth is still unresolved
-  UNPAID       // Past due subscription that exhausted retries
-  PAUSED       // Subscription paused in Stripe
+  ACTIVE // Currently paying
+  TRIALING // Trial access before the first recurring charge
+  PAST_DUE // Payment failed, grace period
+  CANCELED // Ended, downgrading to free
+  EXPIRED // Trial ended without converting
+  INCOMPLETE // Checkout completed but payment/auth is still unresolved
+  UNPAID // Past due subscription that exhausted retries
+  PAUSED // Subscription paused in Stripe
+}
+
+enum EventPostingMethod {
+  LEGACY
+  SUBSCRIPTION
+  ONE_TIME
+  ADMIN
+}
+
+enum EventPaymentStatus {
+  CREATED
+  PROCESSING
+  PAID
+  FAILED
+  EXPIRED
+  REFUND_PENDING
+  REFUNDED
+  REFUND_FAILED
+  DISPUTED
 }
 
 enum EmploymentType {
@@ -48,9 +67,9 @@ enum EmploymentType {
 }
 
 enum JobStatus {
-  ACTIVE    // Live and accepting applications
-  CLOSED    // Not accepting applications but still visible
-  ARCHIVED  // Hidden
+  ACTIVE // Live and accepting applications
+  CLOSED // Not accepting applications but still visible
+  ARCHIVED // Hidden
 }
 
 // =============================================================================
@@ -58,20 +77,20 @@ enum JobStatus {
 // =============================================================================
 
 model User {
-  id           String    @id @default(cuid())
-  email        String    @unique
-  passwordHash String
-  role         Role      @default(USER)
-  name         String?
-  avatarUrl    String?
-  stripeCustomerId String? @unique
-  stripeSubscriptionId String? @unique
-  accountPlanId String?
-  accountPlan   Plan?    @relation("UserAccountPlan", fields: [accountPlanId], references: [id], onDelete: SetNull)
-  billingStatus SubscriptionStatus?
-  currentPeriodEnd DateTime?
-  cancelAtPeriodEnd Boolean @default(false)
-  canceledAt    DateTime?
+  id                   String              @id @default(cuid())
+  email                String              @unique
+  passwordHash         String
+  role                 Role                @default(USER)
+  name                 String?
+  avatarUrl            String?
+  stripeCustomerId     String?             @unique
+  stripeSubscriptionId String?             @unique
+  accountPlanId        String?
+  accountPlan          Plan?               @relation("UserAccountPlan", fields: [accountPlanId], references: [id], onDelete: SetNull)
+  billingStatus        SubscriptionStatus?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean             @default(false)
+  canceledAt           DateTime?
 
   // Localist saves, likes, and searches
   favorites      Favorite[]
@@ -82,13 +101,15 @@ model User {
   ownedBusinesses Business[]
 
   // Events created by this user
-  events       Event[]
+  events            Event[]
+  eventPayments     EventPayment[]
+  eventImageUploads EventImageUpload[]
 
   // Session management
-  lastLoginAt  DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  sessions     Session[]
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  sessions    Session[]
 
   @@index([email])
   @@index([role])
@@ -118,7 +139,7 @@ model City {
   id        String   @id @default(cuid())
   name      String   @unique
   slug      String   @unique
-  state     String   // "Texas", "TX", etc.
+  state     String // "Texas", "TX", etc.
   lat       Float?
   lng       Float?
   createdAt DateTime @default(now())
@@ -135,7 +156,7 @@ model Category {
   id        String   @id @default(cuid())
   name      String   @unique
   slug      String   @unique
-  icon      String?  // Material Icons name or emoji
+  icon      String? // Material Icons name or emoji
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -164,81 +185,81 @@ model Tag {
 // =============================================================================
 
 model Plan {
-  id              String   @id @default(cuid())
-  name            String   // "Free", "Starter", "Pro", "Premium"
-  slug            String   @unique
-  tier            Int      // 0=FREE, 1=TIER1, 2=TIER2, 3=TIER3 (for sorting)
-  priceCents      Int      // Annual or monthly price in cents (0 for free)
-  billingPeriod   String   @default("monthly") // "monthly" or "annual"
-  stripePriceId   String?  @unique
+  id            String  @id @default(cuid())
+  name          String // "Free", "Starter", "Pro", "Premium"
+  slug          String  @unique
+  tier          Int // 0=FREE, 1=TIER1, 2=TIER2, 3=TIER3 (for sorting)
+  priceCents    Int // Annual or monthly price in cents (0 for free)
+  billingPeriod String  @default("monthly") // "monthly" or "annual"
+  stripePriceId String? @unique
 
   // Feature flags (JSON for extensibility)
-  features        String   @default("{}")  // JSON string of feature flags
+  features String @default("{}") // JSON string of feature flags
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  subscriptions   Subscription[]
-  businesses      Business[] @relation("CurrentPlan")
-  accountUsers    User[]     @relation("UserAccountPlan")
+  subscriptions Subscription[]
+  businesses    Business[]     @relation("CurrentPlan")
+  accountUsers  User[]         @relation("UserAccountPlan")
 
   @@index([slug])
   @@index([tier])
 }
 
 model Business {
-  id              String   @id @default(cuid())
+  id String @id @default(cuid())
 
   // Identity & slug
-  slug            String   @unique // "cafe-name-austin"
-  name            String
-  description     String
+  slug        String @unique // "cafe-name-austin"
+  name        String
+  description String
 
   // Contact
-  phone           String?
-  email           String?
-  website         String?
-  isHiring        Boolean  @default(false)
-  hiringRoles     String   @default("[]")
+  phone       String?
+  email       String?
+  website     String?
+  isHiring    Boolean @default(false)
+  hiringRoles String  @default("[]")
 
   // Location
-  address         String
-  addressName     String?
-  zipCode         String
-  cityId          String
-  city            City     @relation(fields: [cityId], references: [id])
-  state           String   @default("Texas")
-  country         String   @default("USA")
-  lat             Float?
-  lng             Float?
+  address     String
+  addressName String?
+  zipCode     String
+  cityId      String
+  city        City    @relation(fields: [cityId], references: [id])
+  state       String  @default("Texas")
+  country     String  @default("USA")
+  lat         Float?
+  lng         Float?
 
   // Owner
-  ownerId         String
-  owner           User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
   // Subscription & status
-  planId          String?
-  plan            Plan?    @relation("CurrentPlan", fields: [planId], references: [id], onDelete: SetNull)
-  subscription    Subscription?
-  status          BusinessStatus @default(DRAFT)
-  publishedAt     DateTime?
+  planId       String?
+  plan         Plan?          @relation("CurrentPlan", fields: [planId], references: [id], onDelete: SetNull)
+  subscription Subscription?
+  status       BusinessStatus @default(DRAFT)
+  publishedAt  DateTime?
 
   // Metadata
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  photos          Photo[]
-  categories      BusinessCategory[]
-  tags            BusinessTag[]
-  socialLinks     SocialLink[]
-  hours           BusinessHours[]
-  jobs            Job[]
-  favorites       Favorite[]
-  likes           Like[]
-  events          Event[]
-  applications    BusinessApplication[]
+  photos       Photo[]
+  categories   BusinessCategory[]
+  tags         BusinessTag[]
+  socialLinks  SocialLink[]
+  hours        BusinessHours[]
+  jobs         Job[]
+  favorites    Favorite[]
+  likes        Like[]
+  events       Event[]
+  applications BusinessApplication[]
 
   @@unique([slug, cityId]) // slug is unique per city, not global
   @@index([ownerId])
@@ -249,42 +270,42 @@ model Business {
 }
 
 model BusinessHours {
-  id          String   @id @default(cuid())
-  businessId  String
-  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  dayOfWeek   Int
-  openTime    String?
-  closeTime   String?
-  isClosed    Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  dayOfWeek  Int
+  openTime   String?
+  closeTime  String?
+  isClosed   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@unique([businessId, dayOfWeek])
   @@index([businessId, dayOfWeek])
 }
 
 model Photo {
-  id          String   @id @default(cuid())
-  businessId  String
-  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
-  url         String
-  width       Int?
-  height      Int?
-  alt         String?
-  order       Int      @default(0)
+  url    String
+  width  Int?
+  height Int?
+  alt    String?
+  order  Int     @default(0)
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([businessId, order])
 }
 
 model BusinessCategory {
-  id          String   @id @default(cuid())
-  businessId  String
-  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  categoryId  String
-  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@unique([businessId, categoryId])
   @@index([businessId])
@@ -292,11 +313,11 @@ model BusinessCategory {
 }
 
 model BusinessTag {
-  id          String   @id @default(cuid())
-  businessId  String
-  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  tagId       String
-  tag         Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  tagId      String
+  tag        Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@unique([businessId, tagId])
   @@index([businessId])
@@ -304,15 +325,15 @@ model BusinessTag {
 }
 
 model SocialLink {
-  id          String   @id @default(cuid())
-  businessId  String
-  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
-  platform    String   // "instagram", "facebook", "twitter", "tiktok", etc.
-  url         String
-  order       Int      @default(0)
+  platform String // "instagram", "facebook", "twitter", "tiktok", etc.
+  url      String
+  order    Int    @default(0)
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([businessId, platform])
 }
@@ -338,24 +359,24 @@ model BusinessApplication {
 // =============================================================================
 
 model Subscription {
-  id                    String   @id @default(cuid())
-  businessId            String   @unique
-  business              Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  planId                String
-  plan                  Plan     @relation(fields: [planId], references: [id])
+  id         String   @id @default(cuid())
+  businessId String   @unique
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  planId     String
+  plan       Plan     @relation(fields: [planId], references: [id])
 
   // Stripe integration
-  stripeCustomerId      String?
-  stripeSubscriptionId  String?
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
 
   // Lifecycle
-  status                SubscriptionStatus @default(ACTIVE)
-  currentPeriodEnd      DateTime?
-  cancelAtPeriodEnd     Boolean            @default(false)
-  canceledAt            DateTime?
+  status            SubscriptionStatus @default(ACTIVE)
+  currentPeriodEnd  DateTime?
+  cancelAtPeriodEnd Boolean            @default(false)
+  canceledAt        DateTime?
 
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([businessId])
   @@index([planId])
@@ -368,27 +389,27 @@ model Subscription {
 // =============================================================================
 
 model Job {
-  id              String   @id @default(cuid())
-  businessId      String
-  business        Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
-  title           String
-  description     String
+  title       String
+  description String
 
-  employmentType  EmploymentType
-  salaryMin       Int?       // in cents
-  salaryMax       Int?       // in cents
-  currency        String   @default("USD")
-  isRemote        Boolean  @default(false)
+  employmentType EmploymentType
+  salaryMin      Int? // in cents
+  salaryMax      Int? // in cents
+  currency       String         @default("USD")
+  isRemote       Boolean        @default(false)
 
-  applyUrl        String?   // external application link
-  applyEmail      String?   // internal application email
+  applyUrl   String? // external application link
+  applyEmail String? // internal application email
 
-  status          JobStatus @default(ACTIVE)
-  expiresAt       DateTime?
+  status    JobStatus @default(ACTIVE)
+  expiresAt DateTime?
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([businessId])
   @@index([status])
@@ -400,13 +421,13 @@ model Job {
 // =============================================================================
 
 model Favorite {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  businessId  String
-  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@unique([userId, businessId])
   @@index([userId])
@@ -414,13 +435,13 @@ model Favorite {
 }
 
 model Like {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  businessId  String
-  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@unique([userId, businessId])
   @@index([userId])
@@ -445,13 +466,13 @@ model EventFavorite {
 // =============================================================================
 
 model AuditLog {
-  id          String   @id @default(cuid())
-  actorId     String?  // User who performed the action (null for system)
-  action      String   // "create", "update", "publish", "suspend", etc.
-  entity      String   // "Business", "Job", "Subscription", etc.
-  entityId    String   // The ID of the entity affected
-  meta        String   @default("{}") // JSON string of changes
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  actorId   String? // User who performed the action (null for system)
+  action    String // "create", "update", "publish", "suspend", etc.
+  entity    String // "Business", "Job", "Subscription", etc.
+  entityId  String // The ID of the entity affected
+  meta      String   @default("{}") // JSON string of changes
+  createdAt DateTime @default(now())
 
   @@index([entityId])
   @@index([createdAt])
@@ -462,7 +483,7 @@ model AuditLog {
 // =============================================================================
 
 model Event {
-  id          String   @id @default(cuid())
+  id String @id @default(cuid())
 
   title       String
   description String
@@ -474,33 +495,109 @@ model Event {
   zipCode     String
   city        String
   state       String
-  country     String   @default("US")
+  country     String @default("US")
 
   // Optional link to a Business listing
-  businessId  String?
-  business    Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
+  businessId String?
+  business   Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
 
   // Creator
-  creatorId   String
-  creator     User      @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  creatorId String
+  creator   User   @relation(fields: [creatorId], references: [id], onDelete: Cascade)
 
   // Tags (reuse existing Tag table via join)
-  tags        Tag[]
-  favorites   EventFavorite[]
+  tags      Tag[]
+  favorites EventFavorite[]
 
   // Schedule (optional for future use)
-  startDate   DateTime?
-  endDate     DateTime?
+  startDate DateTime?
+  endDate   DateTime?
+  timezone  String    @default("America/Chicago")
+  eventUrl  String?
 
-  status      EventStatus @default(PENDING)
+  status             EventStatus              @default(PENDING)
+  postingMethod      EventPostingMethod       @default(LEGACY)
+  publishedAt        DateTime?
+  cancelledAt        DateTime?
+  cancellationReason EventCancellationReason?
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  payments     EventPayment[]
+  imageUploads EventImageUpload[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([city, state])
   @@index([creatorId])
   @@index([businessId])
   @@index([status, createdAt])
+  @@index([status, endDate])
+  @@index([postingMethod])
+}
+
+model EventPayment {
+  id      String             @id @default(cuid())
+  eventId String
+  event   Event              @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  userId  String
+  user    User               @relation(fields: [userId], references: [id], onDelete: Restrict)
+  status  EventPaymentStatus @default(CREATED)
+
+  stripePriceId           String
+  stripeCustomerId        String?
+  stripeCheckoutSessionId String?   @unique
+  stripePaymentIntentId   String?   @unique
+  stripeRefundId          String?   @unique
+  stripeDisputeId         String?
+  stripeDisputeStatus     String?
+  amountCents             Int
+  currency                String    @default("usd")
+  eventStartDate          DateTime?
+  eventEndDate            DateTime?
+  checkoutExpiresAt       DateTime?
+  paidAt                  DateTime?
+  refundedAt              DateTime?
+  refundedAmountCents     Int       @default(0)
+  stripeRefundCreatedAt   DateTime?
+  failureReason           String?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  @@index([eventId, status])
+  @@index([userId, createdAt])
+  @@index([stripePriceId])
+  @@index([stripeCustomerId])
+}
+
+model EventImageUpload {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventId     String?
+  event       Event?    @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  url         String    @unique
+  pathname    String    @unique
+  contentType String
+  sizeBytes   Int
+  createdAt   DateTime  @default(now())
+  claimedAt   DateTime?
+
+  @@index([userId, createdAt])
+  @@index([eventId])
+}
+
+model StripeWebhookEvent {
+  id                  String    @id
+  type                String
+  attempts            Int       @default(0)
+  processingStartedAt DateTime?
+  processedAt         DateTime?
+  lastError           String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([processedAt])
+  @@index([processingStartedAt])
 }
 
 enum EventStatus {
@@ -509,4 +606,11 @@ enum EventStatus {
   PUBLISHED
   DRAFT
   CANCELLED
+}
+
+enum EventCancellationReason {
+  ORGANIZER
+  ADMIN
+  PAYMENT_REFUND
+  PAYMENT_DISPUTE
 }

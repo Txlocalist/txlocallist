@@ -104,14 +104,61 @@
   box-shadow: 0 5px 0 rgba(0, 0, 0, 0.62);
 }
 
+.mobileMenu {
+  display: none;
+  position: relative;
+  color: #fff8df;
+  font-family: var(--font-accent), cursive;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.mobileMenu summary {
+  min-height: 42px;
+  padding: 13px 15px;
+  border: 2px solid rgba(255, 248, 223, 0.7);
+  border-radius: 999px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.mobileMenu summary::-webkit-details-marker {
+  display: none;
+}
+
+.mobileMenu nav {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  display: grid;
+  min-width: 190px;
+  overflow: hidden;
+  border: 2px solid #1a1714;
+  border-radius: 14px;
+  background: #fff8df;
+  color: #1a1714;
+  box-shadow: 5px 6px 0 rgba(0, 0, 0, 0.55);
+}
+
+.mobileMenu nav a {
+  padding: 13px 16px;
+  border-bottom: 1px solid rgba(26, 23, 20, 0.18);
+}
+
+.mobileMenu nav a:last-child {
+  border-bottom: 0;
+}
+
 @media (max-width: 1080px) {
   .links {
-    gap: 18px;
+    gap: 12px;
     font-size: 10px;
   }
 }
 
-@media (max-width: 820px) {
+@media (max-width: 930px) {
   .header {
     padding-top: 22px;
   }
@@ -142,9 +189,61 @@
     display: none;
   }
 
+  .mobileMenu {
+    display: block;
+    margin-left: auto;
+  }
+
   .loginButton {
     min-height: 42px;
     padding: 12px 17px;
     font-size: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    gap: 8px;
+    width: calc(100% - 24px);
+  }
+
+  .logo {
+    width: 108px;
+  }
+
+  .logoState {
+    margin-left: 26px;
+    font-size: 8px;
+  }
+
+  .logoWord {
+    font-size: 30px;
+  }
+
+  .logoUrl {
+    margin-left: 37px;
+    font-size: 5px;
+  }
+
+  .mobileMenu {
+    font-size: 10px;
+  }
+
+  .mobileMenu summary {
+    min-height: 40px;
+    padding: 11px 10px;
+  }
+
+  .mobileMenu nav {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .loginButton {
+    min-height: 40px;
+    padding: 10px 12px;
+    font-size: 9px;
+    letter-spacing: 0.1em;
   }
 }

@@ -22,7 +22,7 @@ export const TIER_NAMES = {
 
 export const TIER_LABELS: Record<string, string> = {
   free: "Free",
-  starter: "Paid",
+  starter: "Local Business Membership",
 };
 
 export const TIER_PRICES: Record<string, number> = {

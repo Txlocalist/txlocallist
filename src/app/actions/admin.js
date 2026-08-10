@@ -2,7 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/session";
+import { reconcileStripeSubscriptions } from "@/lib/billing";
 import { sendListingPublishedEmail } from "@/lib/email";
+import {
+  approveEventForPublication,
+  cancelEventPosting,
+  denyEventAndRefund,
+  retryEventRefund,
+} from "@/lib/event-payments";
 import { prisma } from "@/lib/prisma";
 
 /** Suspend a business listing */
@@ -107,14 +114,23 @@ export async function updatePostModerationStatusAction(formData) {
     return;
   }
 
-  await prisma.event.update({
-    where: { id: entityId },
-    data: {
-      status: mapModerationChoice(statusChoice, "event"),
-    },
-  });
+  if (statusChoice === "approved") {
+    await approveEventForPublication(entityId);
+  } else if (statusChoice === "denied") {
+    try {
+      await denyEventAndRefund(entityId);
+    } catch (error) {
+      console.error("[admin] event denial refund failed:", error);
+    }
+  } else {
+    await prisma.event.update({
+      where: { id: entityId },
+      data: { status: "PENDING" },
+    });
+  }
 
   revalidatePath("/events");
+  revalidatePath(`/events/${entityId}`);
   revalidatePath("/dashboard/events");
   revalidateAdminModerationPaths();
 }
@@ -134,11 +150,37 @@ export async function adminDeleteEventAction(formData) {
   await requireAdmin();
   const id = formData.get("id")?.toString();
   if (!id) return;
-  await prisma.event.delete({ where: { id } });
+  await cancelEventPosting(id, "ADMIN");
   revalidatePath("/admin/events");
   revalidatePath("/admin/posts");
   revalidatePath("/dashboard/events");
   revalidatePath("/events");
+}
+
+/** Retry a failed one-time event refund without changing moderation state. */
+export async function retryEventRefundAction(formData) {
+  await requireAdmin();
+  const id = formData.get("id")?.toString();
+  if (!id) return;
+
+  try {
+    await retryEventRefund(id);
+  } catch (error) {
+    console.error("[admin] event refund retry failed:", error);
+  }
+
+  revalidatePath("/admin/posts");
+  revalidatePath("/admin/events");
+  revalidatePath("/dashboard/events");
+}
+
+/** Pull current subscription state from Stripe for every locally linked account. */
+export async function reconcileStripeSubscriptionsAction() {
+  await requireAdmin();
+  const result = await reconcileStripeSubscriptions();
+  revalidatePath("/admin/settings");
+  revalidatePath("/dashboard/billing");
+  return result;
 }
 
 /** Delete a tag */

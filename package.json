@@ -8,6 +8,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate deploy",
@@ -21,6 +24,7 @@
     "db:seed-italian": "node scripts/seed-italian-test.mjs",
     "db:seed-local-businesses": "node scripts/seed-local-businesses.mjs",
     "db:seed-all": "npm run db:seed-cities && npm run db:seed-categories && npm run db:seed-plans && npm run db:seed-events && npm run db:seed-local-businesses",
+    "stripe:setup-catalog": "node scripts/setup-stripe-catalog.mjs",
     "postinstall": "prisma generate"
   },
   "dependencies": {
@@ -28,6 +32,7 @@
     "@prisma/adapter-neon": "^7.7.0",
     "@prisma/client": "^7.7.0",
     "@vercel/blob": "^2.3.3",
+    "date-fns-tz": "^3.2.0",
     "dotenv": "^17.4.2",
     "next": "16.2.2",
     "react": "19.2.4",
@@ -37,8 +42,10 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "eslint": "^9",
     "eslint-config-next": "16.2.2",
-    "prisma": "^7.7.0"
+    "prisma": "^7.7.0",
+    "vitest": "^4.1.10"
   }
 }

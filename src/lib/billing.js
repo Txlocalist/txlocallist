@@ -1,11 +1,14 @@
 import { prisma } from "@/lib/prisma";
+import { retrieveAndValidateStripePrice } from "@/lib/pricing";
 import { getSiteUrl, getStripe, isStripeConfigured } from "@/lib/stripe";
+import { getStripeSubscriptionPeriodEnd } from "@/lib/subscription-period";
+
+export { getStripeSubscriptionPeriodEnd } from "@/lib/subscription-period";
 
 export const ACTIVE_SUBSCRIPTION_STATUSES = new Set(["ACTIVE", "TRIALING"]);
 export const FEATURE_ACCESS_SUBSCRIPTION_STATUSES = new Set([
   "ACTIVE",
   "TRIALING",
-  "PAST_DUE",
 ]);
 
 const STRIPE_STATUS_TO_LOCAL_STATUS = {
@@ -54,7 +57,7 @@ export function getBillingPath(params = {}) {
 }
 
 function mapStripeSubscriptionStatus(status) {
-  return STRIPE_STATUS_TO_LOCAL_STATUS[status] ?? "PAST_DUE";
+  return STRIPE_STATUS_TO_LOCAL_STATUS[status] ?? "INCOMPLETE";
 }
 
 async function getFreePlan() {
@@ -227,35 +230,48 @@ export async function createStripeCheckoutSession({ user, plan }) {
     throw new Error(`${plan.name} does not have a Stripe price ID configured.`);
   }
 
+  await retrieveAndValidateStripePrice({
+    priceId: plan.stripePriceId,
+    amountCents: plan.priceCents,
+    recurring: true,
+  });
+
   const customerId = await ensureStripeCustomerForUser(user);
   const stripe = getStripe();
   const siteUrl = getSiteUrl();
 
-  return stripe.checkout.sessions.create({
-    mode: "subscription",
-    customer: customerId,
-    client_reference_id: user.id,
-    success_url: `${siteUrl}/dashboard/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${siteUrl}/dashboard/billing?checkout=canceled`,
-    line_items: [
-      {
-        price: plan.stripePriceId,
-        quantity: 1,
-      },
-    ],
-    metadata: {
-      ownerId: user.id,
-      planId: plan.id,
-      scope: "account",
-    },
-    subscription_data: {
+  const idempotencyWindow = Math.floor(Date.now() / (10 * 60 * 1000));
+
+  return stripe.checkout.sessions.create(
+    {
+      mode: "subscription",
+      customer: customerId,
+      client_reference_id: user.id,
+      success_url: `${siteUrl}/dashboard/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${siteUrl}/dashboard/billing?checkout=canceled`,
+      line_items: [
+        {
+          price: plan.stripePriceId,
+          quantity: 1,
+        },
+      ],
       metadata: {
         ownerId: user.id,
         planId: plan.id,
         scope: "account",
       },
+      subscription_data: {
+        metadata: {
+          ownerId: user.id,
+          planId: plan.id,
+          scope: "account",
+        },
+      },
     },
-  });
+    {
+      idempotencyKey: `subscription-checkout:${user.id}:${plan.id}:${idempotencyWindow}`,
+    },
+  );
 }
 
 export async function createStripePortalSession({ user }) {
@@ -301,6 +317,38 @@ function getStripePriceIdFromSubscription(stripeSubscription) {
   return stripeSubscription.items?.data?.[0]?.price?.id ?? null;
 }
 
+function getStripeProductIdFromSubscription(stripeSubscription) {
+  const product = stripeSubscription.items?.data?.[0]?.price?.product;
+  if (!product) return null;
+  return typeof product === "string" ? product : product.id;
+}
+
+async function findPlanForStripeSubscription(stripeSubscription, stripePriceId) {
+  const exactPlan = await prisma.plan.findFirst({
+    where: { stripePriceId },
+    select: { id: true },
+  });
+  if (exactPlan) return exactPlan;
+
+  const incomingProductId = getStripeProductIdFromSubscription(stripeSubscription);
+  if (!incomingProductId || !isStripeConfigured()) return null;
+
+  const starterPlan = await prisma.plan.findUnique({
+    where: { slug: "starter" },
+    select: { id: true, stripePriceId: true },
+  });
+  if (!starterPlan?.stripePriceId) return null;
+
+  const configuredPrice = await getStripe().prices.retrieve(starterPlan.stripePriceId);
+  const configuredProductId = typeof configuredPrice.product === "string"
+    ? configuredPrice.product
+    : configuredPrice.product?.id;
+
+  return configuredProductId === incomingProductId
+    ? { id: starterPlan.id }
+    : null;
+}
+
 async function upsertSubscriptionFromStripeSubscription(stripeSubscription) {
   const businessId = stripeSubscription.metadata?.businessId;
   const ownerId = stripeSubscription.metadata?.ownerId;
@@ -320,12 +368,7 @@ async function upsertSubscriptionFromStripeSubscription(stripeSubscription) {
           },
         })
       : Promise.resolve(null),
-    prisma.plan.findFirst({
-      where: { stripePriceId },
-      select: {
-        id: true,
-      },
-    }),
+    findPlanForStripeSubscription(stripeSubscription, stripePriceId),
     getFreePlanId(),
   ]);
 
@@ -334,9 +377,7 @@ async function upsertSubscriptionFromStripeSubscription(stripeSubscription) {
   }
 
   const localStatus = mapStripeSubscriptionStatus(stripeSubscription.status);
-  const currentPeriodEnd = stripeSubscription.current_period_end
-    ? new Date(stripeSubscription.current_period_end * 1000)
-    : null;
+  const currentPeriodEnd = getStripeSubscriptionPeriodEnd(stripeSubscription);
   const canceledAt = stripeSubscription.canceled_at
     ? new Date(stripeSubscription.canceled_at * 1000)
     : null;
@@ -421,7 +462,7 @@ export async function syncSubscriptionFromStripeSubscriptionId(subscriptionId) {
   return upsertSubscriptionFromStripeSubscription(stripeSubscription);
 }
 
-export async function syncSubscriptionFromCheckoutSessionId(sessionId) {
+export async function syncSubscriptionFromCheckoutSessionId(sessionId, expectedOwnerId = null) {
   if (!sessionId || !isStripeConfigured()) {
     return false;
   }
@@ -431,8 +472,19 @@ export async function syncSubscriptionFromCheckoutSessionId(sessionId) {
     expand: ["subscription"],
   });
 
-  if (session.customer && session.metadata?.ownerId) {
-    await syncUserStripeCustomer(session.customer, session.metadata.ownerId);
+  const ownerId = session.metadata?.ownerId;
+  if (
+    session.mode !== "subscription" ||
+    session.metadata?.scope !== "account" ||
+    !ownerId ||
+    session.client_reference_id !== ownerId ||
+    (expectedOwnerId && expectedOwnerId !== ownerId)
+  ) {
+    return false;
+  }
+
+  if (session.customer) {
+    await syncUserStripeCustomer(session.customer, ownerId);
   }
 
   if (!session.subscription) {
@@ -448,4 +500,38 @@ export async function syncSubscriptionFromCheckoutSessionId(sessionId) {
 
 export async function handleStripeSubscriptionWebhook(stripeSubscription) {
   return upsertSubscriptionFromStripeSubscription(stripeSubscription);
+}
+
+export async function reconcileStripeSubscriptions({ limit = 100 } = {}) {
+  const [accountSubscriptions, legacySubscriptions] = await Promise.all([
+    prisma.user.findMany({
+      where: { stripeSubscriptionId: { not: null } },
+      select: { stripeSubscriptionId: true },
+      take: limit,
+    }),
+    prisma.subscription.findMany({
+      where: { stripeSubscriptionId: { not: null } },
+      select: { stripeSubscriptionId: true },
+      take: limit,
+    }),
+  ]);
+  const subscriptionIds = Array.from(new Set(
+    [...accountSubscriptions, ...legacySubscriptions]
+      .map((item) => item.stripeSubscriptionId)
+      .filter(Boolean),
+  )).slice(0, limit);
+  const results = { checked: subscriptionIds.length, synced: 0, failed: 0 };
+
+  for (const subscriptionId of subscriptionIds) {
+    try {
+      const synced = await syncSubscriptionFromStripeSubscriptionId(subscriptionId);
+      if (synced) results.synced += 1;
+      else results.failed += 1;
+    } catch (error) {
+      results.failed += 1;
+      console.error(`[billing] reconciliation failed for ${subscriptionId}:`, error);
+    }
+  }
+
+  return results;
 }

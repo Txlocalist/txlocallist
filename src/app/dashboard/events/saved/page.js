@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { DashboardLayout } from "../../DashboardShell";
 import styles from "../../dashboard.module.css";
 import { getCurrentSession } from "@/lib/auth/session";
-import { formatEventTime, formatLongEventDate } from "@/lib/events";
+import { formatEventDateRange, formatEventTime, isEventPast } from "@/lib/event-dates";
 import { prisma } from "@/lib/prisma";
 import { isMissingPrismaTableError } from "@/lib/prisma-errors";
 
@@ -36,6 +36,8 @@ export default async function SavedEventsPage() {
               state: true,
               addressName: true,
               startDate: true,
+              endDate: true,
+              timezone: true,
             },
           },
         },
@@ -71,9 +73,11 @@ export default async function SavedEventsPage() {
                       {event.title}
                     </Link>
                     <p className={styles.listItemMeta}>
-                      {formatLongEventDate(event.startDate)} at {formatEventTime(event.startDate)}
-                      {event.addressName ? ` · ${event.addressName}` : ""}
-                      {cityLabel ? ` · ${cityLabel}` : ""}
+                      {formatEventDateRange(event.startDate, event.endDate, event.timezone)} at{" "}
+                      {formatEventTime(event.startDate, event.timezone)}
+                      {event.addressName ? `, ${event.addressName}` : ""}
+                      {cityLabel ? `, ${cityLabel}` : ""}
+                      {isEventPast(event) ? " (Past event)" : ""}
                     </p>
                   </div>
                   <div className={styles.listItemAction}>

@@ -15,7 +15,15 @@ import styles from "./PhotoUploader.module.css";
  *   onChange   (photos) => void      called whenever the list changes
  *   maxPhotos  number                max photos allowed (from tier, default 1)
  */
-export function PhotoUploader({ photos = [], onChange, maxPhotos = 1 }) {
+export function PhotoUploader({
+  photos = [],
+  onChange,
+  maxPhotos = 1,
+  uploadEndpoint = "/api/business-photos/upload",
+  acceptedTypes = "image/*",
+  supportedTypesLabel = "JPG, PNG, WEBP, and GIF",
+  limitMessage = "Upgrade your plan to add more.",
+}) {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
 
@@ -43,7 +51,7 @@ export function PhotoUploader({ photos = [], onChange, maxPhotos = 1 }) {
       const formData = new FormData();
       filesToUpload.forEach((file) => formData.append("files", file));
 
-      const response = await fetch("/api/business-photos/upload", {
+      const response = await fetch(uploadEndpoint, {
         method: "POST",
         body: formData,
       });
@@ -96,7 +104,7 @@ export function PhotoUploader({ photos = [], onChange, maxPhotos = 1 }) {
 
       <p className={styles.hint}>
         {photos.length} / {maxPhotos} photo{maxPhotos !== 1 ? "s" : ""} uploaded.
-        {!canAddMore ? " Upgrade your plan to add more." : ""}
+        {!canAddMore && limitMessage ? ` ${limitMessage}` : ""}
       </p>
 
       {canAddMore ? (
@@ -104,7 +112,7 @@ export function PhotoUploader({ photos = [], onChange, maxPhotos = 1 }) {
           <label className={styles.uploadPanel}>
             <input
               type="file"
-              accept="image/*"
+              accept={acceptedTypes}
               multiple={remainingSlots > 1}
               className={styles.fileInput}
               onChange={handleFileChange}
@@ -115,7 +123,7 @@ export function PhotoUploader({ photos = [], onChange, maxPhotos = 1 }) {
               {uploading ? "Uploading photos..." : "Choose photos to upload"}
             </span>
             <span className={styles.uploadMeta}>
-              JPG, PNG, WEBP, and GIF supported. Up to 8MB per image.
+              {supportedTypesLabel} supported. Up to 8MB per image.
             </span>
             <span className={styles.uploadButton}>
               {uploading ? "Uploading..." : remainingSlots > 1 ? "Select Photos" : "Select Photo"}
@@ -124,8 +132,8 @@ export function PhotoUploader({ photos = [], onChange, maxPhotos = 1 }) {
         </div>
       ) : null}
 
-      {uploading ? <p className={styles.uploadingMsg}>Uploading...</p> : null}
-      {uploadError ? <p className={styles.errorMsg}>{uploadError}</p> : null}
+      {uploading ? <p className={styles.uploadingMsg} role="status">Uploading...</p> : null}
+      {uploadError ? <p className={styles.errorMsg} role="alert">{uploadError}</p> : null}
     </div>
   );
 }

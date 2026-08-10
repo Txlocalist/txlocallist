@@ -9,6 +9,7 @@ import logoImage from "@/app/assets/Tx-Localist-01.png";
 import { LikeCount } from "@/components/LikeCount";
 import SearchBar from "@/components/SearchBar";
 import { getBlobImageUrl } from "@/lib/blob";
+import { formatEventDateRange } from "@/lib/event-dates";
 
 import {
   ArrowRightIcon,
@@ -19,6 +20,16 @@ import {
 } from "./icons";
 
 const numberFormatter = new Intl.NumberFormat("en-US");
+
+function eventDateLabel(event) {
+  if (!event.startDate) return "EVENT";
+  return formatEventDateRange(
+    event.startDate,
+    event.endDate,
+    event.timezone,
+    { compact: true }
+  );
+}
 
 function buildSuggestBusinessHref({ query = "", location = "" } = {}) {
   const params = new URLSearchParams();
@@ -99,9 +110,6 @@ function BusinessCard({ biz, saved, count, saving, onSave }) {
 }
 
 function EventCard({ event }) {
-  const fmt = (val) => val
-    ? new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(new Date(val))
-    : null;
   return (
     <article className="gem-card card-stack-effect">
       {event.imageUrl && (
@@ -111,7 +119,7 @@ function EventCard({ event }) {
         </div>
       )}
       <div className="category-tag bg-retro-red text-white">
-        {event.startDate ? fmt(event.startDate) : "EVENT"}
+        {eventDateLabel(event)}
       </div>
       <h4 className="gem-name">{event.title}</h4>
       <p className="gem-desc">
@@ -171,9 +179,6 @@ function BusinessRow({ biz, saved, count, saving, onSave }) {
 }
 
 function EventRow({ event }) {
-  const fmt = (val) => val
-    ? new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(new Date(val))
-    : null;
   return (
     <article className="list-item">
       <div className="list-item-thumb list-item-thumb-event">
@@ -185,7 +190,7 @@ function EventRow({ event }) {
       <div className="list-item-body">
         <div className="list-item-meta">
           <span className="font-accent list-item-city list-item-city-event">
-            {event.startDate ? fmt(event.startDate) : "EVENT"}
+            {eventDateLabel(event)}
           </span>
           <span className="font-accent list-item-cat">{event.city}</span>
         </div>

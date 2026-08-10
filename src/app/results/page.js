@@ -1,4 +1,5 @@
 import { getCurrentUser, getDashboardPath } from "@/lib/auth/session";
+import { getPublicEventWhere } from "@/lib/event-dates";
 import { prisma } from "@/lib/prisma";
 import { isMissingPrismaTableError } from "@/lib/prisma-errors";
 import ResultsExperience from "./ResultsExperience";
@@ -82,7 +83,7 @@ export default async function ResultsPage({ searchParams }) {
       select: { name: true },
     }),
     prisma.event.findMany({
-      where: { status: "PUBLISHED" },
+      where: getPublicEventWhere(),
       distinct: ["city"],
       select: { city: true },
     }),

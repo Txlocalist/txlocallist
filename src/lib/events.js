@@ -3,6 +3,23 @@ import {
   fromEventCategoryTagName,
   isEventCategoryTagName,
 } from "@/lib/event-categories.mjs";
+import {
+  formatEventDateKey,
+  formatEventDateRange,
+  formatEventTime,
+  getEventLocalHour,
+  getEventTimeZone,
+  getInclusiveEventDateKeys,
+  getPublicEventWhere,
+  isEventPast,
+} from "@/lib/event-dates";
+
+export {
+  formatEventDateKey,
+  formatEventDateRange,
+  formatEventTime,
+  formatLongEventDate,
+} from "@/lib/event-dates";
 
 function unique(values) {
   return Array.from(new Set(values.filter(Boolean)));
@@ -92,7 +109,7 @@ function getDateWindowKeys(dateFilter) {
 
   if (value === "next-7-days" || value === "next 7 days") {
     return new Set(
-      Array.from({ length: 8 }, (_, index) => keyFromLocalDate(addDays(today, index)))
+      Array.from({ length: 7 }, (_, index) => keyFromLocalDate(addDays(today, index)))
     );
   }
 
@@ -104,42 +121,6 @@ function getDateWindowKeys(dateFilter) {
   }
 
   return null;
-}
-
-export function formatEventDateKey(startDate) {
-  if (!startDate) return "undated";
-
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Chicago",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(new Date(startDate));
-
-  return `${parts.find((part) => part.type === "year")?.value}-${parts.find((part) => part.type === "month")?.value}-${parts.find((part) => part.type === "day")?.value}`;
-}
-
-export function formatEventTime(startDate) {
-  if (!startDate) return "Time TBD";
-
-  return new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/Chicago",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  }).format(new Date(startDate));
-}
-
-export function formatLongEventDate(startDate) {
-  if (!startDate) return "Date coming soon";
-
-  return new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/Chicago",
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(startDate));
 }
 
 export function formatShortDateLabel(dateKey) {
@@ -154,6 +135,12 @@ export function formatShortDateLabel(dateKey) {
 
 function normalizeEvent(event) {
   const type = inferEventType(event);
+  const timezone = getEventTimeZone(event);
+  const dateKeys = getInclusiveEventDateKeys(
+    event.startDate,
+    event.endDate,
+    timezone
+  );
   const rawTagNames = (event.tags || [])
     .map((tag) => tag.name)
     .filter((tagName) => !isEventCategoryTagName(tagName));
@@ -169,6 +156,7 @@ function normalizeEvent(event) {
     title: event.title || "Untitled Event",
     description: event.description || "Local event details coming soon.",
     imageUrl: event.imageUrl || "",
+    eventUrl: event.eventUrl || "",
     addressName: event.addressName || "",
     address: event.address || "",
     city: event.city || "",
@@ -186,26 +174,36 @@ function normalizeEvent(event) {
     type,
     startDate: event.startDate ? event.startDate.toISOString() : null,
     endDate: event.endDate ? event.endDate.toISOString() : null,
-    dateKey: formatEventDateKey(event.startDate),
-    timeLabel: formatEventTime(event.startDate),
+    timezone,
+    dateKey: dateKeys[0] || "undated",
+    dateKeys,
+    dateRangeLabel: formatEventDateRange(event.startDate, event.endDate, timezone),
+    shortDateRangeLabel: formatEventDateRange(event.startDate, event.endDate, timezone, {
+      compact: true,
+    }),
+    timeLabel: formatEventTime(event.startDate, timezone),
+    startHour: getEventLocalHour(event.startDate, timezone),
+    isPast: isEventPast(event),
   };
 }
 
 export async function getPublishedEvents() {
   const events = await prisma.event.findMany({
-    where: { status: "PUBLISHED" },
+    where: getPublicEventWhere(),
     orderBy: [{ startDate: "asc" }, { createdAt: "desc" }],
     select: {
       id: true,
       title: true,
       description: true,
       imageUrl: true,
+      eventUrl: true,
       addressName: true,
       address: true,
       city: true,
       state: true,
       startDate: true,
       endDate: true,
+      timezone: true,
       tags: { select: { name: true, slug: true } },
       business: {
         select: {
@@ -277,7 +275,10 @@ export function filterEvents(events, { query = "", location = "", category = "",
       }
     }
 
-    if (dateKeys && !dateKeys.has(event.dateKey)) {
+    if (
+      dateKeys &&
+      !(event.dateKeys || [event.dateKey]).some((dateKey) => dateKeys.has(dateKey))
+    ) {
       return false;
     }
 
@@ -324,12 +325,14 @@ export async function getEventById(id) {
       title: true,
       description: true,
       imageUrl: true,
+      eventUrl: true,
       addressName: true,
       address: true,
       city: true,
       state: true,
       startDate: true,
       endDate: true,
+      timezone: true,
       tags: { select: { name: true, slug: true } },
       business: {
         select: {

@@ -75,7 +75,7 @@ function dateWindowKeys(value) {
   if (value === "today" || value === "tonight") return new Set([keyFromDate(today)]);
   if (value === "tomorrow") return new Set([keyFromDate(addDays(today, 1))]);
   if (value === "next-7-days") {
-    return new Set(Array.from({ length: 8 }, (_, index) => keyFromDate(addDays(today, index))));
+    return new Set(Array.from({ length: 7 }, (_, index) => keyFromDate(addDays(today, index))));
   }
   if (value === "this-weekend") {
     const day = today.getDay();
@@ -98,6 +98,39 @@ function monthShort(key) {
 
 function eventDate(event) {
   return dateObj(event.dateKey) || new Date(8640000000000000);
+}
+
+function eventDateKeys(event) {
+  if (Array.isArray(event.dateKeys) && event.dateKeys.length) {
+    return event.dateKeys;
+  }
+  return event.dateKey && event.dateKey !== "undated" ? [event.dateKey] : [];
+}
+
+function eventOccursOn(event, dateKey) {
+  return eventDateKeys(event).includes(dateKey);
+}
+
+function eventIsOngoingOn(event, dateKey) {
+  const [startKey] = eventDateKeys(event);
+  return Boolean(dateKey && startKey && dateKey !== startKey && eventOccursOn(event, dateKey));
+}
+
+function eventTimeLabelOn(event, dateKey) {
+  return eventIsOngoingOn(event, dateKey) ? "Ongoing" : event.timeLabel;
+}
+
+function firstSelectableEventDate(events, dateFilter) {
+  const filterKeys = dateWindowKeys(dateFilter);
+  if (filterKeys) {
+    for (const dateKey of filterKeys) {
+      if (events.some((event) => eventOccursOn(event, dateKey))) {
+        return dateKey;
+      }
+    }
+  }
+
+  return events.flatMap(eventDateKeys)[0] || "";
 }
 
 function eventTypeClass(event) {
@@ -158,16 +191,19 @@ function filterEvents(events, { query, city, category, date }) {
         if (!values.includes(categoryValue)) return false;
       }
 
-      if (keys && !keys.has(event.dateKey)) return false;
+      if (keys && !eventDateKeys(event).some((key) => keys.has(key))) return false;
 
       return true;
     })
     .sort((a, b) => eventDate(a) - eventDate(b) || String(a.timeLabel).localeCompare(String(b.timeLabel)));
 }
 
-function timeBucket(event) {
+function timeBucket(event, dateKey) {
+  if (eventIsOngoingOn(event, dateKey)) return "Ongoing";
   if (!event.startDate) return "Tonight";
-  const hour = new Date(event.startDate).getHours();
+  const hour = Number.isInteger(event.startHour)
+    ? event.startHour
+    : new Date(event.startDate).getHours();
   if (hour < 12) return "Morning";
   if (hour < 17) return "Afternoon";
   return "Tonight";
@@ -222,7 +258,7 @@ export default function EventsResults({
     [allEvents, query, city, categoryFilter, dateFilter]
   );
 
-  const firstVisibleDate = filtered.find((event) => event.dateKey && event.dateKey !== "undated")?.dateKey;
+  const firstVisibleDate = firstSelectableEventDate(filtered, dateFilter);
   const [selectedDate, setSelectedDate] = useState(firstVisibleDate || "");
   const [month, setMonth] = useState(() => {
     const date = dateObj(firstVisibleDate) || new Date();
@@ -231,13 +267,21 @@ export default function EventsResults({
 
   useEffect(() => {
     if (!filtered.length) return;
-    if (selectedDate && !filtered.some((event) => event.dateKey === selectedDate)) {
-      const next = filtered.find((event) => event.dateKey && event.dateKey !== "undated")?.dateKey || "";
+    const filterKeys = dateWindowKeys(dateFilter);
+    const selectionMatchesEvents = selectedDate &&
+      filtered.some((event) => eventOccursOn(event, selectedDate));
+    const selectionMatchesFilter = !filterKeys || filterKeys.has(selectedDate);
+
+    if (
+      (selectedDate && (!selectionMatchesEvents || !selectionMatchesFilter)) ||
+      (!selectedDate && filterKeys)
+    ) {
+      const next = firstSelectableEventDate(filtered, dateFilter);
       setSelectedDate(next);
       const date = dateObj(next);
       if (date) setMonth(new Date(date.getFullYear(), date.getMonth(), 1));
     }
-  }, [filtered, selectedDate]);
+  }, [dateFilter, filtered, selectedDate]);
 
   useEffect(() => {
     function onKey(event) {
@@ -252,15 +296,16 @@ export default function EventsResults({
   }, []);
 
   const visible = useMemo(
-    () => (selectedDate ? filtered.filter((event) => event.dateKey === selectedDate) : filtered),
+    () => (selectedDate ? filtered.filter((event) => eventOccursOn(event, selectedDate)) : filtered),
     [filtered, selectedDate]
   );
 
   const calendarCounts = useMemo(() => {
     const counts = {};
     filtered.forEach((event) => {
-      if (!event.dateKey || event.dateKey === "undated") return;
-      (counts[event.dateKey] ||= []).push(event);
+      eventDateKeys(event).forEach((dateKey) => {
+        (counts[dateKey] ||= []).push(event);
+      });
     });
     return counts;
   }, [filtered]);
@@ -313,24 +358,24 @@ export default function EventsResults({
   }, [month, calendarCounts]);
 
   const agendaForSelected = useMemo(
-    () => filtered.filter((event) => event.dateKey === selectedDate),
+    () => filtered.filter((event) => eventOccursOn(event, selectedDate)),
     [filtered, selectedDate]
   );
 
   const agendaBuckets = useMemo(() => {
-    const buckets = { Morning: [], Afternoon: [], Tonight: [] };
-    agendaForSelected.forEach((event) => buckets[timeBucket(event)].push(event));
+    const buckets = { Ongoing: [], Morning: [], Afternoon: [], Tonight: [] };
+    agendaForSelected.forEach((event) => buckets[timeBucket(event, selectedDate)].push(event));
     return buckets;
-  }, [agendaForSelected]);
+  }, [agendaForSelected, selectedDate]);
 
   const listGroups = useMemo(() => {
     const grouped = {};
     visible.forEach((event) => {
-      const key = event.dateKey || "undated";
+      const key = selectedDate || event.dateKey || "undated";
       (grouped[key] ||= []).push(event);
     });
     return Object.entries(grouped);
-  }, [visible]);
+  }, [visible, selectedDate]);
 
   const selectedDateObj = dateObj(selectedDate);
   const monthTitle = `${MONTHS[month.getMonth()]} ${month.getFullYear()}`;
@@ -511,7 +556,7 @@ export default function EventsResults({
             </div>
             <div className="date">{dateObj(event.dateKey)?.getDate() || "--"}</div>
           </div>
-          <div className="time">{event.timeLabel}</div>
+          <div className="time">{eventTimeLabelOn(event, selectedDate)}</div>
         </div>
         <EventThumb event={event} />
         <div className="card-body">
@@ -521,6 +566,7 @@ export default function EventsResults({
             <small>{event.venue}</small>
           </h2>
           <div className="card-meta">
+            {eventDateKeys(event).length > 1 ? `${event.shortDateRangeLabel} · ` : ""}
             {event.venue} &middot; {event.cityLabel}
           </div>
           <div className="meta-row">
@@ -750,7 +796,7 @@ export default function EventsResults({
                         <h3>{fmtLong(date)}</h3>
                         {items.map((event) => (
                           <Link key={event.id} className="list-row" href={`/events/${event.id}`}>
-                            <div className="list-time">{event.timeLabel}</div>
+                            <div className="list-time">{eventTimeLabelOn(event, date)}</div>
                             <div className="list-detail">
                               <strong>{event.title}</strong>
                               <span>
@@ -838,7 +884,7 @@ export default function EventsResults({
                             <h4>{label}</h4>
                             {items.map((event) => (
                               <Link key={event.id} className="agenda-item" href={`/events/${event.id}`}>
-                                <div className="agenda-time">{event.timeLabel}</div>
+                                <div className="agenda-time">{eventTimeLabelOn(event, selectedDate)}</div>
                                 <div className="agenda-detail">
                                   <strong>{event.title}</strong>
                                   <span>

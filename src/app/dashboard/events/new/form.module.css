@@ -52,6 +52,29 @@
   font-weight: 500;
 }
 
+.errorMessage p {
+  margin: 0;
+}
+
+.errorMessage a {
+  color: inherit;
+  font-weight: 700;
+}
+
+.paymentNotice {
+  padding: 1rem 1.25rem;
+  border: var(--stroke-thin);
+  border-left: 4px solid var(--retro-yellow);
+  border-radius: var(--radius-md);
+  background: rgba(249, 200, 70, 0.12);
+  color: var(--retro-brown);
+}
+
+.paymentNotice p {
+  margin: 0.35rem 0 0;
+  line-height: 1.55;
+}
+
 /* Success Message */
 .successMessage {
   padding: 1rem;
@@ -115,9 +138,10 @@
 .input:focus,
 .textarea:focus,
 .select:focus {
-  outline: none;
+  outline: 3px solid rgba(74, 157, 156, 0.42);
+  outline-offset: 2px;
   border-color: var(--retro-teal);
-  box-shadow: 0 0 0 3px rgba(74, 157, 156, 0.1);
+  box-shadow: 0 0 0 3px rgba(74, 157, 156, 0.12);
 }
 
 .textarea {
@@ -143,6 +167,13 @@
   margin: 0;
   color: var(--retro-red);
   font-size: 0.85rem;
+}
+
+.helpText {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
 }
 
 /* Categories Grid */

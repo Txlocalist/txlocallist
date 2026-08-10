@@ -1,14 +1,10 @@
 import Link from "next/link";
 
 import { getBlobImageUrl } from "@/lib/blob";
+import { formatEventDateRange, getPublicEventWhere } from "@/lib/event-dates";
 import { prisma } from "@/lib/prisma";
 import { isMissingPrismaTableError } from "@/lib/prisma-errors";
 import styles from "./events.module.css";
-
-function formatDate(val) {
-  if (!val) return null;
-  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(new Date(val));
-}
 
 /**
  * Server component — renders upcoming events near the searched city.
@@ -18,7 +14,7 @@ export async function EventsSection({ city = "" }) {
   let events = [];
 
   try {
-    const where = { status: "PUBLISHED" };
+    const where = getPublicEventWhere();
     if (city) {
       where.city = { contains: city, mode: "insensitive" };
     }
@@ -65,7 +61,14 @@ export async function EventsSection({ city = "" }) {
             )}
             <div className={styles.cardBody}>
               {event.startDate && (
-                <p className={styles.cardDate}>{formatDate(event.startDate)}</p>
+                <p className={styles.cardDate}>
+                  {formatEventDateRange(
+                    event.startDate,
+                    event.endDate,
+                    event.timezone,
+                    { compact: true }
+                  )}
+                </p>
               )}
               <h3 className={styles.cardTitle}>{event.title}</h3>
               <p className={styles.cardLocation}>

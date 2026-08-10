@@ -111,6 +111,12 @@ function EventCard({ event, index }) {
           <Link href={`/events/${event.id}`}>{event.title}</Link>
         </h3>
         <p className="meta">
+          {event.dateKeys?.length > 1 ? (
+            <>
+              {event.shortDateRangeLabel}
+              <br />
+            </>
+          ) : null}
           {event.venue}
           <br />
           {event.cityLabel}

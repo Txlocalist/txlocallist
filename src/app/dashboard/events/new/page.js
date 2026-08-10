@@ -1,46 +1,32 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { DashboardLayout } from "../../DashboardShell";
-import { CreateEventForm } from "./CreateEventForm";
-import styles from "../../dashboard.module.css";
+
+import { getCurrentSession } from "@/lib/auth/session";
 import { getOwnerBillingState } from "@/lib/billing";
 import { prisma } from "@/lib/prisma";
-import { getCurrentSession } from "@/lib/auth/session";
 import { isMissingPrismaTableError } from "@/lib/prisma-errors";
+import {
+  EVENT_MAX_CALENDAR_DAYS,
+  EVENT_POST_PRICE_CENTS,
+  formatWholeDollarPrice,
+  isEventPostingEnabled,
+} from "@/lib/pricing";
+
+import { DashboardLayout } from "../../DashboardShell";
+import styles from "../../dashboard.module.css";
+import { CreateEventForm } from "./CreateEventForm";
+
+export const metadata = {
+  title: "Post an Event | TX Localist",
+};
 
 export default async function NewEventPage() {
   const session = await getCurrentSession();
-  if (!session?.user) redirect("/login");
+  if (!session?.user) redirect("/login?next=/dashboard/events/new");
+
   const user = session.user;
   const billingState = await getOwnerBillingState(user.id).catch(() => null);
-  const canCreateEvents = user.role === "ADMIN" || Boolean(billingState?.hasPaidAccess);
-
-  if (!canCreateEvents) {
-    return (
-      <DashboardLayout activeTab="events-create">
-        <div className={styles.pageHeader}>
-          <div>
-            <h1 className={styles.pageTitle}>Create Event</h1>
-            <p className={styles.pageSubtitle}>Upgrade your account before posting events.</p>
-          </div>
-        </div>
-
-        <div className={styles.card}>
-          <div className={styles.emptyState}>
-            <h2 className={styles.emptyStateTitle}>Upgrade Required</h2>
-            <p className={styles.emptyStateDescription}>
-              Event posting is part of the $10 paid creator account. Upgrade in billing first, then
-              attach events to your business from this dashboard.
-            </p>
-            <Link href="/dashboard/billing" className={styles.emptyStateAction}>
-              Upgrade Account
-            </Link>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
+  const oneTimePostingEnabled = isEventPostingEnabled();
+  const eventPostPrice = formatWholeDollarPrice(EVENT_POST_PRICE_CENTS);
   let businesses = [];
   let schemaNotice = null;
 
@@ -52,7 +38,7 @@ export default async function NewEventPage() {
     });
   } catch (error) {
     if (isMissingPrismaTableError(error)) {
-      schemaNotice = "The database schema is not ready. Run npm run db:push and reload.";
+      schemaNotice = "The event posting database update has not been applied yet.";
     } else {
       throw error;
     }
@@ -62,33 +48,34 @@ export default async function NewEventPage() {
     <DashboardLayout activeTab="events-create">
       <div className={styles.pageHeader}>
         <div>
-          <h1 className={styles.pageTitle}>Create Event</h1>
-          <p className={styles.pageSubtitle}>Post a local event to the directory</p>
+          <h1 className={styles.pageTitle}>Post an Event</h1>
+          <p className={styles.pageSubtitle}>
+            One price covers one continuous event lasting up to {EVENT_MAX_CALENDAR_DAYS} calendar days.
+          </p>
         </div>
       </div>
 
-      {schemaNotice ? (
+      {schemaNotice ||
+      (!oneTimePostingEnabled &&
+        !(billingState?.hasPaidAccess && businesses.length > 0) &&
+        user.role !== "ADMIN") ? (
         <div className={styles.card}>
           <div className={styles.emptyState}>
-            <h2 className={styles.emptyStateTitle}>Schema Not Ready</h2>
-            <p className={styles.emptyStateDescription}>{schemaNotice}</p>
+            <h2 className={styles.emptyStateTitle}>Posting Unavailable</h2>
+            <p className={styles.emptyStateDescription}>
+              {schemaNotice ?? "One-time event posting is being configured. Please check back soon."}
+            </p>
           </div>
         </div>
       ) : (
         <div className={styles.card}>
-          {businesses.length > 0 ? (
-            <CreateEventForm businesses={businesses} />
-          ) : (
-            <div className={styles.emptyState}>
-              <h2 className={styles.emptyStateTitle}>Create A Business First</h2>
-              <p className={styles.emptyStateDescription}>
-                Events must be linked to one of your active business listings before they can be published.
-              </p>
-              <Link href="/dashboard/businesses/new" className={styles.emptyStateAction}>
-                Create Listing
-              </Link>
-            </div>
-          )}
+          <CreateEventForm
+            businesses={businesses}
+            hasMembership={Boolean(billingState?.hasPaidAccess)}
+            isAdmin={user.role === "ADMIN"}
+            oneTimePostingEnabled={oneTimePostingEnabled}
+            eventPostPrice={eventPostPrice}
+          />
         </div>
       )}
     </DashboardLayout>

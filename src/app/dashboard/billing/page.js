@@ -114,7 +114,7 @@ export default async function BillingPage({ searchParams }) {
 
   if (stripeConfigured && params.checkout === "success" && params.session_id) {
     try {
-      await syncSubscriptionFromCheckoutSessionId(params.session_id);
+      await syncSubscriptionFromCheckoutSessionId(params.session_id, session.user.id);
     } catch (error) {
       console.error("[billing] checkout session sync failed:", error);
     }

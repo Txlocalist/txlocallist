@@ -48,7 +48,7 @@ const PLANS = [
     },
   },
   {
-    name: "Paid",
+    name: "Local Business Membership",
     slug: "starter",
     tier: 1,
     priceCents: 1000, // $10.00/month
@@ -77,7 +77,8 @@ async function main() {
       const plan = await prisma.plan.upsert({
         where: { slug: planData.slug },
         update: {
-          // Update if needed
+          name: planData.name,
+          billingPeriod: planData.billingPeriod,
           priceCents: planData.priceCents,
           stripePriceId: planData.stripePriceId,
           features: JSON.stringify(planData.features),

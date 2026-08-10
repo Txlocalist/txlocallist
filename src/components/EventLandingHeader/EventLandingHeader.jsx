@@ -4,6 +4,8 @@ import styles from "./EventLandingHeader.module.css";
 
 const LINKS = [
   { href: "/events", label: "Explore" },
+  { href: "/pricing", label: "Pricing" },
+  { href: "/post-an-event", label: "Post Event" },
   { href: "/about", label: "About" },
   { href: "/post-your-business", label: "Add Listing" },
 ];
@@ -25,6 +27,17 @@ export default function EventLandingHeader() {
             </Link>
           ))}
         </nav>
+
+        <details className={styles.mobileMenu}>
+          <summary>Menu</summary>
+          <nav aria-label="Event mobile navigation">
+            {LINKS.map((link) => (
+              <Link key={link.href} href={link.href}>
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+        </details>
 
         <Link href="/login" className={styles.loginButton}>
           Login

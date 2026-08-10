@@ -25,7 +25,7 @@ function SubmitButton() {
   );
 }
 
-export function SignupForm({ intent = "" }) {
+export function SignupForm({ intent = "", nextPath = "" }) {
   const [state, formAction] = useActionState(signUpAction, INITIAL_STATE);
 
   return (
@@ -33,6 +33,7 @@ export function SignupForm({ intent = "" }) {
       {intent ? (
         <input type="hidden" name="intent" value={intent} />
       ) : null}
+      {nextPath ? <input type="hidden" name="next" value={nextPath} /> : null}
       {state.error ? (
         <p className={styles.errorBanner} aria-live="polite">
           {state.error}

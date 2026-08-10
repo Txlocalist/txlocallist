@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
+import { getSafeNextPath } from "@/lib/auth/redirect";
 import {
   clearCurrentSession,
   createUserSession,
@@ -52,6 +53,7 @@ export async function signUpAction(_prevState, formData) {
   const password = formData.get("password")?.toString() ?? "";
   const confirmPassword = formData.get("confirmPassword")?.toString() ?? "";
   const intent = getTextValue(formData, "intent");
+  const nextPath = getSafeNextPath(getTextValue(formData, "next"));
   const fieldErrors = validateCredentials({
     email,
     password,
@@ -118,6 +120,10 @@ export async function signUpAction(_prevState, formData) {
   sendWelcomeEmail({ to: email, isOwner: false }).catch((err) =>
     console.error("[auth] welcome email failed:", err)
   );
+
+  if (nextPath) {
+    redirect(nextPath);
+  }
 
   if (intent === "owner") {
     redirect("/dashboard/billing");
@@ -193,6 +199,7 @@ export async function createAdminAction(_prevState, formData) {
 export async function loginAction(_prevState, formData) {
   const email = normalizeEmail(getTextValue(formData, "email"));
   const password = formData.get("password")?.toString() ?? "";
+  const nextPath = getSafeNextPath(getTextValue(formData, "next"));
 
   if (!EMAIL_REGEX.test(email) || !password) {
     return buildErrorState("Enter your email and password to continue.", {
@@ -249,7 +256,7 @@ export async function loginAction(_prevState, formData) {
     return buildErrorState(`${authSchemaMessage} Login cannot complete until the session table exists.`);
   }
 
-  redirect(getDashboardPath(user.role));
+  redirect(nextPath || getDashboardPath(user.role));
 }
 
 export async function logoutAction() {

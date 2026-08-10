@@ -1,19 +1,22 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
-import { deleteEventAction } from "@/app/actions/events";
+import { deleteEventAction, retryEventCheckoutAction } from "@/app/actions/events";
 import { getCurrentSession } from "@/lib/auth/session";
-import { getOwnerBillingState } from "@/lib/billing";
+import { formatEventDateRange, isEventPast } from "@/lib/event-dates";
 import { prisma } from "@/lib/prisma";
 import { isMissingPrismaTableError } from "@/lib/prisma-errors";
+import {
+  EVENT_POST_PRICE_CENTS,
+  formatWholeDollarPrice,
+  isEventPostingEnabled,
+} from "@/lib/pricing";
 
 import { DashboardLayout } from "../DashboardShell";
 import styles from "../dashboard.module.css";
+import CancelEventButton from "./CancelEventButton";
 
-function formatDate(value) {
-  if (!value) return "-";
-  return new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(new Date(value));
-}
+const EVENT_POST_PRICE = formatWholeDollarPrice(EVENT_POST_PRICE_CENTS);
 
 function getEventStatusClass(status) {
   if (status === "PUBLISHED") return "statusACTIVE";
@@ -28,11 +31,13 @@ export default async function DashboardEventsPage({ searchParams }) {
   if (!session?.user) redirect("/login");
 
   const user = session.user;
-  const billingState = await getOwnerBillingState(user.id).catch(() => null);
-  const canCreateEvents = user.role === "ADMIN" || Boolean(billingState?.hasPaidAccess);
-
   const params = await searchParams;
   const created = params?.created === "1";
+  const updated = params?.updated === "1";
+  const canceled = params?.canceled === "1";
+  const cancellationBlocked = params?.cancel === "blocked";
+  const paymentUnavailable = params?.payment === "unavailable";
+  const eventPostingEnabled = isEventPostingEnabled();
 
   let events = [];
   let schemaNotice = null;
@@ -41,11 +46,17 @@ export default async function DashboardEventsPage({ searchParams }) {
     events = await prisma.event.findMany({
       where: { creatorId: user.id },
       orderBy: { createdAt: "desc" },
-      include: { business: { select: { name: true } } },
+      include: {
+        business: { select: { name: true } },
+        payments: {
+          orderBy: { createdAt: "desc" },
+          select: { status: true },
+        },
+      },
     });
   } catch (error) {
     if (isMissingPrismaTableError(error)) {
-      schemaNotice = "The events table is not yet in the database. Run npm run db:push to apply the latest schema.";
+      schemaNotice = "The event posting database migration has not been applied yet.";
     } else {
       throw error;
     }
@@ -55,20 +66,32 @@ export default async function DashboardEventsPage({ searchParams }) {
     <DashboardLayout activeTab="events-live">
       <div className={styles.pageHeader}>
         <div>
-          <h1 className={styles.pageTitle}>Live Events</h1>
+          <h1 className={styles.pageTitle}>My Events</h1>
           <p className={styles.pageSubtitle}>Manage the events connected to your dashboard.</p>
         </div>
         <div className={styles.pageActions}>
           <Link
-            href={canCreateEvents ? "/dashboard/events/new" : "/dashboard/billing"}
+            href="/dashboard/events/new"
             className={styles.createButton}
           >
-            {canCreateEvents ? "+ Create Event" : "Upgrade Account"}
+            + Post Event
           </Link>
         </div>
       </div>
 
       {created && <div className={styles.successBanner}>Your event was submitted for admin review.</div>}
+      {updated && <div className={styles.successBanner}>Your event changes were saved.</div>}
+      {canceled && <div className={styles.successBanner}>Your event was canceled. No automatic refund was issued.</div>}
+      {cancellationBlocked ? (
+        <div className={`${styles.noticeBanner} ${styles.noticeError}`}>
+          Cancellation is waiting for Stripe to finish the current payment. Try again after the payment status updates.
+        </div>
+      ) : null}
+      {paymentUnavailable ? (
+        <div className={`${styles.noticeBanner} ${styles.noticeError}`}>
+          Stripe Checkout could not start. Please try again.
+        </div>
+      ) : null}
 
       {schemaNotice && (
         <div className={styles.card}>
@@ -86,10 +109,10 @@ export default async function DashboardEventsPage({ searchParams }) {
             Create your first event to send it to the admin review queue.
           </p>
           <Link
-            href={canCreateEvents ? "/dashboard/events/new" : "/dashboard/billing"}
+            href="/dashboard/events/new"
             className={styles.emptyStateAction}
           >
-            {canCreateEvents ? "Create Event" : "Upgrade Account"}
+            Post Event
           </Link>
         </div>
       )}
@@ -114,19 +137,39 @@ export default async function DashboardEventsPage({ searchParams }) {
             </div>
           </div>
           <div className={styles.tableBody}>
-            {events.map((event) => (
+            {events.map((event) => {
+              const latestPayment = event.payments[0];
+              const hasUnresolvedRefund = event.payments.some((payment) =>
+                ["REFUND_PENDING", "REFUND_FAILED"].includes(payment.status)
+              );
+
+              return (
               <div key={event.id} className={styles.tableRow}>
                 <div className={styles.tableCol} style={{ flex: 2 }} data-label="Title">
                   <div>
                     <p className={styles.businessName}>{event.title}</p>
                     {event.business ? <p className={styles.businessMeta}>{event.business.name}</p> : null}
+                    <p className={styles.businessMeta}>
+                      {event.postingMethod === "ONE_TIME" ? "One-time post" : "Membership post"}
+                      {latestPayment?.status ? ` | Payment: ${latestPayment.status}` : ""}
+                    </p>
+                    {hasUnresolvedRefund ? (
+                      <p className={styles.businessMeta}>
+                        Payment support is resolving a refund. Do not pay again.
+                      </p>
+                    ) : null}
                   </div>
                 </div>
                 <div className={styles.tableCol} style={{ flex: 1 }} data-label="City">
                   {event.city}, {event.state}
                 </div>
                 <div className={styles.tableCol} style={{ flex: 1 }} data-label="Date">
-                  {formatDate(event.startDate)}
+                  {formatEventDateRange(
+                    event.startDate,
+                    event.endDate,
+                    event.timezone,
+                    { compact: true },
+                  )}
                 </div>
                 <div className={styles.tableCol} style={{ flex: 1 }} data-label="Status">
                   <span className={styles[getEventStatusClass(event.status)]}>{event.status}</span>
@@ -134,20 +177,39 @@ export default async function DashboardEventsPage({ searchParams }) {
                 <div className={styles.tableCol} style={{ flex: 1 }} data-label="Actions">
                   <div className={styles.actionButtons}>
                     {event.status === "PUBLISHED" ? (
-                      <Link href="/events" className={styles.actionButton} target="_blank">
+                      <Link href={`/events/${event.id}`} className={styles.actionButton} target="_blank">
                         View
                       </Link>
                     ) : null}
-                    <form action={deleteEventAction}>
-                      <input type="hidden" name="eventId" value={event.id} />
-                      <button type="submit" className={styles.deleteButton}>
-                        Delete
-                      </button>
-                    </form>
+                    {!(["CANCELLED", "DENIED"].includes(event.status)) && !isEventPast(event) ? (
+                      <Link href={`/dashboard/events/${event.id}/edit`} className={styles.actionButton}>
+                        Edit
+                      </Link>
+                    ) : null}
+                    {event.postingMethod === "ONE_TIME" &&
+                    event.status === "DRAFT" &&
+                    event.endDate &&
+                    eventPostingEnabled &&
+                    !hasUnresolvedRefund &&
+                    !isEventPast(event) ? (
+                      <form action={retryEventCheckoutAction}>
+                        <input type="hidden" name="eventId" value={event.id} />
+                        <button type="submit" className={styles.actionButton}>
+                          Pay {EVENT_POST_PRICE}
+                        </button>
+                      </form>
+                    ) : null}
+                    {!(["CANCELLED", "DENIED"].includes(event.status)) && !isEventPast(event) ? (
+                      <form action={deleteEventAction}>
+                        <input type="hidden" name="eventId" value={event.id} />
+                        <CancelEventButton className={styles.deleteButton} />
+                      </form>
+                    ) : null}
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

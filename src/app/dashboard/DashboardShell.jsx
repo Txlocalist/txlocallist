@@ -5,6 +5,11 @@ import logo from "@/app/assets/Tx-Localist-01.png";
 import { logoutAction } from "@/app/actions/auth";
 import { getCurrentSession } from "@/lib/auth/session";
 import { getOwnerBillingState } from "@/lib/billing";
+import {
+  EVENT_POST_PRICE_CENTS,
+  formatWholeDollarPrice,
+  isEventPostingEnabled,
+} from "@/lib/pricing";
 
 import styles from "./DashboardShell.module.css";
 
@@ -16,15 +21,17 @@ export async function DashboardLayout({ children, activeTab = "overview" }) {
   const user = session?.user ?? null;
   const billingState = user?.id ? await getOwnerBillingState(user.id).catch(() => null) : null;
   const hasCreatorAccess = user?.role === "ADMIN" || Boolean(billingState?.hasPaidAccess);
+  const eventPostPrice = formatWholeDollarPrice(EVENT_POST_PRICE_CENTS);
+  const oneTimePostingEnabled = isEventPostingEnabled();
   const navSections = [
     {
       title: "Posts",
       icon: "campaign",
       items: [
-        { id: "events-live", label: "Live Events", href: "/dashboard/events", icon: "event" },
+        { id: "events-live", label: "My Events", href: "/dashboard/events", icon: "event" },
         {
           id: "events-create",
-          label: "Create Events",
+          label: "Post Event",
           href: "/dashboard/events/new",
           icon: "add_circle",
         },
@@ -83,8 +90,8 @@ export async function DashboardLayout({ children, activeTab = "overview" }) {
 
   const sectionTitles = {
     overview: "Dashboard",
-    "events-live": "Live Events",
-    "events-create": hasCreatorAccess ? "Create Events" : "Upgrade Account",
+    "events-live": "My Events",
+    "events-create": "Post Event",
     "events-saved": "Saved Events",
     "businesses-live": "Live Businesses",
     "businesses-create": hasCreatorAccess ? "Create Business" : "Upgrade Account",
@@ -162,8 +169,12 @@ export async function DashboardLayout({ children, activeTab = "overview" }) {
               <p className={styles.helpEyebrow}>{hasCreatorAccess ? "Creator Access" : "Billing Access"}</p>
               <p className={styles.helpText}>
                 {hasCreatorAccess
-                  ? "Your paid account is active. Create listings and post events from the dashboard."
-                  : "Sign in as a normal user, save local businesses, and upgrade to the $10 plan when you're ready to post."}
+                  ? oneTimePostingEnabled
+                    ? "Your membership includes business-linked events. Standalone event posts are also available."
+                    : "Your membership includes business-linked events. One-time Checkout is currently paused."
+                  : oneTimePostingEnabled
+                    ? `Browse and save for free, or post one event for a ${eventPostPrice} one-time fee.`
+                    : "Browse local businesses and save favorites for free."}
               </p>
             </div>
           </div>

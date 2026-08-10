@@ -102,7 +102,8 @@
 }
 
 .typePill,
-.cityLabel {
+.cityLabel,
+.pastPill {
   font-family: var(--font-accent), sans-serif;
   font-size: 0.73rem;
   letter-spacing: 0.12em;
@@ -121,6 +122,17 @@
 
 .cityLabel {
   color: var(--event-orange);
+}
+
+.pastPill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0.65rem 1rem;
+  border: 1px solid rgba(190, 169, 139, 0.5);
+  border-radius: 999px;
+  color: var(--event-muted);
+  background: rgba(190, 169, 139, 0.08);
 }
 
 .title {
@@ -560,6 +572,15 @@
   margin-top: 0.8rem;
   color: var(--event-orange);
   font-size: 1.16rem;
+}
+
+.pastNotice {
+  margin: 0.8rem 0 0;
+  color: var(--event-muted);
+  font-family: var(--font-accent), sans-serif;
+  font-size: 0.67rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .mapButton {

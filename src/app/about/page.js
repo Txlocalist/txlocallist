@@ -130,7 +130,7 @@ export default function AboutPage() {
           </div>
         </section>
 
-        <PricingComparison />
+        <PricingComparison compact />
 
         <section className={styles.nextSection} aria-labelledby="next-title">
           <div className={styles.nextInner}>

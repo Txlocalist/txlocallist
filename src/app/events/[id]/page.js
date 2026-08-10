@@ -4,9 +4,10 @@ import { notFound } from "next/navigation";
 import { Footer, Navbar } from "@/components";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getBlobImageUrl } from "@/lib/blob";
-import { formatEventTime, formatLongEventDate, getEventById } from "@/lib/events";
+import { getEventById } from "@/lib/events";
 import { prisma } from "@/lib/prisma";
 import { isMissingPrismaTableError } from "@/lib/prisma-errors";
+import { getSiteUrl } from "@/lib/stripe";
 
 import EventActions from "./EventActions";
 import EventHeroImage from "./EventHeroImage";
@@ -75,6 +76,7 @@ export default async function EventDetailPage({ params }) {
   }
 
   const imageUrl = event.imageUrl ? getBlobImageUrl(event.imageUrl) : "";
+  const siteUrl = getSiteUrl();
   const mapQuery = Array.from(
     new Set([event.addressName, event.address, event.cityLabel].filter(Boolean))
   ).join(", ");
@@ -84,14 +86,55 @@ export default async function EventDetailPage({ params }) {
     description: event.description,
     startDate: event.startDate,
     endDate: event.endDate,
+    timezone: event.timezone,
     venue: event.venue,
     address: event.address,
     cityLabel: event.cityLabel,
+  };
+  const structuredImageUrl = imageUrl
+    ? imageUrl.startsWith("http") ? imageUrl : `${siteUrl}${imageUrl}`
+    : undefined;
+  const eventJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    name: event.title,
+    description: event.description,
+    startDate: event.startDate,
+    endDate: event.endDate,
+    eventStatus: event.isPast
+      ? "https://schema.org/EventCompleted"
+      : "https://schema.org/EventScheduled",
+    eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+    url: `${siteUrl}/events/${event.id}`,
+    ...(structuredImageUrl ? { image: [structuredImageUrl] } : {}),
+    location: {
+      "@type": "Place",
+      name: event.addressName || event.venue,
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: event.address,
+        addressLocality: event.city,
+        addressRegion: event.state,
+        addressCountry: "US",
+      },
+    },
+    ...(event.business ? {
+      organizer: {
+        "@type": "Organization",
+        name: event.business.name,
+        url: `${siteUrl}/business/${event.business.slug}`,
+      },
+    } : {}),
   };
 
   return (
     <div className={styles.page}>
       <Navbar logoSrc="/Dark-mode-logo.svg" />
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(eventJsonLd).replace(/</g, "\\u003c") }}
+      />
 
       <main className={styles.shell}>
         <Link href="/events/results" className={styles.backLink}>
@@ -104,6 +147,9 @@ export default async function EventDetailPage({ params }) {
             <div className={styles.labelRow}>
               <span className={styles.typePill}>{event.type}</span>
               <span className={styles.cityLabel}>{event.cityLabel}</span>
+              {event.isPast ? (
+                <span className={styles.pastPill}>Past Event</span>
+              ) : null}
             </div>
 
             <h1 id="event-title" className={styles.title}>{event.title}</h1>
@@ -128,8 +174,8 @@ export default async function EventDetailPage({ params }) {
               src={imageUrl}
               alt={`${event.title} event photo`}
               type={event.type}
-              dateLabel={formatLongEventDate(event.startDate)}
-              timeLabel={formatEventTime(event.startDate)}
+              dateLabel={event.dateRangeLabel}
+              timeLabel={event.timeLabel}
               cityLabel={event.cityLabel}
             />
           </div>
@@ -156,8 +202,11 @@ export default async function EventDetailPage({ params }) {
               </div>
               <div>
                 <h2>Date &amp; Time</h2>
-                <p className={styles.infoPrimary}>{formatLongEventDate(event.startDate)}</p>
-                <p className={styles.infoAccent}>{formatEventTime(event.startDate)}</p>
+                <p className={styles.infoPrimary}>{event.dateRangeLabel}</p>
+                <p className={styles.infoAccent}>{event.timeLabel}</p>
+                {event.isPast ? (
+                  <p className={styles.pastNotice}>This event has ended.</p>
+                ) : null}
               </div>
             </article>
 
@@ -175,6 +224,16 @@ export default async function EventDetailPage({ params }) {
                 <a href={mapUrl} target="_blank" rel="noopener noreferrer" className={styles.mapButton}>
                   Open Map
                 </a>
+                {event.eventUrl ? (
+                  <a
+                    href={event.eventUrl}
+                    target="_blank"
+                    rel="noopener noreferrer nofollow"
+                    className={styles.mapButton}
+                  >
+                    Event or Ticket Link
+                  </a>
+                ) : null}
               </div>
             </article>
           </div>

@@ -3,6 +3,7 @@
  * Returns published events optionally filtered by city.
  */
 import { NextResponse } from "next/server";
+import { getPublicEventWhere } from "@/lib/event-dates";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(request) {
@@ -11,7 +12,7 @@ export async function GET(request) {
   const limit = Math.min(parseInt(searchParams.get("limit") ?? "6", 10), 20);
 
   try {
-    const where = { status: "PUBLISHED" };
+    const where = getPublicEventWhere();
     if (city) {
       where.city = { contains: city, mode: "insensitive" };
     }
@@ -30,6 +31,8 @@ export async function GET(request) {
         city: true,
         state: true,
         startDate: true,
+        endDate: true,
+        timezone: true,
         tags: { select: { name: true } },
         business: { select: { name: true, slug: true } },
       },

@@ -15,6 +15,8 @@ export default function Footer({
   links = [
     { href: "/about", label: "ABOUT" },
     { href: "/how-it-works", label: "HOW IT WORKS" },
+    { href: "/pricing", label: "PRICING" },
+    { href: "/post-an-event", label: "POST EVENT" },
     { href: "/terms", label: "TERMS" },
     { href: "/privacy", label: "PRIVACY" },
     { href: "/contact", label: "CONTACT" },

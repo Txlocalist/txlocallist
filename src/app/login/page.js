@@ -3,16 +3,19 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getCurrentUser, getDashboardPath } from "@/lib/auth/session";
+import { getSafeNextPath } from "@/lib/auth/redirect";
 import landscapeImage from "@/app/assets/vintage Texas landscape.png";
 
 import styles from "./login.module.css";
 import { LoginForm } from "./LoginForm";
 
-export default async function LoginPage() {
+export default async function LoginPage({ searchParams }) {
+  const params = await searchParams;
+  const nextPath = getSafeNextPath(params?.next) ?? "";
   const user = await getCurrentUser();
 
   if (user) {
-    redirect(getDashboardPath(user.role));
+    redirect(nextPath || getDashboardPath(user.role));
   }
 
   return (
@@ -40,12 +43,15 @@ export default async function LoginPage() {
 
         <aside className={styles.authPanel}>
           <div className={styles.authCard}>
-            <LoginForm />
+            <LoginForm nextPath={nextPath} />
 
             <div className={styles.authDivider} />
 
             <p className={styles.authFooter}>Want to create a business listing later?</p>
-            <Link href="/signup?intent=owner" className={styles.authFooterLink}>
+            <Link
+              href={nextPath ? `/signup?next=${encodeURIComponent(nextPath)}` : "/signup?intent=owner"}
+              className={styles.authFooterLink}
+            >
               Create a user account
             </Link>
           </div>
