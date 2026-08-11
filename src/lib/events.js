@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { isUnavailablePrismaRelationError } from "@/lib/prisma-errors";
 import {
   fromEventCategoryTagName,
   isEventCategoryTagName,
@@ -184,11 +185,13 @@ function normalizeEvent(event) {
     timeLabel: formatEventTime(event.startDate, timezone),
     startHour: getEventLocalHour(event.startDate, timezone),
     isPast: isEventPast(event),
+    likesCount: event._count?.likes ?? 0,
+    isLiked: Boolean(event.likes?.length),
   };
 }
 
-export async function getPublishedEvents() {
-  const events = await prisma.event.findMany({
+export async function getPublishedEvents(userId = null) {
+  const findEvents = (includeLikes) => prisma.event.findMany({
     where: getPublicEventWhere(),
     orderBy: [{ startDate: "asc" }, { createdAt: "desc" }],
     select: {
@@ -211,8 +214,26 @@ export async function getPublishedEvents() {
           slug: true,
         },
       },
+      ...(includeLikes
+        ? {
+            _count: { select: { likes: true } },
+            ...(userId
+              ? { likes: { where: { userId }, select: { id: true } } }
+              : {}),
+          }
+        : {}),
     },
   });
+
+  let events;
+  try {
+    events = await findEvents(true);
+  } catch (error) {
+    if (!isUnavailablePrismaRelationError(error, "likes")) {
+      throw error;
+    }
+    events = await findEvents(false);
+  }
 
   return events.map(normalizeEvent);
 }
@@ -304,8 +325,8 @@ export function groupEventsByDate(events) {
   }));
 }
 
-export async function getEventsPageData(filters = {}) {
-  const events = await getPublishedEvents();
+export async function getEventsPageData(filters = {}, { userId = null } = {}) {
+  const events = await getPublishedEvents(userId);
   const filteredEvents = filterEvents(events, filters);
 
   return {

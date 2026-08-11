@@ -12,12 +12,21 @@
   transform: translateY(-0.5rem);
 }
 
-.businessImageContainer {
+.businessImageLink {
+  display: block;
   aspect-ratio: 16 / 9;
   margin-bottom: 1.5rem;
   overflow: hidden;
   border-radius: var(--radius-md);
   border: var(--stroke-thin);
+  color: inherit;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.businessImageLink:focus-visible {
+  outline: 3px solid var(--retro-teal);
+  outline-offset: 3px;
 }
 
 .businessImage {

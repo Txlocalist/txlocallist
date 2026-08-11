@@ -11,6 +11,7 @@ export default function SearchBar({
   defaultLocation = "Austin, TX",
   initialType = "businesses",
   visibleTypes = ["businesses", "events"],
+  showTypeSelector = true,
   variant = "hero",
   autoSubmitOnTypeChange = false,
   typeChangeHrefMap,
@@ -196,6 +197,7 @@ export default function SearchBar({
       />
 
       <div className={styles.actionsGroup}>
+        {showTypeSelector ? (
         <div className={styles.typeGroup} role="group" aria-label="Search type">
           {typeOptions.map((option) => {
             const className = [
@@ -249,6 +251,7 @@ export default function SearchBar({
             );
           })}
         </div>
+        ) : null}
 
         <button type="submit" className={styles.searchBtn}>
           <span className={"material-icons " + styles.searchBtnIcon}>search</span>

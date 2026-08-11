@@ -3,12 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { LikeCount } from "@/components/LikeCount";
 import styles from "./page.module.css";
 
 export default function EventActions({
   eventId,
   initialSaved = false,
   initialCount = 0,
+  initialLiked = false,
+  initialLikesCount = 0,
   isLoggedIn = false,
   event,
 }) {
@@ -88,6 +91,15 @@ export default function EventActions({
   return (
     <div className={styles.actionsArea}>
       <div className={styles.actionButtons}>
+        <LikeCount
+          count={initialLikesCount}
+          size="eventHero"
+          targetType="event"
+          targetId={eventId}
+          targetName={event.title}
+          initialLiked={initialLiked}
+          isLoggedIn={isLoggedIn}
+        />
         <button
           type="button"
           onClick={toggleSave}

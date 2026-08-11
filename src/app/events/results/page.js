@@ -1,4 +1,5 @@
 import EventsResults from "./EventsResults";
+import { getCurrentUser } from "@/lib/auth/session";
 import { getEventsPageData } from "@/lib/events";
 
 export const metadata = {
@@ -14,7 +15,8 @@ export default async function EventResultsPage({ searchParams }) {
     category: params?.category ?? "",
     date: params?.date ?? "",
   };
-  const data = await getEventsPageData(filters);
+  const user = await getCurrentUser().catch(() => null);
+  const data = await getEventsPageData(filters, { userId: user?.id });
 
   return (
     <EventsResults
@@ -23,6 +25,7 @@ export default async function EventResultsPage({ searchParams }) {
       cities={data.cities}
       categories={data.categories}
       initialFilters={filters}
+      isLoggedIn={Boolean(user)}
     />
   );
 }

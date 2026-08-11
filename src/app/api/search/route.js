@@ -8,7 +8,8 @@
  *   - loc (optional): city slug or name (searched in city.slug or city.name)
  *   - category (optional): category slug
  *   - jobs (optional): set to 1 to require at least one active job
- *   - page (optional): page number (default 1, 10 results per page)
+ *   - page (optional): page number (default 1)
+ *   - limit (optional): results per page (default 12, maximum 15)
  *
  * Response:
  *   {
@@ -24,12 +25,12 @@
  *   }
  */
 
+import { getCurrentUser } from "@/lib/auth/session";
+import { getBusinessSearchPageSize } from "@/lib/business-search";
 import { prisma } from "@/lib/prisma";
 import { isMissingPrismaTableError } from "@/lib/prisma-errors";
 
-const PAGE_SIZE = 12;
-
-function getBusinessInclude(includeLikes = true) {
+function getBusinessInclude(userId, includeLikes = true) {
   return {
     city: { select: { id: true, name: true, slug: true } },
     plan: { select: { slug: true, features: true } },
@@ -48,11 +49,15 @@ function getBusinessInclude(includeLikes = true) {
         jobs: { where: { status: "ACTIVE" } },
       },
     },
+    ...(includeLikes && userId
+      ? { likes: { where: { userId }, select: { id: true } } }
+      : {}),
   };
 }
 
 export async function GET(request) {
   try {
+    const user = await getCurrentUser().catch(() => null);
     const searchParams = request.nextUrl.searchParams;
     const q        = searchParams.get("q")?.trim()        || "";
     const loc      = searchParams.get("loc")?.trim()      || "";
@@ -60,6 +65,7 @@ export async function GET(request) {
     const sort     = searchParams.get("sort")?.trim()     || "";
     const jobsOnly = searchParams.get("jobs") === "1";
     const page     = Math.max(1, parseInt(searchParams.get("page")) || 1);
+    const pageSize = getBusinessSearchPageSize(searchParams.get("limit"));
 
     // Build the where clause
     const where = {
@@ -117,16 +123,17 @@ export async function GET(request) {
         ]
       : [
           { publishedAt: "desc" },
+          { createdAt: "desc" },
         ];
 
     // Fetch results with pagination. Until the manually-applied Like migration
     // lands, preserve public search and report zero likes instead of returning 500.
     const findBusinesses = (includeLikes) => prisma.business.findMany({
       where,
-      include: getBusinessInclude(includeLikes),
+      include: getBusinessInclude(user?.id, includeLikes),
       orderBy,
-      skip: (page - 1) * PAGE_SIZE,
-      take: PAGE_SIZE,
+      skip: (page - 1) * pageSize,
+      take: pageSize,
     });
 
     let results;
@@ -152,6 +159,7 @@ export async function GET(request) {
       tier: business.plan?.slug || "free",
       favoritesCount: business._count?.favorites ?? 0,
       likesCount: business._count?.likes ?? 0,
+      isLiked: Boolean(business.likes?.length),
       activeJobCount: business._count?.jobs ?? 0,
       // Tier-gated fields
       showContact: JSON.parse(business.plan?.features || "{}").SHOW_CONTACT,
@@ -164,7 +172,7 @@ export async function GET(request) {
         : null,
     }));
 
-    const hasMore = (page - 1) * PAGE_SIZE + PAGE_SIZE < total;
+    const hasMore = (page - 1) * pageSize + pageSize < total;
 
     return Response.json({
       success: true,
@@ -172,7 +180,7 @@ export async function GET(request) {
         results: transformedResults,
         total,
         page,
-        pageSize: PAGE_SIZE,
+        pageSize,
         hasMore,
       },
     });

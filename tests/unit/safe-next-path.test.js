@@ -4,7 +4,7 @@ import { getSafeNextPath } from "@/lib/auth/redirect";
 
 describe("getSafeNextPath", () => {
   test.each([
-    ["/post-an-event", "/post-an-event"],
+    ["/dashboard/events/new", "/dashboard/events/new"],
     [" /dashboard/events/event_1?checkout=success#status ", "/dashboard/events/event_1?checkout=success#status"],
     ["/%65vents", "/%65vents"],
   ])("accepts an internal path: %s", (input, expected) => {

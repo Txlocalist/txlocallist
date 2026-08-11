@@ -38,9 +38,13 @@ export default function BusinessCard({ business, badgeTone = "yellow", href }) {
 
   return (
     <article className={styles.businessCard}>
-      <div className={styles.businessImageContainer}>
+      <Link
+        href={linkHref}
+        className={styles.businessImageLink}
+        aria-label={`View ${name}`}
+      >
         <img alt={imageAlt ?? name} className={styles.businessImage} src={getBlobImageUrl(imageUrl)} />
-      </div>
+      </Link>
 
       {city && <div className={`${styles.businessBadge} ${toneClass}`}>{city}</div>}
 

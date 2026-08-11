@@ -14,11 +14,12 @@ import { formatEventDateRange } from "@/lib/event-dates";
 import {
   ArrowRightIcon,
   CameraIcon,
-  LoaderIcon,
   PlusCircleIcon,
   ShareIcon,
 } from "./icons";
+import ResultsCardSkeleton from "./ResultsCardSkeleton";
 
+const INITIAL_RECENT_BUSINESS_LIMIT = 15;
 const numberFormatter = new Intl.NumberFormat("en-US");
 
 function eventDateLabel(event) {
@@ -40,7 +41,7 @@ function buildSuggestBusinessHref({ query = "", location = "" } = {}) {
 }
 
 /* ─── Card views ──────────────────────────────────────────── */
-function BusinessEngagement({ biz, saved, count, saving, onSave, list = false }) {
+function BusinessEngagement({ biz, saved, count, saving, onSave, isLoggedIn, list = false }) {
   const numericSaveCount = Number(count);
   const saveCount = Number.isFinite(numericSaveCount)
     ? Math.max(0, Math.trunc(numericSaveCount))
@@ -54,33 +55,54 @@ function BusinessEngagement({ biz, saved, count, saving, onSave, list = false })
 
   return (
     <div className={"business-engagement" + (list ? " business-engagement-list" : "")}>
-      <LikeCount count={biz.likesCount ?? 0} size="sm" />
-      <button
-        type="button"
-        onClick={onSave}
-        disabled={saving}
-        aria-busy={saving}
-        aria-pressed={saved}
-        aria-label={saveLabel}
-        className={"save-btn font-accent" + (saved ? " save-btn-saved" : "")}
-      >
-        <span className="material-icons save-btn-icon" aria-hidden="true">
-          {saved ? "bookmark" : "bookmark_border"}
-        </span>
-        <span className="save-btn-count" aria-hidden="true">{formattedSaveCount}</span>
-      </button>
+      <div className="business-action">
+        <LikeCount
+          count={biz.likesCount ?? 0}
+          size="sm"
+          targetType="business"
+          targetId={biz.id}
+          targetName={biz.name}
+          initialLiked={Boolean(biz.isLiked)}
+          isLoggedIn={isLoggedIn}
+          className="business-like-btn"
+        />
+        <span className="business-action-label" aria-hidden="true">Like</span>
+      </div>
+      <div className="business-action">
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={saving}
+          aria-busy={saving}
+          aria-pressed={saved}
+          aria-label={saveLabel}
+          className={[
+            "save-btn font-accent",
+            saved ? "save-btn-saved" : "",
+            saving ? "save-btn-animating" : "",
+          ].filter(Boolean).join(" ")}
+        >
+          <span className="material-icons save-btn-icon" aria-hidden="true">
+            {saved ? "bookmark" : "bookmark_border"}
+          </span>
+          <span className="save-btn-count" aria-hidden="true">{formattedSaveCount}</span>
+        </button>
+        <span className="business-action-label" aria-hidden="true">Save</span>
+      </div>
     </div>
   );
 }
 
-function BusinessCard({ biz, saved, count, saving, onSave }) {
+function BusinessCard({ biz, saved, count, saving, onSave, isLoggedIn }) {
+  const businessHref = "/business/" + biz.slug;
+
   return (
     <article className="gem-card card-stack-effect">
       {biz.image?.url && biz.image.url !== "/placeholder.jpg" && (
-        <div className="gem-image-wrapper">
+        <Link href={businessHref} className="gem-image-wrapper gem-image-link" aria-label={`View ${biz.name}`}>
           <img src={getBlobImageUrl(biz.image.url)} alt={biz.name}
             style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-        </div>
+        </Link>
       )}
       <div className="category-tag">{biz.city?.name ?? biz.city}</div>
       {biz.activeJobCount > 0 && (
@@ -100,8 +122,9 @@ function BusinessCard({ biz, saved, count, saving, onSave }) {
           count={count}
           saving={saving}
           onSave={onSave}
+          isLoggedIn={isLoggedIn}
         />
-        <Link href={"/business/" + biz.slug} className="gem-action-btn">
+        <Link href={businessHref} className="gem-action-btn">
           <ArrowRightIcon size={16} />
         </Link>
       </div>
@@ -109,14 +132,16 @@ function BusinessCard({ biz, saved, count, saving, onSave }) {
   );
 }
 
-function EventCard({ event }) {
+function EventCard({ event, isLoggedIn }) {
+  const eventHref = `/events/${event.id}`;
+
   return (
     <article className="gem-card card-stack-effect">
       {event.imageUrl && (
-        <div className="gem-image-wrapper">
+        <Link href={eventHref} className="gem-image-wrapper gem-image-link" aria-label={`View ${event.title}`}>
           <img src={getBlobImageUrl(event.imageUrl)} alt={event.title}
             style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-        </div>
+        </Link>
       )}
       <div className="category-tag bg-retro-red text-white">
         {eventDateLabel(event)}
@@ -129,15 +154,23 @@ function EventCard({ event }) {
         {event.addressName || event.address} &middot; {event.city}
       </p>
       <div className="gem-footer">
-        <span className="font-accent gem-meta">{event.city}, {event.state}</span>
-        <Link href="/events" className="gem-action-btn"><ArrowRightIcon size={16} /></Link>
+        <LikeCount
+          count={event.likesCount ?? 0}
+          size="sm"
+          targetType="event"
+          targetId={event.id}
+          targetName={event.title}
+          initialLiked={Boolean(event.isLiked)}
+          isLoggedIn={isLoggedIn}
+        />
+        <Link href={eventHref} className="gem-action-btn"><ArrowRightIcon size={16} /></Link>
       </div>
     </article>
   );
 }
 
 /* ─── List-row views ──────────────────────────────────────── */
-function BusinessRow({ biz, saved, count, saving, onSave }) {
+function BusinessRow({ biz, saved, count, saving, onSave, isLoggedIn }) {
   return (
     <article className="list-item">
       <div className="list-item-thumb">
@@ -168,6 +201,7 @@ function BusinessRow({ biz, saved, count, saving, onSave }) {
           count={count}
           saving={saving}
           onSave={onSave}
+          isLoggedIn={isLoggedIn}
           list
         />
       </div>
@@ -178,7 +212,7 @@ function BusinessRow({ biz, saved, count, saving, onSave }) {
   );
 }
 
-function EventRow({ event }) {
+function EventRow({ event, isLoggedIn }) {
   return (
     <article className="list-item">
       <div className="list-item-thumb list-item-thumb-event">
@@ -198,8 +232,17 @@ function EventRow({ event }) {
         <p className="list-item-desc">
           {event.description?.slice(0, 160)}{event.description?.length > 160 ? "..." : ""}
         </p>
+        <LikeCount
+          count={event.likesCount ?? 0}
+          size="sm"
+          targetType="event"
+          targetId={event.id}
+          targetName={event.title}
+          initialLiked={Boolean(event.isLiked)}
+          isLoggedIn={isLoggedIn}
+        />
       </div>
-      <Link href="/events" className="gem-action-btn list-item-arrow">
+      <Link href={`/events/${event.id}`} className="gem-action-btn list-item-arrow">
         <ArrowRightIcon size={16} />
       </Link>
     </article>
@@ -337,15 +380,18 @@ export default function ResultsExperience({
   }, [urlParams]);
 
   useEffect(() => {
-    if (initialQuery || initialLocation || initialBrowseAll || initialJobsOnly) {
-      runSearch(
-        initialQuery,
-        initialLocation,
-        "",
-        initialJobsOnly ? "jobs" : initialBrowseAll ? "all" : "search",
-        initialJobsOnly
-      );
-    }
+    const hasInitialSearch = Boolean(
+      initialQuery || initialLocation || initialBrowseAll || initialJobsOnly
+    );
+
+    runSearch(
+      initialQuery,
+      initialLocation,
+      "",
+      initialJobsOnly ? "jobs" : initialBrowseAll ? "all" : hasInitialSearch ? "search" : "new",
+      initialJobsOnly,
+      hasInitialSearch ? undefined : INITIAL_RECENT_BUSINESS_LIMIT
+    );
   }, [initialBrowseAll, initialJobsOnly, initialLocation, initialQuery]);
 
   function syncFavoriteBusinesses(biz, shouldBeSaved, count) {
@@ -370,7 +416,14 @@ export default function ResultsExperience({
     });
   }
 
-  async function runSearch(q, loc, sort = "", browseTab = "search", nextJobsOnly = false) {
+  async function runSearch(
+    q,
+    loc,
+    sort = "",
+    browseTab = "search",
+    nextJobsOnly = false,
+    limit
+  ) {
     setIsSearching(true);
     setHasSearched(true);
     setLastSearch({ q, loc });
@@ -383,6 +436,7 @@ export default function ResultsExperience({
     if (loc)  bizP.set("loc",  loc);
     if (sort) bizP.set("sort", sort);
     if (nextJobsOnly) bizP.set("jobs", "1");
+    if (limit) bizP.set("limit", String(limit));
 
     const evtP = new URLSearchParams();
     if (loc) evtP.set("city", loc);
@@ -414,13 +468,10 @@ export default function ResultsExperience({
   }
 
   function clearSearch() {
-    setBusinesses([]);
-    setEvents([]);
-    setHasSearched(false);
-    setActiveSort("");
-    setActiveBrowseTab("");
-    setJobsOnly(false);
-    router.replace("/results", { scroll: false });
+    setActiveTab("businesses");
+    setViewMode("card");
+    replaceResultsUrl({ query: "", location: "", type: "businesses" });
+    runSearch("", "", "", "new", false, INITIAL_RECENT_BUSINESS_LIMIT);
   }
 
   function openNewListings() {
@@ -428,7 +479,7 @@ export default function ResultsExperience({
     setViewMode("card");
     setJobsOnly(false);
     replaceResultsUrl({ query: "", location: "", type: "businesses" });
-    runSearch("", "", "", "new");
+    runSearch("", "", "", "new", false, INITIAL_RECENT_BUSINESS_LIMIT);
   }
 
   function openMostSaved() {
@@ -674,12 +725,7 @@ export default function ResultsExperience({
   /* Results panel (tab + view-mode aware) */
   function ResultsPanel() {
     if (isSearching) {
-      return (
-        <div style={{ display: "flex", alignItems: "center", gap: "1rem", padding: "2rem 0", color: "var(--muted)" }}>
-          <LoaderIcon size={24} className="animate-spin" />
-          <span className="font-accent">SEARCHING...</span>
-        </div>
-      );
+      return <ResultsCardSkeleton />;
     }
 
     /* ── Business results ── */
@@ -723,6 +769,7 @@ export default function ResultsExperience({
                 count={count}
                 saving={savingIds.has(b.id)}
                 onSave={() => toggleSave(b)}
+                isLoggedIn={Boolean(user)}
               />
             );
           })}</div>
@@ -736,6 +783,7 @@ export default function ResultsExperience({
                 count={count}
                 saving={savingIds.has(b.id)}
                 onSave={() => toggleSave(b)}
+                isLoggedIn={Boolean(user)}
               />
             );
           })}</div>;
@@ -756,8 +804,8 @@ export default function ResultsExperience({
       );
     }
     return viewMode === "list"
-      ? <div className="list-container">{events.map((e) => <EventRow key={e.id} event={e} />)}</div>
-      : <div className="grid-container">{events.map((e) => <EventCard key={e.id} event={e} />)}</div>;
+      ? <div className="list-container">{events.map((e) => <EventRow key={e.id} event={e} isLoggedIn={Boolean(user)} />)}</div>
+      : <div className="grid-container">{events.map((e) => <EventCard key={e.id} event={e} isLoggedIn={Boolean(user)} />)}</div>;
   }
 
   return (
@@ -938,8 +986,9 @@ export default function ResultsExperience({
                   : "Austin, TX"
               }
               initialType={activeTab}
+              visibleTypes={["businesses"]}
+              showTypeSelector={false}
               variant="inline"
-              autoSubmitOnTypeChange
               onSubmit={handleSearchBarSubmit}
             />
           </div>

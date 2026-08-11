@@ -24,6 +24,7 @@ function toBusinessResult(business, extra = {}) {
     tier: business.plan?.slug || "free",
     favoritesCount: business._count?.favorites ?? 0,
     likesCount: business._count?.likes ?? 0,
+    isLiked: Boolean(business.likes?.length),
     activeJobCount: business._count?.jobs ?? 0,
     showContact: planFeatures.SHOW_CONTACT,
     showWebsite: planFeatures.SHOW_WEBSITE,
@@ -33,7 +34,7 @@ function toBusinessResult(business, extra = {}) {
   };
 }
 
-function getFavoriteBusinessInclude(includeLikes = true) {
+function getFavoriteBusinessInclude(userId, includeLikes = true) {
   return {
     business: {
       include: {
@@ -54,6 +55,9 @@ function getFavoriteBusinessInclude(includeLikes = true) {
             jobs: { where: { status: "ACTIVE" } },
           },
         },
+        ...(includeLikes
+          ? { likes: { where: { userId }, select: { id: true } } }
+          : {}),
       },
     },
   };
@@ -128,7 +132,7 @@ export default async function ResultsPage({ searchParams }) {
         },
       },
       orderBy: { createdAt: "desc" },
-      include: getFavoriteBusinessInclude(includeLikes),
+      include: getFavoriteBusinessInclude(user.id, includeLikes),
     });
 
     let favorites;

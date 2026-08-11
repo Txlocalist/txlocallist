@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { getBlobImageUrl } from "@/lib/blob";
+import { LikeCount } from "@/components/LikeCount";
 
 import "./events-results.css";
 
@@ -237,6 +238,7 @@ export default function EventsResults({
   cities = [],
   categories = [],
   initialFilters = {},
+  isLoggedIn = false,
 }) {
   const router = useRouter();
   const leftColumnRef = useRef(null);
@@ -577,6 +579,15 @@ export default function EventsResults({
             ))}
           </div>
           <div className="actions">
+            <LikeCount
+              count={event.likesCount ?? 0}
+              size="sm"
+              targetType="event"
+              targetId={event.id}
+              targetName={event.title}
+              initialLiked={Boolean(event.isLiked)}
+              isLoggedIn={isLoggedIn}
+            />
             <button className={`tiny-btn${isSaved ? " saved" : ""}`} onClick={() => toggleSave(event.id)}>
               {isSaved ? "Saved" : "Save"}
             </button>

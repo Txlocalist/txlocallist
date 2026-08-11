@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { getBlobImageUrl } from "@/lib/blob";
+import { LikeCount } from "@/components/LikeCount";
 
 import "./events-landing.css";
 
@@ -82,7 +83,7 @@ function Logo({ compact = false }) {
   );
 }
 
-function EventCard({ event, index }) {
+function EventCard({ event, index, isLoggedIn }) {
   const imageUrl = event.imageUrl ? getBlobImageUrl(event.imageUrl) : "";
 
   return (
@@ -129,6 +130,15 @@ function EventCard({ event, index }) {
               </span>
             ))}
           </div>
+          <LikeCount
+            count={event.likesCount ?? 0}
+            size="sm"
+            targetType="event"
+            targetId={event.id}
+            targetName={event.title}
+            initialLiked={Boolean(event.isLiked)}
+            isLoggedIn={isLoggedIn}
+          />
           <Link className="heart" href={`/events/${event.id}`} aria-label={`View ${event.title}`}>
             &rarr;
           </Link>
@@ -138,7 +148,12 @@ function EventCard({ event, index }) {
   );
 }
 
-export default function EventsLanding({ events = [], cities = [], categories = [] }) {
+export default function EventsLanding({
+  events = [],
+  cities = [],
+  categories = [],
+  isLoggedIn = false,
+}) {
   const router = useRouter();
   const popoverRef = useRef(null);
   const dateWrapRef = useRef(null);
@@ -429,7 +444,12 @@ export default function EventsLanding({ events = [], cities = [], categories = [
               {trendingEvents.length ? (
                 <div className="event-grid">
                   {trendingEvents.map((event, index) => (
-                    <EventCard key={event.id} event={event} index={index} />
+                    <EventCard
+                      key={event.id}
+                      event={event}
+                      index={index}
+                      isLoggedIn={isLoggedIn}
+                    />
                   ))}
                 </div>
               ) : (

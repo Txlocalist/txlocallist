@@ -5,7 +5,6 @@ import aboutBadgeImage from "@/app/assets/about-badge.webp";
 import danceHallImage from "@/app/assets/texas-dance-hall.webp";
 import landscapeImage from "@/app/assets/vintage Texas landscape.png";
 import { Footer, Navbar } from "@/components";
-import PricingComparison from "@/components/PricingComparison/PricingComparison";
 
 import styles from "./about.module.css";
 
@@ -129,8 +128,6 @@ export default function AboutPage() {
             </ul>
           </div>
         </section>
-
-        <PricingComparison compact />
 
         <section className={styles.nextSection} aria-labelledby="next-title">
           <div className={styles.nextInner}>

@@ -111,12 +111,22 @@ export default async function BusinessDetailPage({ params }) {
   ]);
 
   let likesCount = 0;
+  let isLiked = false;
   try {
-    const engagementCounts = await prisma.business.findUnique({
-      where: { id: business.id },
-      select: { _count: { select: { likes: true } } },
-    });
+    const [engagementCounts, userLike] = await Promise.all([
+      prisma.business.findUnique({
+        where: { id: business.id },
+        select: { _count: { select: { likes: true } } },
+      }),
+      user
+        ? prisma.like.findUnique({
+            where: { userId_businessId: { userId: user.id, businessId: business.id } },
+            select: { id: true },
+          })
+        : Promise.resolve(null),
+    ]);
     likesCount = engagementCounts?._count.likes ?? 0;
+    isLiked = Boolean(userLike);
   } catch (error) {
     if (!isMissingPrismaTableError(error)) {
       throw error;
@@ -178,7 +188,15 @@ export default async function BusinessDetailPage({ params }) {
                     iconOnly
                     className={styles.heroShareBtn}
                   />
-                  <LikeCount count={likesCount} size="hero" />
+                  <LikeCount
+                    count={likesCount}
+                    size="hero"
+                    targetType="business"
+                    targetId={business.id}
+                    targetName={business.name}
+                    initialLiked={isLiked}
+                    isLoggedIn={Boolean(user)}
+                  />
                   <SaveButton
                     businessId={business.id}
                     businessName={business.name}

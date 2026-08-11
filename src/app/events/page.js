@@ -1,4 +1,5 @@
 import EventsLanding from "./EventsLanding";
+import { getCurrentUser } from "@/lib/auth/session";
 import { getEventsPageData } from "@/lib/events";
 
 // Live event data — render per-request instead of prerendering at build,
@@ -11,7 +12,18 @@ export const metadata = {
 };
 
 export default async function EventsPage() {
-  const { allEvents, cities, categories } = await getEventsPageData();
+  const user = await getCurrentUser().catch(() => null);
+  const { allEvents, cities, categories } = await getEventsPageData(
+    {},
+    { userId: user?.id }
+  );
 
-  return <EventsLanding events={allEvents} cities={cities} categories={categories} />;
+  return (
+    <EventsLanding
+      events={allEvents}
+      cities={cities}
+      categories={categories}
+      isLoggedIn={Boolean(user)}
+    />
+  );
 }

@@ -52,6 +52,8 @@ export default async function EventDetailPage({ params }) {
 
   let favoritesCount = 0;
   let isSaved = false;
+  let likesCount = 0;
+  let isLiked = false;
 
   try {
     if (!prisma.eventFavorite) {
@@ -69,6 +71,28 @@ export default async function EventDetailPage({ params }) {
     ]);
     favoritesCount = count;
     isSaved = Boolean(userFavorite);
+  } catch (error) {
+    if (!isMissingPrismaTableError(error)) {
+      throw error;
+    }
+  }
+
+  try {
+    if (!prisma.eventLike) {
+      throw Object.assign(new Error("EventLike model is not loaded yet."), { code: "P2021" });
+    }
+
+    const [count, userLike] = await Promise.all([
+      prisma.eventLike.count({ where: { eventId: event.id } }),
+      user
+        ? prisma.eventLike.findUnique({
+            where: { userId_eventId: { userId: user.id, eventId: event.id } },
+            select: { id: true },
+          })
+        : Promise.resolve(null),
+    ]);
+    likesCount = count;
+    isLiked = Boolean(userLike);
   } catch (error) {
     if (!isMissingPrismaTableError(error)) {
       throw error;
@@ -164,6 +188,8 @@ export default async function EventDetailPage({ params }) {
               eventId={event.id}
               initialSaved={isSaved}
               initialCount={favoritesCount}
+              initialLiked={isLiked}
+              initialLikesCount={likesCount}
               isLoggedIn={Boolean(user)}
               event={actionEvent}
             />

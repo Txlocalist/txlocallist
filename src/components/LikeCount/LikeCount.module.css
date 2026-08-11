@@ -8,13 +8,92 @@
   font-weight: 800;
   line-height: 1;
   white-space: nowrap;
-  pointer-events: none;
   user-select: none;
 }
 
+.button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  transition: color 150ms ease, opacity 150ms ease, transform 150ms ease;
+}
+
+.button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.button:active:not(:disabled) {
+  transform: translateY(0) scale(0.96);
+}
+
+.button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+  border-radius: 999px;
+}
+
+.button:disabled {
+  cursor: wait;
+}
+
+.loading {
+  opacity: 0.62;
+}
+
 .icon {
+  position: relative;
+  display: inline-block;
   flex-shrink: 0;
-  color: var(--retro-red);
+  width: 1.52em;
+  height: 1.02em;
+  overflow: visible;
+  border-radius: 1px;
+  transform-origin: 42% 56%;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.28));
+}
+
+.icon::before,
+.icon::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  transition:
+    opacity 180ms ease,
+    transform 280ms cubic-bezier(0.2, 0.85, 0.25, 1.25);
+}
+
+.icon::before {
+  background-image: url("/like-before-02.svg");
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
+.icon::after {
+  background-image: url("/like-after.svg");
+  opacity: 0;
+  transform: scale(0.72) rotate(-5deg);
+}
+
+.liked .icon::before {
+  opacity: 0;
+  transform: scale(0.72) rotate(4deg);
+}
+
+.liked .icon::after {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
+.likeBurst {
+  animation: texas-like-pop 420ms cubic-bezier(0.16, 1.2, 0.3, 1);
+}
+
+.unlikeBurst {
+  animation: texas-unlike-settle 260ms ease-out;
 }
 
 .count {
@@ -22,11 +101,11 @@
 }
 
 .sm {
-  font-size: 0.75rem;
+  font-size: 0.9rem;
 }
 
 .sm .icon {
-  font-size: 1rem !important;
+  font-size: 1.2rem !important;
 }
 
 .md {
@@ -55,6 +134,69 @@
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
 }
 
+.eventHero {
+  min-height: 56px;
+  padding: 0.75rem 1.35rem;
+  border: 1px solid rgba(239, 90, 42, 0.75);
+  border-radius: 999px;
+  background: rgba(4, 5, 4, 0.28);
+  color: #f2e5c9;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+}
+
+.eventHero .icon {
+  font-size: 1.2rem !important;
+}
+
 .hero .icon {
   font-size: 1.1rem !important;
+}
+
+@keyframes texas-like-pop {
+  0% {
+    transform: scale(0.78) rotate(-5deg);
+    filter: drop-shadow(0 0 0 rgba(188, 11, 15, 0));
+  }
+
+  52% {
+    transform: scale(1.28) rotate(3deg);
+    filter: drop-shadow(0 4px 5px rgba(188, 11, 15, 0.32));
+  }
+
+  76% {
+    transform: scale(0.94) rotate(-1deg);
+  }
+
+  100% {
+    transform: scale(1) rotate(0deg);
+    filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.28));
+  }
+}
+
+@keyframes texas-unlike-settle {
+  0% {
+    transform: scale(1);
+  }
+
+  45% {
+    transform: scale(0.78) rotate(3deg);
+  }
+
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button,
+  .icon::before,
+  .icon::after {
+    transition: none;
+  }
+
+  .likeBurst,
+  .unlikeBurst {
+    animation: none;
+  }
 }

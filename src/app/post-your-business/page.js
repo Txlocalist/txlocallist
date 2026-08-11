@@ -64,9 +64,6 @@ export default async function PostYourBusinessPage() {
             >
               {user ? "Upgrade To Post →" : "Create Account →"}
             </Link>
-            <Link href="/pricing" className={styles.heroSecondary}>
-              View Plans & Pricing
-            </Link>
           </div>
           <p className={styles.heroNote}>
             $10/month paid plan required before listing creation
@@ -125,9 +122,6 @@ export default async function PostYourBusinessPage() {
               <p className={styles.teaseDesc}>Contact info, socials, more photos, and job postings.</p>
             </div>
           </div>
-          <Link href="/pricing" className={styles.teaseLink}>
-            See Full Feature Comparison →
-          </Link>
         </div>
       </section>
 

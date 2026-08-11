@@ -1,5 +1,203 @@
 {
-  "generated_at": "2026-07-13T20:45:38.261581+00:00",
-  "nodes": {},
+  "generated_at": "2026-08-11T18:30:32.952962+00:00",
+  "nodes": {
+    "src_app_about_page_aboutpage": {
+      "code_fingerprint": "a7e9e5c816e1ea95e2b49a63c87164aab3567da9803df167e8248558074b256a",
+      "label": "AboutPage()",
+      "last": "2026-07-15T19:15:31.884023+00:00",
+      "provenance": [
+        {
+          "date": "2026-07-15T19:15:31.884023+00:00",
+          "outcome": "useful",
+          "q": "Match the About page to the supplied visual reference"
+        }
+      ],
+      "score": 0.536273643,
+      "source_file": "src/app/about/page.js",
+      "status": "tentative",
+      "uses": 1
+    },
+    "src_app_dashboard_events_saved_page_savedeventspage": {
+      "code_fingerprint": "64401794f556130abe906ad99e44f07cbf4b7d280891daac0ab9011123534a8a",
+      "label": "SavedEventsPage()",
+      "last": "2026-07-13T21:00:57.816871+00:00",
+      "provenance": [
+        {
+          "date": "2026-07-13T21:00:57.816871+00:00",
+          "outcome": "useful",
+          "q": "Trace the event detail page implementation, event image fields and fallback behavior, save/favorite counting system, and the equivalent real saved-count flow used on business landing pages."
+        }
+      ],
+      "score": 0.512923348,
+      "source_file": "src/app/dashboard/events/saved/page.js",
+      "status": "tentative",
+      "uses": 1
+    },
+    "src_app_how_it_works_page_howitworkspage": {
+      "code_fingerprint": "ebcee0ecfc92af51aecd00e0076eab67618ffc04ae3887d397d1c2002da32ffd",
+      "label": "HowItWorksPage()",
+      "last": "2026-07-15T20:13:24.315412+00:00",
+      "provenance": [
+        {
+          "date": "2026-07-15T20:13:24.315412+00:00",
+          "outcome": "useful",
+          "q": "How is the how-it-works page composed, which shared components and routes does it depend on, and what must be preserved during a visual redesign?"
+        }
+      ],
+      "score": 0.536771853,
+      "source_file": "src/app/how-it-works/page.js",
+      "status": "tentative",
+      "uses": 1
+    },
+    "src_app_layout_rootlayout": {
+      "code_fingerprint": "abd30f70b6b5ec193db05e60b6eecb73fa68f3e22e30a6daf8a81622b196f41f",
+      "label": "RootLayout()",
+      "last": "2026-07-15T18:15:33.830902+00:00",
+      "provenance": [
+        {
+          "date": "2026-07-15T18:15:33.830902+00:00",
+          "outcome": "useful",
+          "q": "Inspect graphify-out for context before redesigning the how it works page."
+        }
+      ],
+      "score": 0.535757897,
+      "source_file": "src/app/layout.js",
+      "status": "tentative",
+      "uses": 1
+    },
+    "src_app_results_page_resultspage": {
+      "code_fingerprint": "c1af15d11200bde00b27792a20eb29ee58912485c46a4cce3ba69633c848ea54",
+      "label": "ResultsPage()",
+      "last": "2026-07-15T20:13:24.315412+00:00",
+      "provenance": [
+        {
+          "date": "2026-07-15T20:13:24.315412+00:00",
+          "outcome": "useful",
+          "q": "How is the how-it-works page composed, which shared components and routes does it depend on, and what must be preserved during a visual redesign?"
+        },
+        {
+          "date": "2026-07-15T18:15:33.830902+00:00",
+          "outcome": "useful",
+          "q": "Inspect graphify-out for context before redesigning the how it works page."
+        }
+      ],
+      "score": 1.07252975,
+      "source_file": "src/app/results/page.js",
+      "status": "preferred",
+      "uses": 2
+    },
+    "src_app_results_resultsexperience": {
+      "code_fingerprint": "3895021a5b51d901683618c9219f884f8c6615ae81b4262cedef41e23f0c1762",
+      "label": "ResultsExperience.jsx",
+      "last": "2026-08-11T18:02:08.794515+00:00",
+      "provenance": [
+        {
+          "date": "2026-08-11T18:02:08.794515+00:00",
+          "outcome": "useful",
+          "q": "Remove the toggle from the search on the results search bar, and when loading /results without a filter or search load 15 recently added businesses."
+        }
+      ],
+      "score": 0.999544381,
+      "source_file": "src/app/results/ResultsExperience.jsx",
+      "status": "tentative",
+      "uses": 1
+    },
+    "src_components_footer_footer_footer": {
+      "code_fingerprint": "1e8de55b6b43824c8878d98642219431d5157bc7cb6cec4fdabb9e8de3b0b9e2",
+      "label": "Footer()",
+      "last": "2026-07-15T18:15:33.830902+00:00",
+      "provenance": [
+        {
+          "date": "2026-07-15T18:15:33.830902+00:00",
+          "outcome": "useful",
+          "q": "Inspect graphify-out for context before redesigning the how it works page."
+        }
+      ],
+      "score": 0.535757897,
+      "source_file": "src/components/Footer/Footer.jsx",
+      "status": "tentative",
+      "uses": 1
+    },
+    "src_components_navbar_navbar_navbar": {
+      "code_fingerprint": "79d8400b1f46e60c462df45e43e54cc4d2c57db4bdf7be36788a6856fd8e0b53",
+      "label": "Navbar()",
+      "last": "2026-07-15T18:15:33.830902+00:00",
+      "provenance": [
+        {
+          "date": "2026-07-15T18:15:33.830902+00:00",
+          "outcome": "useful",
+          "q": "Inspect graphify-out for context before redesigning the how it works page."
+        }
+      ],
+      "score": 0.535757897,
+      "source_file": "src/components/Navbar/Navbar.jsx",
+      "status": "tentative",
+      "uses": 1
+    },
+    "src_components_searchbar_searchbar": {
+      "code_fingerprint": "8135ed76a7aeab77740f12ca5e2e033aff5db257b5fd344c4822bcc2692c6719",
+      "label": "SearchBar.jsx",
+      "last": "2026-08-11T18:02:08.794515+00:00",
+      "provenance": [
+        {
+          "date": "2026-08-11T18:02:08.794515+00:00",
+          "outcome": "useful",
+          "q": "Remove the toggle from the search on the results search bar, and when loading /results without a filter or search load 15 recently added businesses."
+        }
+      ],
+      "score": 0.999544381,
+      "source_file": "src/components/SearchBar/SearchBar.jsx",
+      "status": "tentative",
+      "uses": 1
+    },
+    "src_components_staticpagelayout_staticpagelayout_staticpagelayout": {
+      "code_fingerprint": "7aa851dc6500b55bf1be0ffedd583189b870e7ebcb6dd9ae9192a4ce4389a751",
+      "label": "StaticPageLayout()",
+      "last": "2026-07-15T18:15:33.830902+00:00",
+      "provenance": [
+        {
+          "date": "2026-07-15T18:15:33.830902+00:00",
+          "outcome": "useful",
+          "q": "Inspect graphify-out for context before redesigning the how it works page."
+        }
+      ],
+      "score": 0.535757897,
+      "source_file": "src/components/StaticPageLayout/StaticPageLayout.jsx",
+      "status": "tentative",
+      "uses": 1
+    },
+    "src_lib_events_geteventbyid": {
+      "code_fingerprint": "5cb3d1a75e1f70eff9f313d667a8add00f5a9f37867f1e0eb8dd5791d0063b7d",
+      "label": "getEventById()",
+      "last": "2026-07-13T21:00:57.816871+00:00",
+      "provenance": [
+        {
+          "date": "2026-07-13T21:00:57.816871+00:00",
+          "outcome": "useful",
+          "q": "Trace the event detail page implementation, event image fields and fallback behavior, save/favorite counting system, and the equivalent real saved-count flow used on business landing pages."
+        }
+      ],
+      "score": 0.512923348,
+      "source_file": "src/lib/events.js",
+      "status": "tentative",
+      "uses": 1
+    },
+    "src_lib_events_getpublishedevents": {
+      "code_fingerprint": "5cb3d1a75e1f70eff9f313d667a8add00f5a9f37867f1e0eb8dd5791d0063b7d",
+      "label": "getPublishedEvents()",
+      "last": "2026-07-13T21:00:57.816871+00:00",
+      "provenance": [
+        {
+          "date": "2026-07-13T21:00:57.816871+00:00",
+          "outcome": "useful",
+          "q": "Trace the event detail page implementation, event image fields and fallback behavior, save/favorite counting system, and the equivalent real saved-count flow used on business landing pages."
+        }
+      ],
+      "score": 0.512923348,
+      "source_file": "src/lib/events.js",
+      "status": "tentative",
+      "uses": 1
+    }
+  },
   "version": 1
 }
