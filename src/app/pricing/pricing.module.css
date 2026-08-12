@@ -1,0 +1,221 @@
+.pageShell {
+  min-height: 100dvh;
+  color: var(--retro-brown);
+  background:
+    radial-gradient(circle at 12% 4%, rgba(255, 193, 76, 0.26), transparent 20rem),
+    radial-gradient(circle at 88% 42%, rgba(44, 139, 132, 0.14), transparent 24rem),
+    #fff3d7;
+}
+
+.page {
+  width: min(calc(100% - 48px), 72rem);
+  margin: 0 auto;
+  padding: 1.25rem 0 4.5rem;
+}
+
+.hero {
+  max-width: 48rem;
+  margin: 2.5rem auto 3rem;
+  text-align: center;
+}
+
+.eyebrow,
+.badge {
+  display: inline-flex;
+  margin: 0;
+  font-family: var(--font-accent), cursive;
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.eyebrow {
+  color: var(--retro-red-ink);
+}
+
+.hero h1 {
+  margin: 0.7rem 0 1rem;
+  font-family: var(--font-editorial), Georgia, serif;
+  font-size: clamp(2.8rem, 6vw, 5rem);
+  font-weight: 400;
+  line-height: 0.95;
+  text-wrap: balance;
+}
+
+.hero > p:last-child {
+  margin: 0 auto;
+  color: rgba(47, 36, 29, 0.76);
+  font-size: 1.05rem;
+  line-height: 1.65;
+}
+
+.plans {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.2rem;
+  align-items: stretch;
+}
+
+.plan {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 1.8rem;
+  border: 3px solid var(--retro-brown);
+  border-radius: 1.1rem;
+  background: rgba(255, 251, 241, 0.9);
+  box-shadow: 0.35rem 0.4rem 0 rgba(47, 36, 29, 0.2);
+}
+
+.planFeatured {
+  color: #fff7e6;
+  background: #2c6566;
+  transform: translateY(-0.55rem);
+}
+
+.badge {
+  width: fit-content;
+  margin: -2.5rem 0 1.3rem;
+  padding: 0.38rem 0.7rem;
+  border: 2px solid var(--retro-brown);
+  border-radius: 999px;
+  background: var(--retro-yellow);
+  color: var(--retro-brown);
+}
+
+.plan h2 {
+  margin: 0;
+  font-family: var(--font-accent), cursive;
+  font-size: 1.15rem;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.price {
+  margin: 1.3rem 0 0.5rem;
+  font-family: var(--font-display), sans-serif;
+  font-size: clamp(2.6rem, 5vw, 3.7rem);
+  line-height: 1;
+}
+
+.price span {
+  font-family: var(--font-accent), cursive;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.description {
+  min-height: 5.2rem;
+  margin: 0.8rem 0 1.4rem;
+  line-height: 1.55;
+}
+
+.plan ul {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0 0 1.75rem;
+  padding: 0;
+  list-style: none;
+  line-height: 1.4;
+}
+
+.plan li {
+  display: grid;
+  grid-template-columns: 1.25rem minmax(0, 1fr);
+  gap: 0.55rem;
+}
+
+.plan li::before {
+  content: "★";
+  color: var(--retro-red-ink);
+}
+
+.planFeatured li::before {
+  color: var(--retro-yellow);
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.1rem;
+  margin-top: auto;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--retro-brown);
+  border-radius: 999px;
+  background: var(--retro-red-ink);
+  color: #fff7e6;
+  font-family: var(--font-accent), cursive;
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: transform var(--dur-sm) var(--ease-snap), background-color var(--dur-sm) var(--ease-snap);
+}
+
+.planFeatured .cta {
+  background: var(--retro-yellow);
+  color: var(--retro-brown);
+}
+
+.cta:hover,
+.cta:focus-visible {
+  background: var(--retro-orange);
+  color: var(--retro-brown);
+  transform: translateY(-0.18rem);
+}
+
+.note {
+  max-width: 55rem;
+  margin: 3rem auto 0;
+  padding: 1.7rem 2rem;
+  border: 2px solid rgba(47, 36, 29, 0.56);
+  border-radius: 1rem;
+  background: rgba(255, 248, 226, 0.7);
+}
+
+.note h2 {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-editorial), Georgia, serif;
+  font-size: 2rem;
+  font-weight: 400;
+}
+
+.note p {
+  margin: 0;
+  line-height: 1.65;
+}
+
+@media (max-width: 900px) {
+  .plans {
+    grid-template-columns: 1fr;
+    max-width: 34rem;
+    margin: 0 auto;
+  }
+
+  .planFeatured {
+    transform: none;
+  }
+
+  .description {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    width: min(calc(100% - 36px), 72rem);
+  }
+
+  .hero {
+    margin-top: 1.35rem;
+  }
+
+  .plan,
+  .note {
+    padding: 1.4rem;
+  }
+}

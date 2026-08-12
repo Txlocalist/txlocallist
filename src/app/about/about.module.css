@@ -45,6 +45,7 @@
 .hero,
 .originSection,
 .beliefsSection,
+.pricingSection,
 .nextSection,
 .ctaSection,
 .sectionRule {
@@ -342,6 +343,42 @@
   transform: rotate(-4deg) scale(1.04);
 }
 
+.pricingSection {
+  padding: clamp(3rem, 6vw, 5rem) 0 clamp(2.6rem, 5vw, 4.25rem);
+}
+
+.pricingHeader {
+  display: grid;
+  gap: 0.65rem;
+  max-width: 44rem;
+  margin: 0 auto 2.55rem;
+  text-align: center;
+}
+
+.pricingHeader p {
+  margin: 0;
+  color: var(--about-rust);
+  font-family: var(--font-accent), sans-serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+
+.pricingHeader h2 {
+  margin: 0;
+  color: var(--about-ink);
+  font-family: var(--font-editorial), Georgia, serif;
+  font-size: clamp(2.65rem, 4.2vw, 4rem);
+  font-weight: 400;
+  line-height: 1;
+  text-wrap: balance;
+}
+
+.pricingHeader span {
+  color: rgba(44, 30, 23, 0.82);
+  line-height: 1.58;
+}
+
 .nextSection {
   margin-top: 0.75rem;
 }
@@ -605,6 +642,7 @@
 
   .originCopy h2,
   .beliefsHeader h2,
+  .pricingHeader h2,
   .nextCopy h2,
   .ctaCopy h2 {
     font-size: clamp(2.25rem, 10vw, 3rem);

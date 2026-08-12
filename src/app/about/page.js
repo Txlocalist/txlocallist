@@ -5,6 +5,7 @@ import aboutBadgeImage from "@/app/assets/about-badge.webp";
 import danceHallImage from "@/app/assets/texas-dance-hall.webp";
 import landscapeImage from "@/app/assets/vintage Texas landscape.png";
 import { Footer, Navbar } from "@/components";
+import PricingCards from "@/components/PricingCards/PricingCards";
 
 import styles from "./about.module.css";
 
@@ -127,6 +128,18 @@ export default function AboutPage() {
               ))}
             </ul>
           </div>
+        </section>
+
+        <section className={styles.pricingSection} aria-labelledby="about-pricing-title">
+          <div className={styles.pricingHeader}>
+            <p>Simple, honest pricing</p>
+            <h2 id="about-pricing-title">Choose how you show up locally.</h2>
+            <span>
+              Browse and save for free, build your local presence with a membership, or share one
+              event with the community.
+            </span>
+          </div>
+          <PricingCards />
         </section>
 
         <section className={styles.nextSection} aria-labelledby="next-title">
