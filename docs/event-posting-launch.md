@@ -2,7 +2,7 @@
 
 ## Catalog decision
 
-Keep the existing subscription product for the Local Business Membership. Use a separate Stripe product and a one-time Price for Event Calendar Post. Separate products keep receipts, reporting, refunds, and webhook metadata unambiguous.
+Keep the existing subscription product for the Local Business Membership. Use a separate Stripe product and a one-time Price for Event Calendar Post. The event product uses Stripe tax code `txcd_10701000` (Website Advertising), and its $10 Price uses exclusive tax behavior so applicable tax is added in Checkout. Separate products keep receipts, reporting, refunds, and webhook metadata unambiguous.
 
 The catalog setup script is safe by default in test mode:
 
@@ -93,8 +93,9 @@ Keep `EVENT_POSTING_ENABLED=false` throughout these steps.
    ```
 
 9. Retrieve both Prices in Stripe (Dashboard or CLI). Confirm the Starter Price is active, USD 1000, and recurring monthly; confirm the event Price is active, USD 1000, and non-recurring. Also confirm the Stripe mode matches the deployed keys.
-10. Redeploy with the recorded Price IDs while leaving `EVENT_POSTING_ENABLED=false`. Complete the webhook and acceptance checks below before enabling it.
-11. After the live webhook endpoint is configured, run the automated read-only
+10. In Stripe Tax, configure the verified Texas head-office address, activate Tax, and add the active Texas sales-tax registration. Confirm the event Product has tax code `txcd_10701000` and its Price has `tax_behavior=exclusive`.
+11. Redeploy with the recorded Price IDs while leaving `EVENT_POSTING_ENABLED=false`. Complete the webhook and acceptance checks below before enabling it.
+12. After the live webhook endpoint is configured, run the automated read-only
     preflight described below. A passing command is evidence that the automated
     checks succeeded; it is not authorization to enable the feature.
 
@@ -157,8 +158,11 @@ The verifier checks:
   configured Price IDs and webhook secret format, Blob access, a sufficiently
   long Cron bearer secret, and the disabled feature flag.
 - Active live Starter and Event Prices and products. Starter must be USD 1000
-  recurring once per month; Event must be USD 1000 one-time; their products must
-  be distinct and carry the catalog metadata created by the setup script.
+  recurring once per month; Event must be USD 1000 one-time with exclusive tax
+  behavior and the Website Advertising tax code; their products must be distinct
+  and carry the catalog metadata created by the setup script.
+- Active live Stripe Tax settings with a Texas head office and an active live
+  Texas sales-tax registration.
 - An enabled live Stripe webhook at the exact
   `NEXT_PUBLIC_SITE_URL/api/stripe/webhook` URL. It must list every event in
   this runbook or use Stripe's `*` wildcard.
@@ -187,25 +191,29 @@ because the automated preflight exits successfully.
 ## Acceptance test
 
 1. Use Stripe test keys and enable event posting.
-2. Create a one-day event and confirm hosted Checkout shows exactly $10.
-3. Repeat with a five-day event and confirm the same $10 total.
+2. Create a one-day event and confirm hosted Checkout shows a $10 subtotal plus the applicable Texas tax.
+3. Repeat with a five-day event and confirm the same $10 subtotal plus applicable tax.
 4. Complete payment with a Stripe test card.
 5. Confirm the payment becomes `PAID` and the event becomes `PENDING`, never public before review.
 6. Approve it and confirm every inclusive calendar day finds the event.
-7. Deny a new paid submission and confirm every successful charge attempt is fully refunded.
-8. Open Checkout, cancel the draft in another tab, then attempt the stale payment. Confirm the session is expired or the late charge is automatically refunded.
-9. Confirm past events disappear from search but retain their direct history page.
-10. Reconcile subscriptions from Admin Settings and confirm inactive or past-due accounts do not retain posting access.
+7. Deny a new paid submission with a required admin comment. Confirm the payment remains `PAID`, the event returns to `DRAFT`, and the owner can see the comment, edit, and resubmit without another fee.
+8. Open Checkout, cancel the draft in another tab, then attempt the stale payment. Confirm the session is expired or the late payment becomes `REVIEW_REQUIRED`; it must never trigger an automatic refund.
+9. From Payment Exceptions, issue a test refund only after entering a reason and checking the explicit full-refund confirmation. Confirm Stripe refunds the subtotal and tax and the audit fields record the approving admin, time, and reason.
+10. Open a dispute and confirm the event is hidden. Close it favorably and confirm it remains hidden until an admin restores it to the review queue.
+11. Confirm past events disappear from search but retain their direct history page.
+12. Reconcile subscriptions from Admin Settings and confirm inactive or past-due accounts do not retain posting access.
 
 ## Policy and operations
 
 - One purchase covers one continuous event spanning 1 to 31 calendar days.
 - Separate occurrences and recurring dates require separate posts.
-- Submissions denied by an admin, including denials during re-review, and duplicate charges receive full refunds.
-- Organizer cancellation does not create an automatic refund.
+- An admin denial requires a comment and returns the event to an editable draft. The owner may correct and resubmit the same event as many times as needed without another fee, provided its dates remain within the original purchased range.
+- Refunds and dispute compensation are never automatic. The customer must contact support, and only an administrator may approve and issue a full refund. The refund includes collected tax and requires an explicit confirmation, reason, approver, and timestamp.
+- Duplicate or late/ineligible payments become `REVIEW_REQUIRED`; they do not trigger an automatic refund.
+- Organizer or admin cancellation does not create an automatic refund.
 - Cancellation first expires any open Checkout session. If Stripe has already confirmed payment, the payment is recorded before cancellation and remains subject to the no-automatic-refund policy. An asynchronous payment still processing must settle before cancellation can finish.
 - A paid event cannot be moved outside its originally purchased date range. A new date range requires a new post.
 - Material edits return a published event to the review queue.
-- An event paused by a payment dispute returns to admin review after a favorable resolution when its schedule is still active. Ended dispute-paused events appear in Payment Exceptions for an explicit refund decision.
-- Confirm sales-tax treatment with the client's accountant before enabling Stripe Tax. The application does not make a taxability determination.
-- Monitor `REFUND_FAILED`, `REFUND_PENDING`, `DISPUTED`, and webhook rows with `lastError` as operational alerts.
+- An event paused by a payment dispute remains hidden even after a favorable resolution. An administrator must explicitly restore an eligible event to the review queue. Ended dispute-paused events remain in Payment Exceptions for an explicit support decision.
+- The approved implementation uses Stripe Tax for Texas only, with tax code `txcd_10701000` (Website Advertising) and exclusive tax behavior. Keep the documented tax-adviser approval with the release record.
+- Monitor `REVIEW_REQUIRED`, `REFUND_FAILED`, `REFUND_PENDING`, `DISPUTED`, and webhook rows with `lastError` as operational alerts.

@@ -5,6 +5,7 @@ export const BILLING_CURRENCY = "usd";
 export const MEMBERSHIP_PRICE_CENTS = 1000;
 export const EVENT_POST_PRICE_CENTS = 1000;
 export const EVENT_MAX_CALENDAR_DAYS = MAX_EVENT_CALENDAR_DAYS;
+export const EVENT_POST_TAX_CODE = "txcd_10701000";
 
 export function formatWholeDollarPrice(priceCents) {
   return `$${(priceCents / 100).toFixed(0)}`;
@@ -13,11 +14,11 @@ export function formatWholeDollarPrice(priceCents) {
 const EVENT_POST_PRICE_LABEL = formatWholeDollarPrice(EVENT_POST_PRICE_CENTS);
 
 export const EVENT_POST_REVIEW_DISCLOSURE =
-  `Stripe collects the one-time ${EVENT_POST_PRICE_LABEL} event fee after form validation and before admin review. Payment submits the event for review and does not guarantee publication.`;
+  `Stripe collects the one-time ${EVENT_POST_PRICE_LABEL} event subtotal after form validation and before admin review. Payment submits the event for review and does not guarantee publication. Denied events can be corrected and resubmitted without another event fee.`;
 export const EVENT_POST_REFUND_DISCLOSURE =
-  "Full refunds are automatically initiated for submissions denied by an admin and duplicate charges. Organizer cancellations are not automatically refunded.";
+  "Refunds are never automatic. Contact support to request one; only an administrator can approve and issue a full refund.";
 export const EVENT_POST_TAX_DISCLOSURE =
-  "Tax is not automatically calculated or collected in Checkout.";
+  "Applicable Texas sales tax is calculated in Checkout and added to the $10 subtotal.";
 export const EVENT_POST_CHECKOUT_DISCLOSURE = [
   EVENT_POST_REVIEW_DISCLOSURE,
   EVENT_POST_REFUND_DISCLOSURE,
@@ -56,7 +57,13 @@ function secretUsesLiveMode() {
 
 export function validateStripePriceObject(
   price,
-  { amountCents, currency = BILLING_CURRENCY, recurring },
+  {
+    amountCents,
+    currency = BILLING_CURRENCY,
+    recurring,
+    taxBehavior = null,
+    productTaxCode = null,
+  },
 ) {
   if (!price?.active) {
     throw new Error("The configured Stripe price is not active.");
@@ -78,6 +85,21 @@ export function validateStripePriceObject(
     throw new Error("The configured Stripe product is not active.");
   }
 
+  if (taxBehavior && price.tax_behavior !== taxBehavior) {
+    throw new Error("The configured Stripe price has the wrong tax behavior.");
+  }
+
+  if (
+    productTaxCode &&
+    (
+      !price.product ||
+      typeof price.product === "string" ||
+      price.product.tax_code !== productTaxCode
+    )
+  ) {
+    throw new Error("The configured Stripe product has the wrong tax code.");
+  }
+
   return price;
 }
 
@@ -85,6 +107,8 @@ export async function retrieveAndValidateStripePrice({
   priceId,
   amountCents,
   recurring,
+  taxBehavior = null,
+  productTaxCode = null,
 }) {
   if (!priceId) {
     throw new Error("A required Stripe price ID is not configured.");
@@ -97,6 +121,8 @@ export async function retrieveAndValidateStripePrice({
   return validateStripePriceObject(price, {
     amountCents,
     recurring,
+    taxBehavior,
+    productTaxCode,
   });
 }
 
@@ -107,6 +133,8 @@ export async function validateEventPostPrice() {
     priceId,
     amountCents: EVENT_POST_PRICE_CENTS,
     recurring: false,
+    taxBehavior: "exclusive",
+    productTaxCode: EVENT_POST_TAX_CODE,
   });
 
   return priceId;

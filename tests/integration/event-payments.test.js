@@ -119,6 +119,7 @@ const harness = vi.hoisted(() => {
     api.state = {
       events: [],
       payments: [],
+      reviews: [],
       users: [],
       checkoutSessions: new Map(),
       checkoutByIdempotencyKey: new Map(),
@@ -157,6 +158,7 @@ const harness = vi.hoisted(() => {
       email: "organizer@example.com",
       name: "Organizer",
       stripeCustomerId: "cus_event_1",
+      role: "USER",
       ...clone(overrides),
     };
     api.state.users.push(record);
@@ -177,6 +179,8 @@ const harness = vi.hoisted(() => {
       stripeDisputeId: null,
       stripeDisputeStatus: null,
       amountCents: 1000,
+      chargedAmountCents: null,
+      taxAmountCents: null,
       currency: "usd",
       eventStartDate: new Date("2027-01-10T15:00:00.000Z"),
       eventEndDate: new Date("2027-01-10T23:00:00.000Z"),
@@ -186,6 +190,9 @@ const harness = vi.hoisted(() => {
       refundedAmountCents: 0,
       stripeRefundCreatedAt: null,
       stripeRefundStatus: null,
+      refundApprovedById: null,
+      refundApprovedAt: null,
+      refundReason: null,
       failureReason: null,
       createdAt: api.now(),
       updatedAt: api.now(),
@@ -212,7 +219,10 @@ const harness = vi.hoisted(() => {
         userId: "user_1",
       },
       payment_intent: null,
+      amount_subtotal: 1000,
       amount_total: 1000,
+      total_details: { amount_tax: 0 },
+      automatic_tax: { enabled: true, status: "complete" },
       currency: "usd",
       created: Math.floor(Date.now() / 1000),
       line_items: {
@@ -315,6 +325,17 @@ const harness = vi.hoisted(() => {
         return api.prisma.eventPayment.create({ data: create });
       }),
     },
+    eventReview: {
+      create: vi.fn(async ({ data }) => {
+        const record = {
+          id: `review_${api.state.reviews.length + 1}`,
+          createdAt: api.now(),
+          ...clone(data),
+        };
+        api.state.reviews.push(record);
+        return clone(record);
+      }),
+    },
     user: {
       findUnique: vi.fn(async ({ where }) =>
         clone(api.state.users.find((record) => matches(record, where)) ?? null)),
@@ -397,7 +418,7 @@ const harness = vi.hoisted(() => {
         const refund = {
           id: `re_test_${api.state.nextRefund++}`,
           status: "succeeded",
-          amount: payment?.amountCents ?? 1000,
+          amount: payment?.chargedAmountCents ?? payment?.amountCents ?? 1000,
           currency: payment?.currency ?? "usd",
           payment_intent: paymentIntentId,
           charge: null,
@@ -428,7 +449,7 @@ vi.mock("@/lib/billing", () => ({
 vi.mock("@/lib/pricing", () => ({
   BILLING_CURRENCY: "usd",
   EVENT_POST_CHECKOUT_DISCLOSURE:
-    "Stripe collects the one-time $10 event fee after form validation and before admin review. Payment submits the event for review and does not guarantee publication. Full refunds are automatically initiated for submissions denied by an admin and duplicate charges. Organizer cancellations are not automatically refunded. Tax is not automatically calculated or collected in Checkout.",
+    "Stripe collects the one-time $10 event subtotal after form validation and before admin review. Payment submits the event for review and does not guarantee publication. Denied events can be corrected and resubmitted without another event fee. Refunds are never automatic. Contact support to request one; only an administrator can approve and issue a full refund. Applicable Texas sales tax is calculated in Checkout and added to the $10 subtotal.",
   EVENT_POST_PRICE_CENTS: 1000,
   isEventPostingEnabled: vi.fn(() => true),
   validateEventPostPrice: vi.fn(async () => "price_event_post"),
@@ -441,14 +462,15 @@ vi.mock("@/lib/stripe", () => ({
 
 import {
   createEventCheckoutSession,
-  denyEventAndRefund,
+  denyEventForRevision,
   expireOpenEventCheckoutSessions,
   handleEventChargeRefunded,
   handleEventChargeDispute,
   handleEventChargeDisputeClosed,
   handleEventCheckoutSessionProcessing,
   handleEventRefundUpdated,
-  retryEventRefund,
+  issueEventPaymentRefund,
+  restoreEventAfterFavorableDispute,
   syncEventPaymentFromCheckoutSession,
 } from "@/lib/event-payments";
 
@@ -464,7 +486,7 @@ beforeEach(() => {
 
 describe("event payment service integration", () => {
   describe("Checkout attempt coordination", () => {
-    it("shows the event payment policy and explicitly disables automatic tax", async () => {
+    it("shows the event payment policy and enables automatic tax", async () => {
       seedCheckoutOwner();
 
       await createEventCheckoutSession({
@@ -473,18 +495,14 @@ describe("event payment service integration", () => {
       });
 
       const [params] = harness.stripe.checkout.sessions.create.mock.calls[0];
-      expect(params.automatic_tax).toEqual({ enabled: false });
-      expect(params.custom_text?.submit?.message).toContain("one-time $10 event fee");
+      expect(params.automatic_tax).toEqual({ enabled: true });
+      expect(params.customer_update).toEqual({ address: "auto" });
+      expect(params.custom_text?.submit?.message).toContain("one-time $10 event subtotal");
       expect(params.custom_text?.submit?.message).toContain("before admin review");
       expect(params.custom_text?.submit?.message).toContain("does not guarantee publication");
-      expect(params.custom_text?.submit?.message).toContain("denied by an admin");
-      expect(params.custom_text?.submit?.message).toContain("duplicate charges");
-      expect(params.custom_text?.submit?.message).toContain(
-        "Organizer cancellations are not automatically refunded",
-      );
-      expect(params.custom_text?.submit?.message).toContain(
-        "Tax is not automatically calculated or collected",
-      );
+      expect(params.custom_text?.submit?.message).toContain("Refunds are never automatic");
+      expect(params.custom_text?.submit?.message).toContain("only an administrator");
+      expect(params.custom_text?.submit?.message).toContain("Texas sales tax");
     });
 
     it("reuses the same open Checkout Session on a repeated request", async () => {
@@ -785,6 +803,7 @@ describe("event payment service integration", () => {
 
     it("keeps a same-second local retry active when the old refund arrives late", async () => {
       harness.addUser();
+      harness.addUser({ id: "admin_1", email: "admin@example.com", role: "ADMIN" });
       harness.addEvent({ status: "DENIED" });
       harness.addPayment({
         status: "REFUND_FAILED",
@@ -812,7 +831,11 @@ describe("event payment service integration", () => {
         failure_reason: null,
       });
 
-      await retryEventRefund("event_1");
+      await issueEventPaymentRefund({
+        paymentId: "payment_1",
+        adminId: "admin_1",
+        reason: "Customer contacted support and the admin approved a full refund.",
+      });
 
       expect(harness.state.payments[0]).toMatchObject({
         status: "REFUND_PENDING",
@@ -1081,8 +1104,9 @@ describe("event payment service integration", () => {
       });
     });
 
-    it("restores an unvalidated attempt to processing after a favorable early dispute closure", async () => {
+    it("keeps an event hidden for admin review after a favorable early dispute closure", async () => {
       seedCheckoutOwner();
+      harness.addUser({ id: "admin_1", email: "admin@example.com", role: "ADMIN" });
       const session = harness.addCheckoutSession({
         id: "cs_early_dispute_won",
         status: "complete",
@@ -1128,15 +1152,26 @@ describe("event payment service integration", () => {
 
       expect(handled).toBe(true);
       expect(harness.state.payments[0]).toMatchObject({
-        status: "PROCESSING",
+        status: "REVIEW_REQUIRED",
         stripePaymentIntentId: "pi_early_dispute_won",
         stripeDisputeId: "dp_early_dispute_won",
         stripeDisputeStatus: "won",
-        paidAt: null,
-        failureReason: null,
+        paidAt: expect.any(Date),
+        failureReason:
+          "Stripe closed the dispute favorably, but the payment still requires administrator review.",
       });
       expect(harness.state.events[0]).toMatchObject({
-        status: "DRAFT",
+        status: "CANCELLED",
+        cancellationReason: "PAYMENT_DISPUTE",
+      });
+
+      await restoreEventAfterFavorableDispute({
+        eventId: "event_1",
+        adminId: "admin_1",
+      });
+      expect(harness.state.payments[0]).toMatchObject({ status: "PAID" });
+      expect(harness.state.events[0]).toMatchObject({
+        status: "PENDING",
         cancelledAt: null,
         cancellationReason: null,
       });
@@ -1177,9 +1212,10 @@ describe("event payment service integration", () => {
     });
   });
 
-  describe("denial refund policy", () => {
-    it("fully refunds a paid one-time event denied during re-review", async () => {
+  describe("denial revision policy", () => {
+    it("returns a paid event to draft with review notes and no automatic refund", async () => {
       harness.addUser();
+      harness.addUser({ id: "admin_1", email: "admin@example.com", role: "ADMIN" });
       harness.addEvent({
         status: "PENDING",
         publishedAt: new Date("2026-12-01T18:00:00.000Z"),
@@ -1191,26 +1227,60 @@ describe("event payment service integration", () => {
         paidAt: new Date("2026-12-01T17:00:00.000Z"),
       });
 
-      await denyEventAndRefund("event_1");
+      await denyEventForRevision({
+        eventId: "event_1",
+        reviewerId: "admin_1",
+        comment: "Please clarify the venue address before resubmitting.",
+      });
 
-      expect(harness.state.events[0].status).toBe("DENIED");
-      expect(harness.stripe.refunds.create).toHaveBeenCalledTimes(1);
+      expect(harness.state.events[0].status).toBe("DRAFT");
+      expect(harness.stripe.refunds.create).not.toHaveBeenCalled();
+      expect(harness.state.payments[0]).toMatchObject({
+        status: "PAID",
+        refundedAmountCents: 0,
+      });
+      expect(harness.state.reviews).toContainEqual(expect.objectContaining({
+        eventId: "event_1",
+        reviewerId: "admin_1",
+        decision: "DENIED",
+        comment: "Please clarify the venue address before resubmitting.",
+      }));
+    });
+  });
+
+  describe("manual administrator refund policy", () => {
+    it("requires admin approval and refunds the full charged total including tax", async () => {
+      harness.addUser();
+      harness.addUser({ id: "admin_1", email: "admin@example.com", role: "ADMIN" });
+      harness.addEvent({ status: "CANCELLED", cancellationReason: "ORGANIZER" });
+      harness.addPayment({
+        status: "PAID",
+        stripePaymentIntentId: "pi_taxed_refund",
+        chargedAmountCents: 1083,
+        taxAmountCents: 83,
+        paidAt: new Date("2026-12-01T17:00:00.000Z"),
+      });
+
+      await issueEventPaymentRefund({
+        paymentId: "payment_1",
+        adminId: "admin_1",
+        reason: "Customer contacted support and the administrator approved the refund.",
+      });
+
       expect(harness.stripe.refunds.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          payment_intent: "pi_re_review",
-          metadata: expect.objectContaining({
-            scope: "event_post",
-            eventId: "event_1",
-            paymentId: "payment_re_review",
-          }),
+          payment_intent: "pi_taxed_refund",
+          metadata: expect.objectContaining({ approvedBy: "admin_1" }),
         }),
-        expect.objectContaining({
-          idempotencyKey: expect.stringContaining("payment_re_review"),
-        }),
+        expect.any(Object),
       );
       expect(harness.state.payments[0]).toMatchObject({
         status: "REFUNDED",
-        refundedAmountCents: 1000,
+        refundedAmountCents: 1083,
+        refundApprovedById: "admin_1",
+        refundApprovedAt: expect.any(Date),
+        refundReason:
+          "Customer contacted support and the administrator approved the refund.",
       });
     });
   });

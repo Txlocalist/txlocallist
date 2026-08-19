@@ -1,13 +1,18 @@
 import Link from "next/link";
 
 import {
-  retryEventRefundAction,
+  issueEventPaymentRefundAction,
+  restoreEventAfterDisputeAction,
   updatePostModerationStatusAction,
 } from "@/app/actions/admin";
 import { AdminShell } from "@/app/admin/AdminShell";
 import { requireAdmin } from "@/lib/auth/session";
 import { getBlobImageUrl } from "@/lib/blob";
 import { formatEventDateRange, formatEventTime } from "@/lib/event-dates";
+import {
+  isFavorableEventDisputeStatus,
+  isTerminalEventDisputeStatus,
+} from "@/lib/event-disputes";
 import { prisma } from "@/lib/prisma";
 import { isMissingPrismaTableError } from "@/lib/prisma-errors";
 import styles from "@/app/dashboard/dashboard.module.css";
@@ -19,6 +24,14 @@ const PAGE_SIZE = 100;
 function formatDate(value) {
   if (!value) return "-";
   return new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(new Date(value));
+}
+
+function formatMoney(amountCents, currency = "usd") {
+  if (!Number.isInteger(amountCents)) return "-";
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: currency.toUpperCase(),
+  }).format(amountCents / 100);
 }
 
 function getOwnerLabel(owner) {
@@ -56,6 +69,47 @@ function ModerationForm({ entityId, entityType, currentStatus, canApprove = true
         Save
       </button>
     </form>
+  );
+}
+
+function EventModerationForm({ eventId, canApprove = true }) {
+  const commentId = `denial-comment-${eventId}`;
+
+  return (
+    <div className={styles.eventModerationForms}>
+      {canApprove ? (
+        <form action={updatePostModerationStatusAction}>
+          <input type="hidden" name="entityId" value={eventId} />
+          <input type="hidden" name="entityType" value="event" />
+          <input type="hidden" name="status" value="approved" />
+          <button type="submit" className={styles.publishButton}>Approve Event</button>
+        </form>
+      ) : null}
+      <form action={updatePostModerationStatusAction} className={styles.eventDenialForm}>
+        <input type="hidden" name="entityId" value={eventId} />
+        <input type="hidden" name="entityType" value="event" />
+        <input type="hidden" name="status" value="denied" />
+        <label htmlFor={commentId} className={styles.formLabel}>
+          Required correction notes
+        </label>
+        <textarea
+          id={commentId}
+          name="comment"
+          required
+          minLength={1}
+          maxLength={1000}
+          rows={4}
+          className={styles.moderationTextarea}
+          aria-describedby={`${commentId}-help`}
+        />
+        <p id={`${commentId}-help`} className={styles.businessMeta}>
+          The owner will see this note and can edit and resubmit the same draft.
+        </p>
+        <button type="submit" className={styles.deleteButton}>
+          Request Corrections
+        </button>
+      </form>
+    </div>
   );
 }
 
@@ -100,20 +154,37 @@ export default async function AdminPostsPage({ searchParams }) {
                 OR: [
                   {
                     payments: {
-                      some: { status: { in: ["REFUND_PENDING", "REFUND_FAILED"] } },
+                      some: {
+                        status: {
+                          in: [
+                            "REVIEW_REQUIRED",
+                            "REFUND_PENDING",
+                            "REFUND_FAILED",
+                            "DISPUTED",
+                          ],
+                        },
+                      },
                     },
                   },
                   {
                     status: "CANCELLED",
                     cancellationReason: "PAYMENT_DISPUTE",
-                    payments: { some: { status: "PAID" } },
+                    payments: { some: { stripeDisputeId: { not: null } } },
                   },
                 ],
               }
             : {
-                status: view === "queue"
-                  ? "PENDING"
-                  : { in: EVENT_HISTORY_STATUSES },
+                ...(view === "queue"
+                  ? { status: "PENDING" }
+                  : {
+                      OR: [
+                        { status: { in: EVENT_HISTORY_STATUSES } },
+                        {
+                          status: "DRAFT",
+                          reviews: { some: { decision: "DENIED" } },
+                        },
+                      ],
+                    }),
               }),
         },
         orderBy: { updatedAt: "desc" },
@@ -125,10 +196,25 @@ export default async function AdminPostsPage({ searchParams }) {
           payments: {
             orderBy: { createdAt: "desc" },
             select: {
+              id: true,
               status: true,
               amountCents: true,
+              chargedAmountCents: true,
+              taxAmountCents: true,
               currency: true,
+              paidAt: true,
+              refundedAmountCents: true,
+              refundApprovedAt: true,
+              refundReason: true,
+              stripeDisputeId: true,
+              stripeDisputeStatus: true,
               failureReason: true,
+            },
+          },
+          reviews: {
+            orderBy: { createdAt: "desc" },
+            include: {
+              reviewer: { select: { name: true, email: true } },
             },
           },
         },
@@ -221,7 +307,7 @@ export default async function AdminPostsPage({ searchParams }) {
               ? view === "queue"
                 ? "New event submissions will appear here."
                 : view === "payments"
-                  ? "No event refunds need attention."
+                  ? "No event payment exceptions need attention."
                   : "No published or denied event history yet."
               : view === "queue"
                 ? "New business submissions will appear here."
@@ -308,20 +394,32 @@ export default async function AdminPostsPage({ searchParams }) {
             {events.map((event) => {
               const latestPayment = event.payments[0];
               const ended = Boolean(event.endDate && event.endDate <= new Date());
-              const canRefundClosedDispute = Boolean(
+              const canRestoreAfterDispute = Boolean(
+                !ended &&
                 event.status === "CANCELLED" &&
                 event.cancellationReason === "PAYMENT_DISPUTE" &&
-                event.payments.some((payment) => payment.status === "PAID")
+                event.payments.some(
+                  (payment) =>
+                    payment.status === "REVIEW_REQUIRED" &&
+                    payment.paidAt &&
+                    isFavorableEventDisputeStatus(payment.stripeDisputeStatus),
+                )
               );
-              const needsRefundRetry = event.payments.some((payment) =>
-                ["REFUND_FAILED", "REFUND_PENDING"].includes(payment.status)
-              ) || Boolean(
-                event.status === "DENIED" &&
-                !event.publishedAt &&
-                event.payments.some((payment) => payment.status === "PAID")
-              ) || canRefundClosedDispute;
+              const refundablePayments = event.payments.filter(
+                (payment) =>
+                  ["PAID", "REVIEW_REQUIRED", "REFUND_PENDING", "REFUND_FAILED"].includes(
+                    payment.status,
+                  ) &&
+                  (
+                    !payment.stripeDisputeId ||
+                    isTerminalEventDisputeStatus(payment.stripeDisputeStatus)
+                  ),
+              );
               const paymentSummary = event.payments.length > 0
-                ? event.payments.map((payment) => payment.status).join(", ")
+                ? event.payments.map((payment) => {
+                    const total = payment.chargedAmountCents ?? payment.amountCents;
+                    return `${payment.status} ${formatMoney(total, payment.currency)}`;
+                  }).join(", ")
                 : "No separate payment";
 
               return (
@@ -375,6 +473,43 @@ export default async function AdminPostsPage({ searchParams }) {
                             Open Event Link
                           </a>
                         ) : null}
+                        {event.reviews.length > 0 ? (
+                          <section className={styles.reviewTimeline} aria-label="Event review history">
+                            <h4 className={styles.reviewTimelineTitle}>Review History</h4>
+                            <ol className={styles.reviewTimelineList}>
+                              {event.reviews.map((review) => (
+                                <li key={review.id} className={styles.reviewTimelineItem}>
+                                  <strong>{review.decision}</strong>
+                                  {` · ${formatDate(review.createdAt)} · ${getOwnerLabel(review.reviewer)}`}
+                                  {review.comment ? <p>{review.comment}</p> : null}
+                                </li>
+                              ))}
+                            </ol>
+                          </section>
+                        ) : null}
+                        {event.payments.length > 0 ? (
+                          <section className={styles.reviewTimeline} aria-label="Payment history">
+                            <h4 className={styles.reviewTimelineTitle}>Payment History</h4>
+                            <ol className={styles.reviewTimelineList}>
+                              {event.payments.map((payment) => (
+                                <li key={payment.id} className={styles.reviewTimelineItem}>
+                                  <strong>{payment.status}</strong>
+                                  {` · Subtotal ${formatMoney(payment.amountCents, payment.currency)}`}
+                                  {` · Tax ${formatMoney(payment.taxAmountCents ?? 0, payment.currency)}`}
+                                  {` · Total ${formatMoney(payment.chargedAmountCents ?? payment.amountCents, payment.currency)}`}
+                                  {payment.refundApprovedAt ? (
+                                    <p>
+                                      Refund approved {formatDate(payment.refundApprovedAt)}: {payment.refundReason}
+                                    </p>
+                                  ) : null}
+                                  {payment.stripeDisputeStatus ? (
+                                    <p>Stripe dispute: {payment.stripeDisputeStatus}</p>
+                                  ) : null}
+                                </li>
+                              ))}
+                            </ol>
+                          </section>
+                        ) : null}
                       </details>
                     </div>
                   </div>
@@ -393,21 +528,62 @@ export default async function AdminPostsPage({ searchParams }) {
                         {ended ? `${event.status} / ENDED` : event.status}
                       </span>
                       {view === "queue" ? (
-                        <ModerationForm
-                          entityId={event.id}
-                          entityType="event"
-                          currentStatus={event.status}
-                          canApprove={!ended}
-                        />
+                        <EventModerationForm eventId={event.id} canApprove={!ended} />
                       ) : null}
-                      {needsRefundRetry ? (
-                        <form action={retryEventRefundAction}>
-                          <input type="hidden" name="id" value={event.id} />
-                          <button type="submit" className={styles.deleteButton}>
-                            {canRefundClosedDispute ? "Issue Full Refund" : "Retry All Refunds"}
+                      {canRestoreAfterDispute ? (
+                        <form action={restoreEventAfterDisputeAction}>
+                          <input type="hidden" name="eventId" value={event.id} />
+                          <button type="submit" className={styles.actionButtonSecondary}>
+                            Restore to Review Queue
                           </button>
                         </form>
                       ) : null}
+                      {refundablePayments.map((payment) => {
+                        const reasonId = `refund-reason-${payment.id}`;
+                        const confirmId = `refund-confirm-${payment.id}`;
+                        return (
+                          <form
+                            key={payment.id}
+                            action={issueEventPaymentRefundAction}
+                            className={styles.refundApprovalForm}
+                          >
+                            <input type="hidden" name="paymentId" value={payment.id} />
+                            <p className={styles.businessMeta}>
+                              Full refund: {formatMoney(
+                                payment.chargedAmountCents ?? payment.amountCents,
+                                payment.currency,
+                              )}
+                            </p>
+                            <label htmlFor={reasonId} className={styles.formLabel}>
+                              Refund reason
+                            </label>
+                            <textarea
+                              id={reasonId}
+                              name="reason"
+                              required
+                              minLength={5}
+                              maxLength={500}
+                              rows={3}
+                              className={styles.moderationTextarea}
+                            />
+                            <label htmlFor={confirmId} className={styles.refundConfirmLabel}>
+                              <input
+                                id={confirmId}
+                                type="checkbox"
+                                name="confirmed"
+                                value="yes"
+                                required
+                              />
+                              Issue the full refund, including tax. This cannot be undone.
+                            </label>
+                            <button type="submit" className={styles.deleteButton}>
+                              {payment.status === "REFUND_FAILED"
+                                ? "Approve and Retry Full Refund"
+                                : "Approve and Issue Full Refund"}
+                            </button>
+                          </form>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>

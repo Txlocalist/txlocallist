@@ -8,6 +8,7 @@ const ACTIVE_PAYMENT_STATUSES = Object.freeze(["CREATED", "PROCESSING"]);
 const STARTER_CATALOG_KEY = "tx_localist_membership";
 const STARTER_PRICE_CATALOG_KEY = "tx_localist_membership_monthly";
 const EVENT_CATALOG_KEY = "tx_localist_event_post";
+const EVENT_TAX_CODE = "txcd_10701000";
 
 export const REQUIRED_EVENT_POSTING_MIGRATIONS = Object.freeze([
   "20260807000000_baseline",
@@ -20,6 +21,7 @@ export const REQUIRED_EVENT_POSTING_MIGRATIONS = Object.freeze([
   "20260810002000_sync_starter_membership_plan",
   "20260810003000_event_image_upload_lifecycle",
   "20260810004000_track_event_refund_status",
+  "20260819000000_manual_event_refunds_and_reviews",
 ]);
 
 export const REQUIRED_STRIPE_WEBHOOK_EVENTS = Object.freeze([
@@ -50,8 +52,8 @@ ORDER BY "started_at" ASC
 
 const ACTIVE_CHECKOUT_INDEX_QUERY = `
 SELECT
-  "indexname" AS "indexName",
-  "indexdef" AS "indexDefinition"
+  "indexname"::text AS "indexName",
+  "indexdef"::text AS "indexDefinition"
 FROM "pg_indexes"
 WHERE "schemaname" = current_schema()
   AND "tablename" = 'EventPayment'
@@ -118,7 +120,7 @@ function safeReadFailure(service, error) {
   return `${service} could not be read${code ? ` (${code})` : ""}; verify credentials and read permissions.`;
 }
 
-function priceProblems(price, { recurring, catalogKey }) {
+function priceProblems(price, { recurring, catalogKey, taxBehavior = null }) {
   const problems = [];
   if (!price || price.deleted) return ["the configured Price does not exist"];
   if (price.active !== true) problems.push("Price is not active");
@@ -130,6 +132,9 @@ function priceProblems(price, { recurring, catalogKey }) {
   if (!objectId(price.product)) problems.push("Price has no product");
   if (price.metadata?.catalogKey !== catalogKey) {
     problems.push(`Price catalogKey is not ${catalogKey}`);
+  }
+  if (taxBehavior && price.tax_behavior !== taxBehavior) {
+    problems.push(`Price tax behavior is not ${taxBehavior}`);
   }
 
   if (recurring) {
@@ -146,13 +151,16 @@ function priceProblems(price, { recurring, catalogKey }) {
   return problems;
 }
 
-function productProblems(product, catalogKey) {
+function productProblems(product, catalogKey, taxCode = null) {
   const problems = [];
   if (!product || product.deleted) return ["the Price product does not exist"];
   if (product.active !== true) problems.push("product is not active");
   if (product.livemode !== true) problems.push("product is not in live mode");
   if (product.metadata?.catalogKey !== catalogKey) {
     problems.push(`product catalogKey is not ${catalogKey}`);
+  }
+  if (taxCode && product.tax_code !== taxCode) {
+    problems.push(`product tax code is not ${taxCode}`);
   }
   return problems;
 }
@@ -339,6 +347,7 @@ async function verifyStripeCatalog(stripe, environment) {
   const eventProblems = priceProblems(eventPrice, {
     recurring: false,
     catalogKey: EVENT_CATALOG_KEY,
+    taxBehavior: "exclusive",
   });
   checks.push(
     eventProblems.length === 0
@@ -375,7 +384,11 @@ async function verifyStripeCatalog(stripe, environment) {
     starterProduct,
     STARTER_CATALOG_KEY,
   );
-  const eventProductProblems = productProblems(eventProduct, EVENT_CATALOG_KEY);
+  const eventProductProblems = productProblems(
+    eventProduct,
+    EVENT_CATALOG_KEY,
+    EVENT_TAX_CODE,
+  );
   if (starterProductId === eventProductId) {
     starterProductProblems.push("Starter and event posting share one product");
   }
@@ -388,6 +401,72 @@ async function verifyStripeCatalog(stripe, environment) {
     allProductProblems.length === 0
       ? pass("stripe.products", "Both Prices use distinct, active, live products.")
       : fail("stripe.products", `Stripe Products invalid: ${allProductProblems.join("; ")}.`),
+  );
+
+  return checks;
+}
+
+async function verifyStripeTax(stripe) {
+  const checks = [];
+  if (
+    typeof stripe.tax?.settings?.retrieve !== "function" ||
+    typeof stripe.tax?.registrations?.list !== "function"
+  ) {
+    return [
+      fail(
+        "stripe.tax_client",
+        "This Stripe client cannot verify Tax settings and registrations.",
+      ),
+    ];
+  }
+
+  let settings;
+  try {
+    settings = await stripe.tax.settings.retrieve();
+  } catch (error) {
+    return [fail("stripe.tax_settings", safeReadFailure("Stripe Tax settings", error))];
+  }
+
+  const headOffice = settings?.head_office?.address;
+  const settingsProblems = [];
+  if (settings?.status !== "active") settingsProblems.push("status is not active");
+  if (settings?.livemode !== true) settingsProblems.push("settings are not in live mode");
+  if (headOffice?.country !== "US" || headOffice?.state !== "TX") {
+    settingsProblems.push("head office is not configured in Texas, US");
+  }
+  checks.push(
+    settingsProblems.length === 0
+      ? pass("stripe.tax_settings", "Stripe Tax is active with a Texas head office.")
+      : fail("stripe.tax_settings", `Stripe Tax settings invalid: ${settingsProblems.join("; ")}.`),
+  );
+
+  let registrations;
+  try {
+    registrations = await stripe.tax.registrations.list({
+      status: "active",
+      limit: 100,
+    });
+  } catch (error) {
+    checks.push(
+      fail("stripe.tax_registration", safeReadFailure("Stripe Tax registrations", error)),
+    );
+    return checks;
+  }
+
+  const texasRegistration = (registrations?.data ?? []).find(
+    (registration) =>
+      registration.status === "active" &&
+      registration.livemode === true &&
+      registration.country === "US" &&
+      registration.country_options?.us?.state === "TX",
+  );
+  checks.push(
+    texasRegistration
+      ? pass("stripe.tax_registration", "An active live Texas sales-tax registration exists.")
+      : fail(
+        "stripe.tax_registration",
+        "Stripe Tax requires an active live Texas sales-tax registration.",
+      ),
   );
 
   return checks;
@@ -593,6 +672,7 @@ export async function verifyEventPostingReadiness({
     checks.push(fail("stripe.client", "A Stripe client is required for read-only checks."));
   } else {
     checks.push(...await verifyStripeCatalog(stripe, environment));
+    checks.push(...await verifyStripeTax(stripe));
     checks.push(await verifyStripeWebhook(stripe, environment.siteUrl));
   }
 

@@ -322,6 +322,79 @@ export async function retryEventCheckoutAction(formData) {
   }
 }
 
+export async function resubmitEventAction(formData) {
+  const user = await requireUser();
+  const eventId = getTextValue(formData, "eventId");
+  if (!eventId) redirect("/dashboard/events?resubmit=invalid");
+
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    include: {
+      business: { select: { id: true, ownerId: true, status: true } },
+      payments: {
+        where: { status: "PAID" },
+        orderBy: { paidAt: "asc" },
+        take: 1,
+      },
+      reviews: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: { decision: true },
+      },
+    },
+  });
+
+  if (!event || (event.creatorId !== user.id && user.role !== "ADMIN")) {
+    redirect("/dashboard/events?resubmit=invalid");
+  }
+  if (
+    event.status !== "DRAFT" ||
+    event.reviews[0]?.decision !== "DENIED" ||
+    !event.endDate ||
+    event.endDate <= new Date()
+  ) {
+    redirect("/dashboard/events?resubmit=invalid");
+  }
+
+  if (event.postingMethod === "ONE_TIME") {
+    const payment = event.payments[0];
+    if (
+      !payment ||
+      !payment.eventStartDate ||
+      !payment.eventEndDate ||
+      event.startDate < payment.eventStartDate ||
+      event.endDate > payment.eventEndDate
+    ) {
+      redirect("/dashboard/events?resubmit=payment");
+    }
+  } else if (event.postingMethod === "SUBSCRIPTION" && user.role !== "ADMIN") {
+    const billingState = await getOwnerBillingState(user.id).catch(() => null);
+    if (
+      !billingState?.hasPaidAccess ||
+      !event.business ||
+      event.business.ownerId !== user.id ||
+      event.business.status !== "ACTIVE"
+    ) {
+      redirect("/dashboard/events?resubmit=membership");
+    }
+  }
+
+  const resubmitted = await prisma.event.updateMany({
+    where: {
+      id: event.id,
+      status: "DRAFT",
+      updatedAt: event.updatedAt,
+    },
+    data: { status: "PENDING" },
+  });
+  if (resubmitted.count !== 1) {
+    redirect("/dashboard/events?resubmit=conflict");
+  }
+
+  revalidateEventPaths(event.id);
+  redirect("/dashboard/events?resubmitted=1");
+}
+
 export async function updateEventAction(prevState, formData) {
   const user = await requireUser();
   const eventId = getTextValue(formData, "eventId");

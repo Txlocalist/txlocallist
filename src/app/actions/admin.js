@@ -7,8 +7,9 @@ import { sendListingPublishedEmail } from "@/lib/email";
 import {
   approveEventForPublication,
   cancelEventPosting,
-  denyEventAndRefund,
-  retryEventRefund,
+  denyEventForRevision,
+  issueEventPaymentRefund,
+  restoreEventAfterFavorableDispute,
 } from "@/lib/event-payments";
 import { prisma } from "@/lib/prisma";
 
@@ -63,7 +64,7 @@ function mapModerationChoice(choice, entityType) {
 
 /** Update moderation status for a business or event */
 export async function updatePostModerationStatusAction(formData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
 
   const entityType = formData.get("entityType")?.toString();
   const entityId = formData.get("entityId")?.toString();
@@ -115,18 +116,19 @@ export async function updatePostModerationStatusAction(formData) {
   }
 
   if (statusChoice === "approved") {
-    await approveEventForPublication(entityId);
-  } else if (statusChoice === "denied") {
-    try {
-      await denyEventAndRefund(entityId);
-    } catch (error) {
-      console.error("[admin] event denial refund failed:", error);
-    }
-  } else {
-    await prisma.event.update({
-      where: { id: entityId },
-      data: { status: "PENDING" },
+    await approveEventForPublication({
+      eventId: entityId,
+      reviewerId: admin.id,
+      comment: formData.get("comment")?.toString(),
     });
+  } else if (statusChoice === "denied") {
+    await denyEventForRevision({
+      eventId: entityId,
+      reviewerId: admin.id,
+      comment: formData.get("comment")?.toString(),
+    });
+  } else {
+    return;
   }
 
   revalidatePath("/events");
@@ -157,18 +159,30 @@ export async function adminDeleteEventAction(formData) {
   revalidatePath("/events");
 }
 
-/** Retry a failed one-time event refund without changing moderation state. */
-export async function retryEventRefundAction(formData) {
-  await requireAdmin();
-  const id = formData.get("id")?.toString();
-  if (!id) return;
-
-  try {
-    await retryEventRefund(id);
-  } catch (error) {
-    console.error("[admin] event refund retry failed:", error);
+/** Approve and issue one full event-payment refund. */
+export async function issueEventPaymentRefundAction(formData) {
+  const admin = await requireAdmin();
+  const paymentId = formData.get("paymentId")?.toString();
+  const reason = formData.get("reason")?.toString();
+  const confirmed = formData.get("confirmed")?.toString() === "yes";
+  if (!paymentId || !confirmed) {
+    throw new Error("Confirm the full refund before issuing it.");
   }
 
+  await issueEventPaymentRefund({ paymentId, adminId: admin.id, reason });
+
+  revalidatePath("/admin/posts");
+  revalidatePath("/admin/events");
+  revalidatePath("/dashboard/events");
+}
+
+/** Return a favorably resolved disputed event to the moderation queue. */
+export async function restoreEventAfterDisputeAction(formData) {
+  const admin = await requireAdmin();
+  const eventId = formData.get("eventId")?.toString();
+  if (!eventId) return;
+
+  await restoreEventAfterFavorableDispute({ eventId, adminId: admin.id });
   revalidatePath("/admin/posts");
   revalidatePath("/admin/events");
   revalidatePath("/dashboard/events");

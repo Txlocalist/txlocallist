@@ -79,21 +79,44 @@ describe("isEventPostingEnabled", () => {
     vi.stubEnv("EVENT_POSTING_ENABLED", "  TRUE  ");
     expect(isEventPostingEnabled()).toBe(true);
   });
+
+  test("validates exclusive tax and the event product tax code", () => {
+    vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_example");
+    const price = makePrice({
+      tax_behavior: "exclusive",
+      product: { active: true, tax_code: "txcd_10701000" },
+    });
+
+    expect(validateStripePriceObject(price, {
+      amountCents: 1000,
+      currency: "usd",
+      recurring: false,
+      taxBehavior: "exclusive",
+      productTaxCode: "txcd_10701000",
+    })).toBe(price);
+    expect(() => validateStripePriceObject(
+      { ...price, tax_behavior: "inclusive" },
+      {
+        amountCents: 1000,
+        currency: "usd",
+        recurring: false,
+        taxBehavior: "exclusive",
+        productTaxCode: "txcd_10701000",
+      },
+    )).toThrow("wrong tax behavior");
+  });
 });
 
 describe("event posting payment disclosure", () => {
   test("states the fee, review, refund, cancellation, and tax rules", () => {
-    expect(EVENT_POST_REVIEW_DISCLOSURE).toContain("one-time $10 event fee");
+    expect(EVENT_POST_REVIEW_DISCLOSURE).toContain("one-time $10 event subtotal");
     expect(EVENT_POST_REVIEW_DISCLOSURE).toContain("before admin review");
     expect(EVENT_POST_REVIEW_DISCLOSURE).toContain("does not guarantee publication");
-    expect(EVENT_POST_REFUND_DISCLOSURE).toContain("denied by an admin");
-    expect(EVENT_POST_REFUND_DISCLOSURE).toContain("duplicate charges");
-    expect(EVENT_POST_REFUND_DISCLOSURE).toContain(
-      "Organizer cancellations are not automatically refunded",
-    );
-    expect(EVENT_POST_TAX_DISCLOSURE).toBe(
-      "Tax is not automatically calculated or collected in Checkout.",
-    );
+    expect(EVENT_POST_REVIEW_DISCLOSURE).toContain("resubmitted without another event fee");
+    expect(EVENT_POST_REFUND_DISCLOSURE).toContain("Refunds are never automatic");
+    expect(EVENT_POST_REFUND_DISCLOSURE).toContain("only an administrator");
+    expect(EVENT_POST_TAX_DISCLOSURE).toContain("Texas sales tax");
+    expect(EVENT_POST_TAX_DISCLOSURE).toContain("added to the $10 subtotal");
     expect(EVENT_POST_CHECKOUT_DISCLOSURE.length).toBeLessThanOrEqual(1200);
   });
 });

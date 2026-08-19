@@ -53,6 +53,9 @@ function liveProduct(id, catalogKey) {
     active: true,
     livemode: true,
     metadata: { catalogKey },
+    ...(catalogKey === "tx_localist_event_post"
+      ? { tax_code: "txcd_10701000" }
+      : {}),
   };
 }
 
@@ -62,6 +65,7 @@ function stripeFake(overrides = {}) {
     price_event_live: livePrice({
       id: "price_event_live",
       recurring: null,
+      tax_behavior: "exclusive",
       product: "prod_event",
       metadata: { catalogKey: "tx_localist_event_post" },
     }),
@@ -90,6 +94,26 @@ function stripeFake(overrides = {}) {
           enabled_events: [...REQUIRED_STRIPE_WEBHOOK_EVENTS],
         }],
       })),
+    },
+    tax: overrides.tax ?? {
+      settings: {
+        retrieve: vi.fn(async () => ({
+          status: "active",
+          livemode: true,
+          head_office: { address: { country: "US", state: "TX" } },
+        })),
+      },
+      registrations: {
+        list: vi.fn(async () => ({
+          data: [{
+            id: "taxreg_tx",
+            status: "active",
+            livemode: true,
+            country: "US",
+            country_options: { us: { state: "TX", type: "state_sales_tax" } },
+          }],
+        })),
+      },
     },
   };
 }
@@ -155,6 +179,11 @@ describe("one-time event posting production readiness verifier", () => {
     expect(stripe.prices.retrieve).toHaveBeenCalledTimes(2);
     expect(stripe.products.retrieve).toHaveBeenCalledTimes(2);
     expect(stripe.webhookEndpoints.list).toHaveBeenCalledWith({ limit: 100 });
+    expect(stripe.tax.settings.retrieve).toHaveBeenCalledTimes(1);
+    expect(stripe.tax.registrations.list).toHaveBeenCalledWith({
+      status: "active",
+      limit: 100,
+    });
     expect(prisma.plan.findUnique).toHaveBeenCalledWith(
       expect.objectContaining({ where: { slug: "starter" } }),
     );
@@ -301,7 +330,7 @@ describe("one-time event posting production readiness verifier", () => {
     });
     expect(check(report, "db.migrations")).toMatchObject({ status: "fail" });
     expect(check(report, "db.migrations").message).toContain(
-      "20260810004000_track_event_refund_status",
+      "20260819000000_manual_event_refunds_and_reviews",
     );
     expect(check(report, "db.active_checkout_index")).toMatchObject({
       status: "fail",

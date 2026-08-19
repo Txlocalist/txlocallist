@@ -6,7 +6,6 @@ import {
   TERMINAL_EVENT_DISPUTE_STATUSES,
 } from "@/lib/event-disputes";
 import {
-  canAdminRefundPaidEvent,
   shouldKeepSettledPaymentForCancelledEvent,
 } from "@/lib/event-payment-policy";
 import { prisma } from "@/lib/prisma";
@@ -21,7 +20,12 @@ import { getSiteUrl, getStripe, isStripeConfigured } from "@/lib/stripe";
 
 export { assertEventCheckoutSession } from "@/lib/event-checkout-validation";
 
-const FINAL_PAYMENT_STATUSES = new Set(["PAID", "REFUNDED", "DISPUTED"]);
+const FINAL_PAYMENT_STATUSES = new Set([
+  "PAID",
+  "REVIEW_REQUIRED",
+  "REFUNDED",
+  "DISPUTED",
+]);
 const ACTIVE_CHECKOUT_STATUSES = ["CREATED", "PROCESSING"];
 const REFUND_REQUIRED_PAYMENT_STATUSES = new Set([
   "REFUND_PENDING",
@@ -35,6 +39,12 @@ const TERMINAL_STRIPE_REFUND_STATUSES = new Set([
 const CHECKOUT_TTL_SECONDS = 31 * 60;
 const DIRECT_CANCELLATION_REASONS = new Set(["ORGANIZER", "ADMIN"]);
 const checkoutCreationPromises = new Map();
+
+function getPaymentChargedAmount(payment) {
+  return Number.isInteger(payment?.chargedAmountCents)
+    ? payment.chargedAmountCents
+    : payment?.amountCents;
+}
 
 function getObjectId(value) {
   if (!value) return null;
@@ -52,7 +62,7 @@ function paymentConcurrencyError(message) {
 function getRefundPaymentStatus(refund, payment, refundedAmountCents) {
   if (
     refund.status === "succeeded" &&
-    refundedAmountCents >= payment.amountCents
+    refundedAmountCents >= getPaymentChargedAmount(payment)
   ) {
     return "REFUNDED";
   }
@@ -90,7 +100,7 @@ function wouldRegressTerminalStripeRefund(current, refund) {
 function isFullRefundForPayment(refund, payment) {
   return Boolean(
     refund.status === "succeeded" &&
-    (refund.amount ?? 0) >= payment.amountCents &&
+    (refund.amount ?? 0) >= getPaymentChargedAmount(payment) &&
     getObjectId(refund.payment_intent) === payment.stripePaymentIntentId &&
     refund.currency === payment.currency
   );
@@ -102,7 +112,10 @@ async function getRefundedAmountCents(payment, refund) {
     refund.status === "succeeded" ? refund.amount ?? 0 : 0,
   );
 
-  if (refund.status !== "succeeded" || refundedAmountCents >= payment.amountCents) {
+  if (
+    refund.status !== "succeeded" ||
+    refundedAmountCents >= getPaymentChargedAmount(payment)
+  ) {
     return refundedAmountCents;
   }
 
@@ -160,7 +173,7 @@ async function persistEventRefund(
     );
     const fullRefundAdvancesAggregate = Boolean(
       fullRefundForPayment &&
-      totalRefundedCents >= current.amountCents &&
+      totalRefundedCents >= getPaymentChargedAmount(current) &&
       totalRefundedCents > (current.refundedAmountCents ?? 0)
     );
     if (
@@ -195,7 +208,8 @@ async function persistEventRefund(
           refundedAt: nextStatus === "REFUNDED" ? new Date() : null,
           failureReason: nextStatus === "REFUND_FAILED"
             ? refund.failure_reason ?? "Stripe reported that the refund failed."
-            : refund.status === "succeeded" && totalRefundedCents < current.amountCents
+            : refund.status === "succeeded" &&
+                totalRefundedCents < getPaymentChargedAmount(current)
               ? "Stripe has not yet confirmed a full refund."
               : null,
         },
@@ -272,12 +286,18 @@ async function resolveEventPaymentForPaymentIntent(paymentIntentId) {
     ? await prisma.eventPayment.findUnique({ where: { id: paymentId } })
     : null;
   const paymentIntentCustomerId = getObjectId(paymentIntent.customer);
+  const chargedAmountCents = paymentIntent.amount;
   const correlationIsValid = Boolean(
     payment &&
     paymentIntent.id === paymentIntentId &&
     paymentIntent.metadata.eventId === payment.eventId &&
     paymentIntent.metadata.userId === payment.userId &&
-    paymentIntent.amount === payment.amountCents &&
+    Number.isInteger(chargedAmountCents) &&
+    chargedAmountCents >= payment.amountCents &&
+    (
+      !Number.isInteger(payment.chargedAmountCents) ||
+      chargedAmountCents === payment.chargedAmountCents
+    ) &&
     paymentIntent.currency === payment.currency &&
     (
       !payment.stripeCustomerId ||
@@ -299,7 +319,11 @@ async function resolveEventPaymentForPaymentIntent(paymentIntentId) {
         { stripePaymentIntentId: paymentIntentId },
       ],
     },
-    data: { stripePaymentIntentId: paymentIntentId },
+    data: {
+      stripePaymentIntentId: paymentIntentId,
+      chargedAmountCents,
+      taxAmountCents: Math.max(0, chargedAmountCents - payment.amountCents),
+    },
   });
   if (linked.count !== 1) {
     throw paymentConcurrencyError(
@@ -573,6 +597,23 @@ async function createEventCheckoutSessionInternal({ eventId, userId }) {
     throw new Error("An event that has already ended cannot be purchased.");
   }
 
+  const settledPayment = await prisma.eventPayment.findFirst({
+    where: {
+      eventId,
+      userId,
+      status: { in: ["PAID", "REVIEW_REQUIRED", "DISPUTED", "REFUNDED"] },
+    },
+    orderBy: { createdAt: "desc" },
+    select: { status: true },
+  });
+  if (settledPayment) {
+    throw new Error(
+      settledPayment.status === "PAID"
+        ? "This event is already paid. Correct the draft and resubmit it without paying again."
+        : "This event already has a settled payment that requires administrator review.",
+    );
+  }
+
   const unresolvedRefund = await prisma.eventPayment.findFirst({
     where: {
       eventId,
@@ -719,7 +760,8 @@ async function createEventCheckoutSessionInternal({ eventId, userId }) {
         success_url: `${siteUrl}/dashboard/events/${eventId}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${siteUrl}/dashboard/events/${eventId}/checkout/cancel`,
         line_items: [{ price: payment.stripePriceId, quantity: 1 }],
-        automatic_tax: { enabled: false },
+        automatic_tax: { enabled: true },
+        customer_update: { address: "auto" },
         custom_text: {
           submit: { message: EVENT_POST_CHECKOUT_DISCLOSURE },
         },
@@ -835,13 +877,32 @@ export function createEventCheckoutSession({ eventId, userId }) {
   return creationPromise;
 }
 
-async function refundEventPayment(paymentId, reason = "Event post refund") {
+async function refundEventPayment(paymentId) {
   let payment = await prisma.eventPayment.findUnique({
     where: { id: paymentId },
   });
 
   if (!payment || payment.status === "REFUNDED") {
     return payment;
+  }
+
+  if (
+    !payment.refundApprovedById ||
+    !payment.refundApprovedAt ||
+    !payment.refundReason?.trim()
+  ) {
+    throw new Error("An administrator must approve this refund before Stripe is called.");
+  }
+
+  if (
+    payment.stripeDisputeId &&
+    !isTerminalEventDisputeStatus(payment.stripeDisputeStatus)
+  ) {
+    await updateNonterminalRefundState(paymentId, {
+      status: "REFUND_FAILED",
+      failureReason: "An active Stripe dispute blocked the approved refund.",
+    });
+    throw new Error("Resolve the active Stripe dispute before issuing a refund.");
   }
 
   if (!payment.stripePaymentIntentId) {
@@ -903,7 +964,8 @@ async function refundEventPayment(paymentId, reason = "Event post refund") {
           scope: "event_post",
           eventId: payment.eventId,
           paymentId: payment.id,
-          reason,
+          approvedBy: payment.refundApprovedById,
+          reason: payment.refundReason,
         },
       },
       {
@@ -956,15 +1018,35 @@ export async function syncEventPaymentFromCheckoutSession(
     return false;
   }
 
-  const { paymentIntentId } = assertEventCheckoutSession(session, payment);
+  const {
+    paymentIntentId,
+    chargedAmountCents,
+    taxAmountCents,
+  } = assertEventCheckoutSession(session, payment);
+  const settlementData = {
+    stripeCheckoutSessionId: session.id,
+    stripePaymentIntentId: paymentIntentId,
+    chargedAmountCents,
+    taxAmountCents,
+  };
   const result = await withSerializableRetry(async (tx) => {
     const current = await tx.eventPayment.findUnique({
       where: { id: payment.id },
     });
 
     if (!current) return { outcome: "missing" };
-    if (current.status === "PAID") return { outcome: "already_paid" };
-    if (["REFUNDED", "DISPUTED"].includes(current.status)) {
+    if (current.status === "PAID") {
+      await tx.eventPayment.update({
+        where: { id: current.id },
+        data: settlementData,
+      });
+      return { outcome: "already_paid" };
+    }
+    if (["REVIEW_REQUIRED", "REFUNDED", "DISPUTED"].includes(current.status)) {
+      await tx.eventPayment.update({
+        where: { id: current.id },
+        data: settlementData,
+      });
       return { outcome: "final" };
     }
 
@@ -973,15 +1055,12 @@ export async function syncEventPaymentFromCheckoutSession(
         where: { id: current.id },
         data: {
           status: "REFUND_PENDING",
-          stripeCheckoutSessionId: session.id,
-          stripePaymentIntentId: paymentIntentId,
+          ...settlementData,
           paidAt: current.paidAt ?? new Date(),
         },
       });
       return {
-        outcome: "refund_required",
-        paymentId: current.id,
-        reason: current.failureReason ?? "Payment could not be applied to this event.",
+        outcome: "legacy_refund_pending",
       };
     }
 
@@ -1012,14 +1091,13 @@ export async function syncEventPaymentFromCheckoutSession(
       await tx.eventPayment.update({
         where: { id: current.id },
         data: {
-          status: "REFUND_PENDING",
-          stripeCheckoutSessionId: session.id,
-          stripePaymentIntentId: paymentIntentId,
+          status: "REVIEW_REQUIRED",
+          ...settlementData,
           paidAt: new Date(),
-          failureReason: "Duplicate paid Checkout attempt.",
+          failureReason: "Duplicate paid Checkout attempt requires administrator review.",
         },
       });
-      return { outcome: "duplicate", paymentId: current.id };
+      return { outcome: "review_required" };
     }
 
     const scheduleMatchesPurchase = Boolean(
@@ -1037,8 +1115,7 @@ export async function syncEventPaymentFromCheckoutSession(
         where: { id: current.id },
         data: {
           status: "PAID",
-          stripeCheckoutSessionId: session.id,
-          stripePaymentIntentId: paymentIntentId,
+          ...settlementData,
           paidAt: current.paidAt ?? new Date(),
           failureReason: "Payment settled before an organizer or admin cancellation completed.",
         },
@@ -1060,17 +1137,15 @@ export async function syncEventPaymentFromCheckoutSession(
       await tx.eventPayment.update({
         where: { id: current.id },
         data: {
-          status: "REFUND_PENDING",
-          stripeCheckoutSessionId: session.id,
-          stripePaymentIntentId: paymentIntentId,
+          status: "REVIEW_REQUIRED",
+          ...settlementData,
           paidAt: new Date(),
-          failureReason: "The event was canceled, changed, or ended before payment settled.",
+          failureReason:
+            "The event was canceled, changed, or ended before payment settled. Administrator review is required.",
         },
       });
       return {
-        outcome: "refund_required",
-        paymentId: current.id,
-        reason: "Payment settled after the event was no longer eligible.",
+        outcome: "review_required",
       };
     }
 
@@ -1090,17 +1165,15 @@ export async function syncEventPaymentFromCheckoutSession(
       await tx.eventPayment.update({
         where: { id: current.id },
         data: {
-          status: "REFUND_PENDING",
-          stripeCheckoutSessionId: session.id,
-          stripePaymentIntentId: paymentIntentId,
+          status: "REVIEW_REQUIRED",
+          ...settlementData,
           paidAt: new Date(),
-          failureReason: "The event changed while payment was settling.",
+          failureReason:
+            "The event changed while payment was settling. Administrator review is required.",
         },
       });
       return {
-        outcome: "refund_required",
-        paymentId: current.id,
-        reason: "The event changed while payment was settling.",
+        outcome: "review_required",
       };
     }
 
@@ -1108,21 +1181,13 @@ export async function syncEventPaymentFromCheckoutSession(
       where: { id: current.id },
       data: {
         status: "PAID",
-        stripeCheckoutSessionId: session.id,
-        stripePaymentIntentId: paymentIntentId,
+        ...settlementData,
         paidAt: new Date(),
         failureReason: null,
       },
     });
     return { outcome: "fulfilled" };
   });
-
-  if (["duplicate", "refund_required"].includes(result.outcome)) {
-    await refundEventPayment(
-      result.paymentId,
-      result.reason ?? "Duplicate paid Checkout attempt",
-    );
-  }
 
   return ["fulfilled", "already_paid", "cancelled_without_refund"].includes(
     result.outcome,
@@ -1190,15 +1255,19 @@ export async function handleEventCheckoutSessionProcessing(session) {
   return result.count > 0;
 }
 
-export async function denyEventAndRefund(eventId) {
-  const paymentIdsToRefund = await withSerializableRetry(async (tx) => {
+export async function denyEventForRevision({ eventId, reviewerId, comment }) {
+  const denialComment = comment?.trim() ?? "";
+  if (!reviewerId) throw new Error("A reviewing administrator is required.");
+  if (denialComment.length < 1 || denialComment.length > 1000) {
+    throw new Error("A denial comment between 1 and 1000 characters is required.");
+  }
+
+  return withSerializableRetry(async (tx) => {
     const event = await tx.event.findUnique({
       where: { id: eventId },
       select: {
         id: true,
-        postingMethod: true,
         status: true,
-        publishedAt: true,
         updatedAt: true,
       },
     });
@@ -1207,95 +1276,99 @@ export async function denyEventAndRefund(eventId) {
       throw new Error("Only a pending event can be denied.");
     }
 
-    const shouldRefund = event.postingMethod === "ONE_TIME";
-
     const denied = await tx.event.updateMany({
       where: {
         id: eventId,
         status: "PENDING",
-        publishedAt: event.publishedAt,
         updatedAt: event.updatedAt,
       },
-      data: { status: "DENIED" },
+      data: {
+        status: "DRAFT",
+        cancelledAt: null,
+        cancellationReason: null,
+      },
     });
     if (denied.count !== 1) {
       throw paymentConcurrencyError("The event changed while it was being denied.");
     }
 
-    if (!shouldRefund) return [];
-
-    const payments = await tx.eventPayment.findMany({
-      where: {
+    await tx.eventReview.create({
+      data: {
         eventId,
-        status: { in: ["PAID", "REFUND_FAILED", "REFUND_PENDING"] },
+        reviewerId,
+        decision: "DENIED",
+        comment: denialComment,
       },
-      orderBy: { paidAt: "desc" },
-      select: { id: true },
     });
-    if (payments.length === 0) return [];
 
-    await tx.eventPayment.updateMany({
-      where: { id: { in: payments.map((payment) => payment.id) } },
-      data: { status: "REFUND_PENDING", failureReason: null },
-    });
-    return payments.map((payment) => payment.id);
+    return tx.event.findUnique({ where: { id: eventId } });
   });
-
-  const results = await Promise.allSettled(
-    paymentIdsToRefund.map((paymentId) =>
-      refundEventPayment(paymentId, "Event submission denied")
-    ),
-  );
-  const failed = results.filter((result) => result.status === "rejected");
-  if (failed.length > 0) {
-    throw new AggregateError(
-      failed.map((result) => result.reason),
-      "One or more event refunds failed.",
-    );
-  }
-
-  return results;
 }
 
-export async function retryEventRefund(eventId) {
-  const event = await prisma.event.findUnique({
-    where: { id: eventId },
-    select: {
-      status: true,
-      publishedAt: true,
-      cancellationReason: true,
-    },
+export async function issueEventPaymentRefund({ paymentId, adminId, reason }) {
+  const refundReason = reason?.trim() ?? "";
+  if (!paymentId || !adminId) {
+    throw new Error("A payment and approving administrator are required.");
+  }
+  if (refundReason.length < 5 || refundReason.length > 500) {
+    throw new Error("A refund reason between 5 and 500 characters is required.");
+  }
+
+  const approvedPayment = await withSerializableRetry(async (tx) => {
+    const [admin, payment] = await Promise.all([
+      tx.user.findUnique({
+        where: { id: adminId },
+        select: { role: true },
+      }),
+      tx.eventPayment.findUnique({ where: { id: paymentId } }),
+    ]);
+    if (admin?.role !== "ADMIN") {
+      throw new Error("Only an administrator can approve a refund.");
+    }
+    if (!payment) throw new Error("Event payment not found.");
+    if (
+      payment.stripeDisputeId &&
+      !isTerminalEventDisputeStatus(payment.stripeDisputeStatus)
+    ) {
+      throw new Error("Resolve the active Stripe dispute before issuing a refund.");
+    }
+    if (
+      !["PAID", "REVIEW_REQUIRED", "REFUND_PENDING", "REFUND_FAILED"].includes(
+        payment.status,
+      )
+    ) {
+      throw new Error("This payment is not eligible for an administrator refund.");
+    }
+    if (!payment.stripePaymentIntentId) {
+      throw new Error("Stripe has not confirmed a refundable payment intent.");
+    }
+
+    return tx.eventPayment.update({
+      where: { id: payment.id },
+      data: {
+        status: "REFUND_PENDING",
+        refundApprovedById: adminId,
+        refundApprovedAt: new Date(),
+        refundReason,
+        failureReason: null,
+      },
+    });
   });
-  const refundableStatuses = ["REFUND_FAILED", "REFUND_PENDING"];
-  if (canAdminRefundPaidEvent(event)) {
-    refundableStatuses.push("PAID");
-  }
 
-  const payments = await prisma.eventPayment.findMany({
-    where: { eventId, status: { in: refundableStatuses } },
-    orderBy: { updatedAt: "desc" },
-    select: { id: true },
-  });
-
-  if (payments.length === 0) {
-    throw new Error("No event refund is waiting to be retried.");
-  }
-
-  const results = await Promise.allSettled(
-    payments.map((payment) => refundEventPayment(payment.id, "Admin refund retry")),
-  );
-  const failed = results.filter((result) => result.status === "rejected");
-  if (failed.length > 0) {
-    throw new AggregateError(
-      failed.map((result) => result.reason),
-      "One or more event refund retries failed.",
-    );
-  }
-
-  return results;
+  return refundEventPayment(approvedPayment.id);
 }
 
-export async function approveEventForPublication(eventId) {
+export async function approveEventForPublication({
+  eventId,
+  reviewerId,
+  comment = null,
+}) {
+  const reviewComment = comment?.trim() || null;
+  if (!reviewerId) throw new Error("A reviewing administrator is required.");
+  if (reviewComment && reviewComment.length > 1000) {
+    throw new Error("An approval comment must be 1000 characters or fewer.");
+  }
+
   return withSerializableRetry(async (tx) => {
     const event = await tx.event.findUnique({
       where: { id: eventId },
@@ -1331,6 +1404,15 @@ export async function approveEventForPublication(eventId) {
     if (updated.count !== 1) {
       throw new Error("The event changed while it was being approved.");
     }
+
+    await tx.eventReview.create({
+      data: {
+        eventId,
+        reviewerId,
+        decision: "APPROVED",
+        comment: reviewComment,
+      },
+    });
 
     return tx.event.findUnique({ where: { id: eventId } });
   });
@@ -1485,11 +1567,7 @@ export async function handleEventChargeDisputeClosed(
     const nextStatus = refundMustContinue
       ? current.status
       : favorable
-      ? wasValidatedAsPaid
-        ? "PAID"
-        : current.stripeCheckoutSessionId
-          ? "PROCESSING"
-          : "CREATED"
+      ? "REVIEW_REQUIRED"
       : "DISPUTED";
     const updated = await tx.eventPayment.updateMany({
       where: {
@@ -1507,35 +1585,22 @@ export async function handleEventChargeDisputeClosed(
       },
       data: {
         status: nextStatus,
+        paidAt: favorable ? current.paidAt ?? new Date() : current.paidAt,
         stripeDisputeId: disputeId,
         stripeDisputeStatus: disputeStatus,
         failureReason: refundMustContinue
           ? current.failureReason
           : favorable
           ? wasValidatedAsPaid
-            ? "Stripe closed the dispute without a customer loss."
-            : null
+            ? "Stripe closed the dispute favorably. An administrator must restore this event."
+            : "Stripe closed the dispute favorably, but the payment still requires administrator review."
           : "Stripe closed the dispute in the customer's favor.",
       },
     });
 
     if (updated.count !== 1) return false;
 
-    if (favorable && !refundMustContinue) {
-      await tx.event.updateMany({
-        where: {
-          id: payment.eventId,
-          status: "CANCELLED",
-          cancellationReason: "PAYMENT_DISPUTE",
-          endDate: { gt: new Date() },
-        },
-        data: {
-          status: wasValidatedAsPaid ? "PENDING" : "DRAFT",
-          cancelledAt: null,
-          cancellationReason: null,
-        },
-      });
-    } else {
+    if (!favorable) {
       await tx.event.updateMany({
         where: {
           id: payment.eventId,
@@ -1547,6 +1612,85 @@ export async function handleEventChargeDisputeClosed(
           cancellationReason: "PAYMENT_DISPUTE",
         },
       });
+    }
+
+    return true;
+  });
+}
+
+export async function restoreEventAfterFavorableDispute({ eventId, adminId }) {
+  if (!eventId || !adminId) {
+    throw new Error("An event and restoring administrator are required.");
+  }
+
+  return withSerializableRetry(async (tx) => {
+    const [admin, event] = await Promise.all([
+      tx.user.findUnique({ where: { id: adminId }, select: { role: true } }),
+      tx.event.findUnique({
+        where: { id: eventId },
+        include: {
+          payments: {
+            where: {
+              status: "REVIEW_REQUIRED",
+              stripeDisputeId: { not: null },
+            },
+            orderBy: { updatedAt: "desc" },
+          },
+        },
+      }),
+    ]);
+
+    if (admin?.role !== "ADMIN") {
+      throw new Error("Only an administrator can restore a disputed event.");
+    }
+    if (
+      !event ||
+      event.status !== "CANCELLED" ||
+      event.cancellationReason !== "PAYMENT_DISPUTE"
+    ) {
+      throw new Error("This event is not hidden because of a payment dispute.");
+    }
+    if (!event.endDate || event.endDate <= new Date()) {
+      throw new Error("An event that has already ended cannot be restored.");
+    }
+
+    const payment = event.payments.find(
+      (candidate) =>
+        Boolean(candidate.paidAt) &&
+        isFavorableEventDisputeStatus(candidate.stripeDisputeStatus),
+    );
+    if (!payment) {
+      throw new Error("Stripe has not closed this dispute favorably.");
+    }
+
+    const restoredPayment = await tx.eventPayment.updateMany({
+      where: {
+        id: payment.id,
+        status: "REVIEW_REQUIRED",
+        stripeDisputeStatus: payment.stripeDisputeStatus,
+        updatedAt: payment.updatedAt,
+      },
+      data: { status: "PAID", failureReason: null },
+    });
+    if (restoredPayment.count !== 1) {
+      throw paymentConcurrencyError("The disputed payment changed before restoration.");
+    }
+
+    const restoredEvent = await tx.event.updateMany({
+      where: {
+        id: event.id,
+        status: "CANCELLED",
+        cancellationReason: "PAYMENT_DISPUTE",
+        endDate: { gt: new Date() },
+      },
+      data: {
+        status: "PENDING",
+        cancelledAt: null,
+        cancellationReason: null,
+      },
+    });
+    if (restoredEvent.count !== 1) {
+      throw paymentConcurrencyError("The event changed before restoration.");
     }
 
     return true;
@@ -1566,6 +1710,7 @@ export async function handleEventRefundUpdated(refund) {
       "FAILED",
       "EXPIRED",
       "PAID",
+      "REVIEW_REQUIRED",
       "DISPUTED",
       "REFUND_PENDING",
       "REFUNDED",

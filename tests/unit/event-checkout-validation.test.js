@@ -30,7 +30,10 @@ function makeSession(overrides = {}) {
     line_items: {
       data: [{ price: { id: "price_event_post" }, quantity: 1 }],
     },
+    amount_subtotal: 1000,
     amount_total: 1000,
+    total_details: { amount_tax: 0 },
+    automatic_tax: { enabled: true, status: "complete" },
     currency: "usd",
     payment_status: "paid",
     payment_intent: { id: "pi_event_1" },
@@ -50,6 +53,8 @@ describe("assertEventCheckoutSession", () => {
   test("accepts a paid session that exactly matches its event payment", () => {
     expect(assertEventCheckoutSession(makeSession(), makePayment())).toEqual({
       paymentIntentId: "pi_event_1",
+      chargedAmountCents: 1000,
+      taxAmountCents: 0,
     });
   });
 
@@ -58,6 +63,22 @@ describe("assertEventCheckoutSession", () => {
 
     expect(assertEventCheckoutSession(makeSession(), makePayment())).toEqual({
       paymentIntentId: "pi_event_1",
+      chargedAmountCents: 1000,
+      taxAmountCents: 0,
+    });
+  });
+
+  test("accepts tax added to the $10 subtotal", () => {
+    expect(assertEventCheckoutSession(
+      makeSession({
+        amount_total: 1083,
+        total_details: { amount_tax: 83 },
+      }),
+      makePayment(),
+    )).toEqual({
+      paymentIntentId: "pi_event_1",
+      chargedAmountCents: 1083,
+      taxAmountCents: 83,
     });
   });
 
@@ -88,14 +109,14 @@ describe("assertEventCheckoutSession", () => {
     expect(() => assertEventCheckoutSession(
       makeSession({ amount_total: 999 }),
       makePayment()
-    )).toThrow("Stripe Checkout total did not match the event-posting price.");
+    )).toThrow("Stripe Checkout subtotal, tax, or total did not match the event-posting price.");
   });
 
   test("rejects the wrong currency", () => {
     expect(() => assertEventCheckoutSession(
       makeSession({ currency: "eur" }),
       makePayment()
-    )).toThrow("Stripe Checkout total did not match the event-posting price.");
+    )).toThrow("Stripe Checkout subtotal, tax, or total did not match the event-posting price.");
   });
 
   test("rejects an unpaid session", () => {

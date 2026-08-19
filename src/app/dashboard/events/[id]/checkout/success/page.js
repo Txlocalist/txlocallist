@@ -46,6 +46,7 @@ export default async function EventCheckoutSuccessPage({ params, searchParams })
   const refunded = payment?.status === "REFUNDED";
   const refundPending = payment?.status === "REFUND_PENDING";
   const refundFailed = payment?.status === "REFUND_FAILED";
+  const reviewRequired = payment?.status === "REVIEW_REQUIRED";
   const cancelledPaid = paid && event.status === "CANCELLED";
 
   const heading = refunded
@@ -54,17 +55,21 @@ export default async function EventCheckoutSuccessPage({ params, searchParams })
       ? "Refund Started"
       : refundFailed
         ? "Refund Needs Attention"
+        : reviewRequired
+          ? "Payment Needs Admin Review"
         : cancelledPaid
           ? "Event Canceled"
         : paid
           ? "Payment Confirmed"
           : "Payment Is Verifying";
   const description = refunded
-    ? `${event.title} was no longer eligible when payment settled, so the charge was refunded.`
+    ? `An administrator issued a full refund for ${event.title}.`
     : refundPending
-      ? `${event.title} was no longer eligible when payment settled. Stripe is processing a full refund.`
+      ? `Stripe is processing the full refund approved by an administrator for ${event.title}.`
       : refundFailed
-        ? "The event was not submitted, and the automatic refund needs support review. No additional payment is required."
+        ? "The administrator-approved refund needs support attention. Do not submit another payment."
+        : reviewRequired
+          ? "The payment was recorded, but an administrator must review it before the event can continue. No refund will be issued automatically."
         : cancelledPaid
           ? "Stripe confirmed payment before cancellation completed. The event remains canceled, and no automatic refund was issued."
         : paid

@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { deleteEventAction, retryEventCheckoutAction } from "@/app/actions/events";
+import {
+  deleteEventAction,
+  resubmitEventAction,
+  retryEventCheckoutAction,
+} from "@/app/actions/events";
 import { getCurrentSession } from "@/lib/auth/session";
 import { formatEventDateRange, isEventPast } from "@/lib/event-dates";
 import { prisma } from "@/lib/prisma";
@@ -37,6 +41,8 @@ export default async function DashboardEventsPage({ searchParams }) {
   const canceled = params?.canceled === "1";
   const cancellationBlocked = params?.cancel === "blocked";
   const paymentUnavailable = params?.payment === "unavailable";
+  const resubmitted = params?.resubmitted === "1";
+  const resubmitError = params?.resubmit;
   const eventPostingEnabled = isEventPostingEnabled();
 
   let events = [];
@@ -51,6 +57,15 @@ export default async function DashboardEventsPage({ searchParams }) {
         payments: {
           orderBy: { createdAt: "desc" },
           select: { status: true, failureReason: true },
+        },
+        reviews: {
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            decision: true,
+            comment: true,
+            createdAt: true,
+          },
         },
       },
     });
@@ -81,6 +96,7 @@ export default async function DashboardEventsPage({ searchParams }) {
 
       {created && <div className={styles.successBanner}>Your event was submitted for admin review.</div>}
       {updated && <div className={styles.successBanner}>Your event changes were saved.</div>}
+      {resubmitted && <div className={styles.successBanner}>Your corrected event was resubmitted for admin review.</div>}
       {canceled && <div className={styles.successBanner}>Your event was canceled. No automatic refund was issued.</div>}
       {cancellationBlocked ? (
         <div className={`${styles.noticeBanner} ${styles.noticeError}`}>
@@ -90,6 +106,15 @@ export default async function DashboardEventsPage({ searchParams }) {
       {paymentUnavailable ? (
         <div className={`${styles.noticeBanner} ${styles.noticeError}`}>
           Stripe Checkout could not start. Please try again.
+        </div>
+      ) : null}
+      {resubmitError ? (
+        <div className={`${styles.noticeBanner} ${styles.noticeError}`}>
+          {resubmitError === "membership"
+            ? "An active membership and linked active business are required to resubmit this event."
+            : resubmitError === "payment"
+              ? "The original event payment or purchased date range could not be verified. Contact support for help."
+              : "This event could not be resubmitted. Reload the page and try again."}
         </div>
       ) : null}
 
@@ -139,6 +164,16 @@ export default async function DashboardEventsPage({ searchParams }) {
           <div className={styles.tableBody}>
             {events.map((event) => {
               const latestPayment = event.payments[0];
+              const latestReview = event.reviews[0];
+              const changesRequested = Boolean(
+                event.status === "DRAFT" && latestReview?.decision === "DENIED",
+              );
+              const hasPaidPayment = event.payments.some(
+                (payment) => payment.status === "PAID",
+              );
+              const paymentNeedsAdminReview = event.payments.some(
+                (payment) => payment.status === "REVIEW_REQUIRED",
+              );
               const hasUnresolvedRefund = event.payments.some((payment) =>
                 ["REFUND_PENDING", "REFUND_FAILED"].includes(payment.status)
               );
@@ -167,6 +202,36 @@ export default async function DashboardEventsPage({ searchParams }) {
                         Stripe is still processing this payment. Do not pay again.
                       </p>
                     ) : null}
+                    {paymentNeedsAdminReview ? (
+                      <p className={styles.businessMeta}>
+                        This payment needs administrator review. No refund will be issued automatically.
+                      </p>
+                    ) : null}
+                    {changesRequested && latestReview.comment ? (
+                      <div className={`${styles.noticeBanner} ${styles.noticeWarning}`}>
+                        <h3 className={styles.noticeTitle}>Corrections requested</h3>
+                        <p className={styles.noticeDescription}>{latestReview.comment}</p>
+                      </div>
+                    ) : null}
+                    {event.reviews.length > 0 ? (
+                      <details className={styles.reviewTimeline}>
+                        <summary className={styles.actionButton}>Review history</summary>
+                        <ol className={styles.reviewTimelineList}>
+                          {event.reviews.map((review) => (
+                            <li key={review.id} className={styles.reviewTimelineItem}>
+                              <strong>{review.decision}</strong>
+                              {` · ${new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(review.createdAt)}`}
+                              {review.comment ? <p>{review.comment}</p> : null}
+                            </li>
+                          ))}
+                        </ol>
+                      </details>
+                    ) : null}
+                    {event.postingMethod === "ONE_TIME" && hasPaidPayment ? (
+                      <p className={styles.businessMeta}>
+                        Need a refund? Contact <Link href="/contact">support</Link>. Refunds require admin approval.
+                      </p>
+                    ) : null}
                   </div>
                 </div>
                 <div className={styles.tableCol} style={{ flex: 1 }} data-label="City">
@@ -181,7 +246,9 @@ export default async function DashboardEventsPage({ searchParams }) {
                   )}
                 </div>
                 <div className={styles.tableCol} style={{ flex: 1 }} data-label="Status">
-                  <span className={styles[getEventStatusClass(event.status)]}>{event.status}</span>
+                  <span className={styles[getEventStatusClass(event.status)]}>
+                    {changesRequested ? "CHANGES REQUESTED" : event.status}
+                  </span>
                 </div>
                 <div className={styles.tableCol} style={{ flex: 1 }} data-label="Actions">
                   <div className={styles.actionButtons}>
@@ -199,6 +266,8 @@ export default async function DashboardEventsPage({ searchParams }) {
                     event.status === "DRAFT" &&
                     event.endDate &&
                     eventPostingEnabled &&
+                    !hasPaidPayment &&
+                    !paymentNeedsAdminReview &&
                     !hasUnresolvedRefund &&
                     !paymentIsStillProcessing &&
                     !isEventPast(event) ? (
@@ -206,6 +275,14 @@ export default async function DashboardEventsPage({ searchParams }) {
                         <input type="hidden" name="eventId" value={event.id} />
                         <button type="submit" className={styles.actionButton}>
                           Pay {EVENT_POST_PRICE}
+                        </button>
+                      </form>
+                    ) : null}
+                    {changesRequested && !isEventPast(event) ? (
+                      <form action={resubmitEventAction}>
+                        <input type="hidden" name="eventId" value={event.id} />
+                        <button type="submit" className={styles.publishButton}>
+                          Resubmit for Review
                         </button>
                       </form>
                     ) : null}

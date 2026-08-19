@@ -762,6 +762,101 @@
   box-shadow: 0 0 0 3px rgba(74, 157, 156, 0.14);
 }
 
+.eventModerationForms,
+.eventDenialForm,
+.refundApprovalForm {
+  display: flex;
+  width: min(100%, 320px);
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.55rem;
+}
+
+.eventModerationForms {
+  padding-top: 0.25rem;
+}
+
+.eventDenialForm,
+.refundApprovalForm {
+  padding: 0.75rem;
+  border: 1px solid rgba(45, 36, 30, 0.18);
+  border-radius: var(--radius-md);
+  background: rgba(255, 250, 242, 0.72);
+}
+
+.formLabel {
+  color: var(--retro-brown);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.moderationTextarea {
+  width: 100%;
+  min-height: 5rem;
+  resize: vertical;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid rgba(45, 36, 30, 0.28);
+  border-radius: var(--radius-md);
+  background: #fffaf2;
+  color: var(--retro-brown);
+  font: inherit;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.moderationTextarea:focus-visible {
+  outline: 3px solid rgba(74, 157, 156, 0.28);
+  outline-offset: 2px;
+  border-color: var(--retro-teal);
+}
+
+.reviewTimeline {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(45, 36, 30, 0.14);
+}
+
+.reviewTimelineTitle {
+  margin: 0 0 0.55rem;
+  color: var(--retro-brown);
+  font-size: 0.9rem;
+}
+
+.reviewTimelineList {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.reviewTimelineItem {
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.reviewTimelineItem p {
+  margin: 0.3rem 0 0;
+  white-space: pre-wrap;
+}
+
+.refundConfirmLabel {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  color: var(--retro-brown);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.refundConfirmLabel input {
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.1rem;
+  accent-color: var(--retro-red);
+  flex: 0 0 auto;
+}
+
 .publishButton {
   padding: 0.5rem 1rem;
   background-color: #2a9d6e;

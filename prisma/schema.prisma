@@ -49,12 +49,18 @@ enum EventPaymentStatus {
   CREATED
   PROCESSING
   PAID
+  REVIEW_REQUIRED
   FAILED
   EXPIRED
   REFUND_PENDING
   REFUNDED
   REFUND_FAILED
   DISPUTED
+}
+
+enum EventReviewDecision {
+  APPROVED
+  DENIED
 }
 
 enum EmploymentType {
@@ -102,10 +108,12 @@ model User {
   ownedBusinesses Business[]
 
   // Events created by this user
-  events            Event[]
-  eventPayments     EventPayment[]
-  eventImageUploads EventImageUpload[]
+  events                    Event[]
+  eventPayments             EventPayment[]
+  eventImageUploads         EventImageUpload[]
   eventImageUploadRateLimit EventImageUploadRateLimit?
+  eventReviews              EventReview[]              @relation("EventReviewReviewer")
+  approvedEventRefunds      EventPayment[]             @relation("EventPaymentRefundApprover")
 
   // Session management
   lastLoginAt DateTime?
@@ -539,6 +547,7 @@ model Event {
 
   payments     EventPayment[]
   imageUploads EventImageUpload[]
+  reviews      EventReview[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -569,6 +578,8 @@ model EventPayment {
   stripeDisputeId         String?
   stripeDisputeStatus     String?
   amountCents             Int
+  chargedAmountCents      Int?
+  taxAmountCents          Int?
   currency                String    @default("usd")
   eventStartDate          DateTime?
   eventEndDate            DateTime?
@@ -578,6 +589,10 @@ model EventPayment {
   refundedAmountCents     Int       @default(0)
   stripeRefundCreatedAt   DateTime?
   stripeRefundStatus      String?
+  refundApprovedById      String?
+  refundApprovedBy        User?     @relation("EventPaymentRefundApprover", fields: [refundApprovedById], references: [id], onDelete: SetNull)
+  refundApprovedAt        DateTime?
+  refundReason            String?
   failureReason           String?
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
@@ -586,6 +601,21 @@ model EventPayment {
   @@index([userId, createdAt])
   @@index([stripePriceId])
   @@index([stripeCustomerId])
+  @@index([refundApprovedById])
+}
+
+model EventReview {
+  id         String              @id @default(cuid())
+  eventId    String
+  event      Event               @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  reviewerId String?
+  reviewer   User?               @relation("EventReviewReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  decision   EventReviewDecision
+  comment    String?
+  createdAt  DateTime            @default(now())
+
+  @@index([eventId, createdAt])
+  @@index([reviewerId])
 }
 
 model EventImageUpload {

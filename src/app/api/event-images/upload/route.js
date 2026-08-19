@@ -8,6 +8,7 @@ import {
   hasValidEventImageSignature,
 } from "@/lib/event-image-uploads";
 import { prisma } from "@/lib/prisma";
+import { isMissingPrismaTableError } from "@/lib/prisma-errors";
 
 export const runtime = "nodejs";
 
@@ -172,6 +173,16 @@ export async function POST(request) {
     });
   } catch (error) {
     console.error("[event-image-upload] upload failed:", error);
+    if (isMissingPrismaTableError(error)) {
+      return Response.json(
+        {
+          success: false,
+          message:
+            "Event image uploads are temporarily unavailable while a database update is applied. Please try again after deployment.",
+        },
+        { status: 503 },
+      );
+    }
     return Response.json(
       { success: false, message: "Event image upload failed. Please try again." },
       { status: 500 },
