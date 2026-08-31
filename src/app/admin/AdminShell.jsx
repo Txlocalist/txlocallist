@@ -6,6 +6,7 @@ import { logoutAction } from "@/app/actions/auth";
 import logo from "@/app/assets/Tx-Localist-01.png";
 import styles from "@/app/dashboard/DashboardShell.module.css";
 import { getCurrentSession } from "@/lib/auth/session";
+import { isStaffRole } from "@/lib/account-access";
 
 /**
  * Admin layout shell using the shared dashboard styling
@@ -15,16 +16,20 @@ export async function AdminShell({ children, activeTab = "overview" }) {
   const session = await getCurrentSession().catch(() => null);
   const user = session?.user ?? null;
 
-  if (!user || user.role !== "ADMIN") {
+  if (!user || !isStaffRole(user.role)) {
     redirect("/login");
   }
+
+  const isAdmin = user.role === "ADMIN";
 
   const tabs = [
     { id: "overview", label: "Overview", href: "/admin", icon: "dashboard" },
     { id: "posts", label: "Posts", href: "/admin/posts", icon: "inventory_2" },
     { id: "users", label: "Users", href: "/admin/users", icon: "group" },
     { id: "tags", label: "Tags", href: "/admin/tags", icon: "label" },
-    { id: "settings", label: "Admin Tools", href: "/admin/settings", icon: "admin_panel_settings" },
+    ...(isAdmin
+      ? [{ id: "settings", label: "Admin Tools", href: "/admin/settings", icon: "admin_panel_settings" }]
+      : []),
   ];
 
   const sectionTitles = {
@@ -54,7 +59,7 @@ export async function AdminShell({ children, activeTab = "overview" }) {
                 />
               </div>
               <div className={styles.brandText}>
-                <p className={styles.brandTitle}>Admin Panel</p>
+                <p className={styles.brandTitle}>{isAdmin ? "Admin Panel" : "Manager Panel"}</p>
                 <p className={styles.brandSubtitle}>TX Localist</p>
               </div>
             </Link>
@@ -88,10 +93,12 @@ export async function AdminShell({ children, activeTab = "overview" }) {
                 className={styles.helpEyebrow}
                 style={{ color: "var(--retro-red)" }}
               >
-                Admin Access
+                {isAdmin ? "Admin Access" : "Manager Access"}
               </p>
               <p className={styles.helpText}>
-                Actions here affect all users and listings platform-wide.
+                {isAdmin
+                  ? "Actions here affect all users and listings platform-wide."
+                  : "Moderate content and review account status without changing roles or billing."}
               </p>
             </div>
           </div>
@@ -123,7 +130,7 @@ export async function AdminShell({ children, activeTab = "overview" }) {
                     className={styles.profileRole}
                     style={{ color: "var(--retro-red)" }}
                   >
-                    ADMIN
+                    {user.role}
                   </span>
                 </div>
               </div>

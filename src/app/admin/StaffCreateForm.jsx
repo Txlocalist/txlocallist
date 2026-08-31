@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 
-import { createAdminAction } from "@/app/actions/auth";
+import { createStaffAction } from "@/app/actions/auth";
 
 import styles from "../portal.module.css";
 
@@ -18,18 +18,18 @@ function SubmitButton() {
 
   return (
     <button type="submit" className={styles.submitButton} disabled={pending}>
-      {pending ? "Creating admin..." : "Create admin"}
+      {pending ? "Creating staff account..." : "Create staff account"}
     </button>
   );
 }
 
-export function AdminCreateForm() {
-  const [state, formAction] = useActionState(createAdminAction, INITIAL_STATE);
+export function StaffCreateForm() {
+  const [state, formAction] = useActionState(createStaffAction, INITIAL_STATE);
 
   return (
     <form action={formAction} className={styles.form} noValidate>
       {state.error ? (
-        <p className={styles.errorBanner} aria-live="polite">
+        <p className={styles.errorBanner} role="alert">
           {state.error}
         </p>
       ) : null}
@@ -42,17 +42,40 @@ export function AdminCreateForm() {
 
       <div className={styles.formGrid}>
         <div className={styles.field}>
-          <label htmlFor="admin-email" className={styles.label}>
-            Admin email
+          <label htmlFor="staff-role" className={styles.label}>
+            Staff role
+          </label>
+          <select
+            id="staff-role"
+            name="role"
+            defaultValue="MANAGER"
+            className={styles.input}
+            aria-describedby="staff-role-help"
+          >
+            <option value="MANAGER">Manager</option>
+            <option value="ADMIN">Admin</option>
+          </select>
+          <p id="staff-role-help" className={styles.formHelper}>
+            Managers moderate content but cannot change roles, create staff, or manage billing.
+          </p>
+          {state.fieldErrors?.role ? (
+            <p className={styles.fieldError}>{state.fieldErrors.role}</p>
+          ) : null}
+        </div>
+
+        <div className={styles.field}>
+          <label htmlFor="staff-email" className={styles.label}>
+            Staff email
           </label>
           <input
-            id="admin-email"
+            id="staff-email"
             name="email"
             type="email"
             autoComplete="off"
-            placeholder="admin@yourcompany.com"
+            placeholder="staff@yourcompany.com"
             className={styles.input}
             required
+            aria-invalid={Boolean(state.fieldErrors?.email)}
           />
           {state.fieldErrors?.email ? (
             <p className={styles.fieldError}>{state.fieldErrors.email}</p>
@@ -60,11 +83,11 @@ export function AdminCreateForm() {
         </div>
 
         <div className={styles.field}>
-          <label htmlFor="admin-password" className={styles.label}>
+          <label htmlFor="staff-password" className={styles.label}>
             Password
           </label>
           <input
-            id="admin-password"
+            id="staff-password"
             name="password"
             type="password"
             autoComplete="new-password"
@@ -72,6 +95,7 @@ export function AdminCreateForm() {
             className={styles.input}
             minLength={12}
             required
+            aria-invalid={Boolean(state.fieldErrors?.password)}
           />
           {state.fieldErrors?.password ? (
             <p className={styles.fieldError}>{state.fieldErrors.password}</p>
@@ -79,11 +103,11 @@ export function AdminCreateForm() {
         </div>
 
         <div className={styles.field}>
-          <label htmlFor="admin-confirm-password" className={styles.label}>
+          <label htmlFor="staff-confirm-password" className={styles.label}>
             Confirm password
           </label>
           <input
-            id="admin-confirm-password"
+            id="staff-confirm-password"
             name="confirmPassword"
             type="password"
             autoComplete="new-password"
@@ -91,6 +115,7 @@ export function AdminCreateForm() {
             className={styles.input}
             minLength={12}
             required
+            aria-invalid={Boolean(state.fieldErrors?.confirmPassword)}
           />
           {state.fieldErrors?.confirmPassword ? (
             <p className={styles.fieldError}>{state.fieldErrors.confirmPassword}</p>
@@ -99,8 +124,7 @@ export function AdminCreateForm() {
       </div>
 
       <p className={styles.formHelper}>
-        Admin accounts can only be created from this dashboard. Public signup
-        always creates standard users.
+        Public signup always creates a standard User account. Only Admins can create staff.
       </p>
 
       <SubmitButton />

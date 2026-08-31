@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireAdmin } from "@/lib/auth/session";
+import { requireAdmin, requireStaff } from "@/lib/auth/session";
 import { reconcileStripeSubscriptions } from "@/lib/billing";
 import { sendListingPublishedEmail } from "@/lib/email";
 import {
@@ -12,10 +12,18 @@ import {
   restoreEventAfterFavorableDispute,
 } from "@/lib/event-payments";
 import { prisma } from "@/lib/prisma";
+import {
+  confirmRoleTransition,
+  previewRoleTransition,
+} from "@/lib/role-transitions";
+import {
+  deleteUserAccount,
+  previewUserDeletion,
+} from "@/lib/user-deletion";
 
 /** Suspend a business listing */
 export async function suspendBusinessAction(formData) {
-  await requireAdmin();
+  await requireStaff();
   const id = formData.get("id")?.toString();
   if (!id) return;
   await prisma.business.update({ where: { id }, data: { status: "SUSPENDED" } });
@@ -25,10 +33,14 @@ export async function suspendBusinessAction(formData) {
 
 /** Activate (unsuspend) a business listing */
 export async function activateBusinessAction(formData) {
-  await requireAdmin();
+  await requireStaff();
   const id = formData.get("id")?.toString();
   if (!id) return;
-  await prisma.business.update({ where: { id }, data: { status: "ACTIVE" } });
+  const result = await prisma.business.updateMany({
+    where: { id, owner: { deletedAt: null } },
+    data: { status: "ACTIVE" },
+  });
+  if (result.count !== 1) return;
   revalidatePath("/admin/businesses");
   revalidatePath("/admin/posts");
 }
@@ -64,7 +76,7 @@ function mapModerationChoice(choice, entityType) {
 
 /** Update moderation status for a business or event */
 export async function updatePostModerationStatusAction(formData) {
-  const admin = await requireAdmin();
+  const admin = await requireStaff();
 
   const entityType = formData.get("entityType")?.toString();
   const entityId = formData.get("entityId")?.toString();
@@ -82,11 +94,11 @@ export async function updatePostModerationStatusAction(formData) {
         slug: true,
         name: true,
         publishedAt: true,
-        owner: { select: { email: true } },
+        owner: { select: { email: true, deletedAt: true } },
       },
     });
 
-    if (!business) return;
+    if (!business || business.owner.deletedAt) return;
 
     const nextStatus = mapModerationChoice(statusChoice, "business");
     const data =
@@ -94,10 +106,11 @@ export async function updatePostModerationStatusAction(formData) {
         ? { status: "ACTIVE", publishedAt: business.publishedAt ?? new Date() }
         : { status: nextStatus, publishedAt: null };
 
-    await prisma.business.update({
-      where: { id: entityId },
+    const updated = await prisma.business.updateMany({
+      where: { id: entityId, owner: { deletedAt: null } },
       data,
     });
+    if (updated.count !== 1) return;
 
     revalidatePath(`/business/${business.slug}`);
     revalidatePath("/dashboard/businesses");
@@ -137,14 +150,93 @@ export async function updatePostModerationStatusAction(formData) {
   revalidateAdminModerationPaths();
 }
 
-/** Change a user role */
-export async function changeUserRoleAction(formData) {
-  await requireAdmin();
-  const id   = formData.get("id")?.toString();
-  const role = formData.get("role")?.toString();
-  if (!id || !["USER", "OWNER", "ADMIN"].includes(role)) return;
-  await prisma.user.update({ where: { id }, data: { role } });
-  revalidatePath("/admin/users");
+export async function previewUserRoleChangeAction({ targetUserId, toRole }) {
+  const admin = await requireAdmin();
+  try {
+    const preview = await previewRoleTransition({
+      actorId: admin.id,
+      targetUserId,
+      toRole,
+    });
+    return { ok: true, preview };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Role change could not be prepared.",
+    };
+  }
+}
+
+export async function confirmUserRoleChangeAction({ operationId, confirmed }) {
+  const admin = await requireAdmin();
+  try {
+    await confirmRoleTransition({ actorId: admin.id, operationId, confirmed });
+    revalidatePath("/admin");
+    revalidatePath("/admin/users");
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/billing");
+    revalidatePath("/dashboard/businesses");
+    revalidatePath("/search");
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Role change could not be completed.",
+    };
+  }
+}
+
+export async function previewUserDeletionAction({ targetUserId }) {
+  const admin = await requireAdmin();
+  try {
+    const preview = await previewUserDeletion({
+      actorId: admin.id,
+      targetUserId,
+    });
+    return { ok: true, preview };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Account deletion could not be reviewed.",
+    };
+  }
+}
+
+export async function deleteUserAccountAction({
+  targetUserId,
+  expectedRoleVersion,
+  confirmationEmail,
+  confirmed,
+}) {
+  const admin = await requireAdmin();
+  try {
+    const deletion = await deleteUserAccount({
+      actorId: admin.id,
+      targetUserId,
+      expectedRoleVersion,
+      confirmationEmail,
+      confirmed,
+    });
+    revalidatePath("/admin");
+    revalidatePath("/admin/users");
+    revalidatePath("/admin/businesses");
+    revalidatePath("/admin/events");
+    revalidatePath("/admin/posts");
+    revalidatePath("/search");
+    revalidatePath("/events");
+    for (const slug of deletion.businessSlugs) {
+      revalidatePath(`/business/${slug}`);
+    }
+    for (const eventId of deletion.eventIds) {
+      revalidatePath(`/events/${eventId}`);
+    }
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Account deletion could not be completed.",
+    };
+  }
 }
 
 /** Delete an event (admin) */

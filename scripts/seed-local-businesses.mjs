@@ -92,11 +92,11 @@ async function main() {
   const [owner, city, freePlan] = await Promise.all([
     prisma.user.upsert({
       where: { email: DIRECTORY_DEMO_OWNER_EMAIL },
-      update: { role: "OWNER", name: "TX Localist Directory Demo" },
+      update: { role: "USER", name: "TX Localist Directory Demo" },
       create: {
         email: DIRECTORY_DEMO_OWNER_EMAIL,
         passwordHash: await createPasswordHash(),
-        role: "OWNER",
+        role: "USER",
         name: "TX Localist Directory Demo",
       },
     }),

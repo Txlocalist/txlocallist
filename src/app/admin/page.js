@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { AdminShell } from "./AdminShell";
-import { requireAdmin } from "@/lib/auth/session";
+import { requireStaff } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { isMissingPrismaTableError } from "@/lib/prisma-errors";
 import styles from "@/app/dashboard/dashboard.module.css";
@@ -12,7 +12,8 @@ function formatDate(val) {
 }
 
 export default async function AdminOverviewPage() {
-  const admin = await requireAdmin();
+  const staff = await requireStaff();
+  const isAdmin = staff.role === "ADMIN";
 
   let stats = { users: 0, owners: 0, businesses: 0, activeBusinesses: 0, events: 0 };
   let recentUsers = [];
@@ -22,11 +23,19 @@ export default async function AdminOverviewPage() {
   try {
     const [userCount, ownerCount, bizCount, activeBizCount, recentUsersData, recentBizData] =
       await prisma.$transaction([
-        prisma.user.count(),
-        prisma.user.count({ where: { role: "OWNER" } }),
+        prisma.user.count({ where: { deletedAt: null } }),
+        prisma.user.count({
+          where: {
+            deletedAt: null,
+            ownedBusinesses: { some: { status: { not: "ARCHIVED" } } },
+          },
+        }),
         prisma.business.count(),
         prisma.business.count({ where: { status: "ACTIVE" } }),
         prisma.user.findMany({
+          where: isAdmin
+            ? { deletedAt: null }
+            : { id: "__manager-overview-hidden__", deletedAt: null },
           orderBy: { createdAt: "desc" },
           take: 6,
           select: { id: true, email: true, role: true, createdAt: true, lastLoginAt: true },
@@ -39,7 +48,7 @@ export default async function AdminOverviewPage() {
       ]);
 
     stats = { users: userCount, owners: ownerCount, businesses: bizCount, activeBusinesses: activeBizCount };
-    recentUsers = recentUsersData;
+    recentUsers = isAdmin ? recentUsersData : [];
     recentBusinesses = recentBizData;
 
     // Events may not exist yet
@@ -93,9 +102,9 @@ export default async function AdminOverviewPage() {
       <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginBottom: "2rem" }}>
         {[
           { href: "/admin/posts",      label: "Review Posts",      icon: "inventory_2" },
-          { href: "/admin/users",      label: "Manage Users",      icon: "group" },
+          { href: "/admin/users",      label: isAdmin ? "Manage Users" : "View Users", icon: "group" },
           { href: "/admin/tags",       label: "Manage Tags",       icon: "label" },
-          { href: "/admin/settings",   label: "Create Admin",      icon: "admin_panel_settings" },
+          ...(isAdmin ? [{ href: "/admin/settings", label: "Admin Tools", icon: "admin_panel_settings" }] : []),
         ].map((l) => (
           <Link key={l.href} href={l.href} className={styles.createButton} style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
             <span className="material-icons" style={{ fontSize: "1rem" }}>{l.icon}</span>

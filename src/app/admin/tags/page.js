@@ -1,12 +1,13 @@
 import { AdminShell } from "../AdminShell";
-import { requireAdmin } from "@/lib/auth/session";
+import { requireStaff } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { deleteTagAction } from "@/app/actions/admin";
 import { TagCreateForm } from "../TagCreateForm";
 import styles from "@/app/dashboard/dashboard.module.css";
 
 export default async function AdminTagsPage() {
-  await requireAdmin();
+  const staff = await requireStaff();
+  const isAdmin = staff.role === "ADMIN";
 
   const tags = await prisma.tag.findMany({
     orderBy: { name: "asc" },
@@ -47,10 +48,12 @@ export default async function AdminTagsPage() {
                 {tag._count.businessTags}
               </div>
               <div className={styles.tableCol} style={{ flex: 1 }}>
-                <form action={deleteTagAction}>
-                  <input type="hidden" name="id" value={tag.id} />
-                  <button type="submit" className={styles.deleteButton}>Delete</button>
-                </form>
+                {isAdmin ? (
+                  <form action={deleteTagAction}>
+                    <input type="hidden" name="id" value={tag.id} />
+                    <button type="submit" className={styles.deleteButton}>Delete</button>
+                  </form>
+                ) : <span className={styles.businessMeta}>Admin only</span>}
               </div>
             </div>
           ))}

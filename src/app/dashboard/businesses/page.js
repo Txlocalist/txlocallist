@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { DashboardLayout } from "../DashboardShell";
 import styles from "../dashboard.module.css";
-import { getOwnerBillingState } from "@/lib/billing";
+import { getAccountAccess } from "@/lib/account-access";
 import { prisma } from "@/lib/prisma";
 import { getCurrentSession } from "@/lib/auth/session";
 import { isMissingPrismaTableError, phase3SchemaMessage } from "@/lib/prisma-errors";
@@ -20,8 +20,8 @@ export default async function BusinessesPage({ searchParams }) {
   }
 
   const user = session.user;
-  const billingState = await getOwnerBillingState(user.id).catch(() => null);
-  const canCreateListing = user.role === "ADMIN" || Boolean(billingState?.hasPaidAccess);
+  const billingState = await getAccountAccess(user.id).catch(() => null);
+  const canCreateListing = Boolean(billingState?.hasCreatorAccess);
 
   // Next.js 16: searchParams is a Promise
   const params = await searchParams;

@@ -111,7 +111,7 @@ export async function POST(request) {
         case "customer.subscription.created":
         case "customer.subscription.updated":
         case "customer.subscription.deleted":
-          await handleStripeSubscriptionWebhook(object);
+          await handleStripeSubscriptionWebhook(object, stripeEvent.id);
           break;
 
         case "charge.refunded":

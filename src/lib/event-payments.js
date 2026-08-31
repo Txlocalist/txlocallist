@@ -672,10 +672,11 @@ async function createEventCheckoutSessionInternal({ eventId, userId }) {
       email: true,
       name: true,
       stripeCustomerId: true,
+      deletedAt: true,
     },
   });
 
-  if (!user) {
+  if (!user || user.deletedAt) {
     throw new Error("User not found.");
   }
 
@@ -1318,11 +1319,11 @@ export async function issueEventPaymentRefund({ paymentId, adminId, reason }) {
     const [admin, payment] = await Promise.all([
       tx.user.findUnique({
         where: { id: adminId },
-        select: { role: true },
+        select: { role: true, deletedAt: true },
       }),
       tx.eventPayment.findUnique({ where: { id: paymentId } }),
     ]);
-    if (admin?.role !== "ADMIN") {
+    if (admin?.role !== "ADMIN" || admin.deletedAt) {
       throw new Error("Only an administrator can approve a refund.");
     }
     if (!payment) throw new Error("Event payment not found.");
@@ -1373,6 +1374,7 @@ export async function approveEventForPublication({
     const event = await tx.event.findUnique({
       where: { id: eventId },
       include: {
+        creator: { select: { deletedAt: true } },
         payments: {
           where: { status: "PAID" },
           select: { id: true },
@@ -1382,6 +1384,9 @@ export async function approveEventForPublication({
     });
 
     if (!event) throw new Error("Event not found.");
+    if (event.creator?.deletedAt) {
+      throw new Error("Events belonging to a deleted account cannot be published.");
+    }
     if (event.status !== "PENDING") {
       throw new Error("Only a pending event can be approved.");
     }
@@ -1393,7 +1398,12 @@ export async function approveEventForPublication({
     }
 
     const updated = await tx.event.updateMany({
-      where: { id: eventId, status: "PENDING", endDate: { gt: new Date() } },
+      where: {
+        id: eventId,
+        status: "PENDING",
+        endDate: { gt: new Date() },
+        creator: { deletedAt: null },
+      },
       data: {
         status: "PUBLISHED",
         publishedAt: event.publishedAt ?? new Date(),
@@ -1625,10 +1635,14 @@ export async function restoreEventAfterFavorableDispute({ eventId, adminId }) {
 
   return withSerializableRetry(async (tx) => {
     const [admin, event] = await Promise.all([
-      tx.user.findUnique({ where: { id: adminId }, select: { role: true } }),
+      tx.user.findUnique({
+        where: { id: adminId },
+        select: { role: true, deletedAt: true },
+      }),
       tx.event.findUnique({
         where: { id: eventId },
         include: {
+          creator: { select: { deletedAt: true } },
           payments: {
             where: {
               status: "REVIEW_REQUIRED",
@@ -1640,7 +1654,7 @@ export async function restoreEventAfterFavorableDispute({ eventId, adminId }) {
       }),
     ]);
 
-    if (admin?.role !== "ADMIN") {
+    if (admin?.role !== "ADMIN" || admin.deletedAt) {
       throw new Error("Only an administrator can restore a disputed event.");
     }
     if (
@@ -1649,6 +1663,9 @@ export async function restoreEventAfterFavorableDispute({ eventId, adminId }) {
       event.cancellationReason !== "PAYMENT_DISPUTE"
     ) {
       throw new Error("This event is not hidden because of a payment dispute.");
+    }
+    if (event.creator?.deletedAt) {
+      throw new Error("Events belonging to a deleted account cannot be restored.");
     }
     if (!event.endDate || event.endDate <= new Date()) {
       throw new Error("An event that has already ended cannot be restored.");
@@ -1682,6 +1699,7 @@ export async function restoreEventAfterFavorableDispute({ eventId, adminId }) {
         status: "CANCELLED",
         cancellationReason: "PAYMENT_DISPUTE",
         endDate: { gt: new Date() },
+        creator: { deletedAt: null },
       },
       data: {
         status: "PENDING",

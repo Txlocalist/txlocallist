@@ -132,10 +132,11 @@ export async function signUpAction(_prevState, formData) {
   redirect(getDashboardPath(user.role));
 }
 
-export async function createAdminAction(_prevState, formData) {
+export async function createStaffAction(_prevState, formData) {
   await requireAdmin();
 
   const email = normalizeEmail(getTextValue(formData, "email"));
+  const role = getTextValue(formData, "role") || "MANAGER";
   const password = formData.get("password")?.toString() ?? "";
   const confirmPassword = formData.get("confirmPassword")?.toString() ?? "";
   const fieldErrors = validateCredentials({
@@ -143,6 +144,10 @@ export async function createAdminAction(_prevState, formData) {
     password,
     confirmPassword,
   });
+
+  if (!["MANAGER", "ADMIN"].includes(role)) {
+    fieldErrors.role = "Choose Manager or Admin.";
+  }
 
   if (Object.keys(fieldErrors).length > 0) {
     return buildErrorState("Fix the highlighted fields and try again.", fieldErrors);
@@ -160,7 +165,7 @@ export async function createAdminAction(_prevState, formData) {
       throw error;
     }
 
-    return buildErrorState(`${authSchemaMessage} Run the Prisma schema sync before creating admins.`);
+    return buildErrorState(`${authSchemaMessage} Run the Prisma schema sync before creating staff.`);
   }
 
   if (existingUser) {
@@ -176,7 +181,7 @@ export async function createAdminAction(_prevState, formData) {
       data: {
         email,
         passwordHash,
-        role: "ADMIN",
+        role,
       },
     });
   } catch (error) {
@@ -184,15 +189,16 @@ export async function createAdminAction(_prevState, formData) {
       throw error;
     }
 
-    return buildErrorState(`${authSchemaMessage} Run the Prisma schema sync before creating admins.`);
+    return buildErrorState(`${authSchemaMessage} Run the Prisma schema sync before creating staff.`);
   }
 
   revalidatePath("/admin");
+  revalidatePath("/admin/users");
 
   return {
     error: "",
     fieldErrors: {},
-    success: `Admin account created for ${email}.`,
+    success: `${role === "ADMIN" ? "Admin" : "Manager"} account created for ${email}.`,
   };
 }
 
@@ -217,6 +223,7 @@ export async function loginAction(_prevState, formData) {
         id: true,
         role: true,
         passwordHash: true,
+        deletedAt: true,
       },
     });
   } catch (error) {
@@ -227,7 +234,7 @@ export async function loginAction(_prevState, formData) {
     return buildErrorState(`${authSchemaMessage} Run the Prisma schema sync, then log in again.`);
   }
 
-  if (!user) {
+  if (!user || user.deletedAt) {
     return buildErrorState("Invalid email or password.");
   }
 
@@ -238,10 +245,11 @@ export async function loginAction(_prevState, formData) {
   }
 
   try {
-    await prisma.user.update({
-      where: { id: user.id },
+    const updated = await prisma.user.updateMany({
+      where: { id: user.id, deletedAt: null },
       data: { lastLoginAt: new Date() },
     });
+    if (updated.count !== 1) return buildErrorState("Invalid email or password.");
   } catch (error) {
     if (!isMissingPrismaTableError(error)) {
       throw error;

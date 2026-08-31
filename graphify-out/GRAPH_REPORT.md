@@ -1,16 +1,16 @@
-# Graph Report - txlocallist  (2026-07-29)
+# Graph Report - txlocallist  (2026-08-28)
 
 ## Corpus Check
-- 148 files · ~607,790 words
+- 217 files · ~636,576 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 640 nodes · 800 edges · 79 communities (60 shown, 19 thin omitted)
-- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 6 edges (avg confidence: 0.75)
+- 983 nodes · 1362 edges · 131 communities (97 shown, 34 thin omitted)
+- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 9 edges (avg confidence: 0.73)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `b9606789`
+- Built from commit: `1e5dc04e`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -62,12 +62,14 @@
 - page.js
 - page.js
 - page.js
-- EventsSection.jsx
 - layout.js
 - page.js
 - EventLandingHeader.jsx
 - blob.js
 - eslint.config.mjs
+- route.js
+- route.js
+- prisma-errors.js
 - page.js
 - Shared Components
 - Q: Trace the event detail page implementation, event image fields and fallback behavior, save/favorite counting system, and the equivalent real saved-count flow used on business landing pages.
@@ -76,75 +78,112 @@
 - Q: How is the how-it-works page composed, which shared components and routes does it depend on, and what must be preserved during a visual redesign?
 - AGENTS.md
 - directory-demo.js
+- verify-event-posting-readiness.mjs
+- event-dates.js
+- role-transitions.js
+- DashboardShell.jsx
+- event-image-uploads.js
+- events.js
+- account-access.js
+- page.js
+- pricing.js
+- One-Time Event Posting Launch
+- setup-stripe-catalog.mjs
+- seed-local-businesses.mjs
+- page.js
+- event-disputes.js
+- route.js
+- page.js
+- Q: Remove the toggle from the search on the results search bar, and when loading /results without a filter or search load 15 recently added businesses.
+- Q: Add a beautiful skeleton loader for the results page that looks like the cards.
+- page.js
+- page.js
+- PricingCards.jsx
+- account-access.test.js
+- event-payment-policy.test.js
+- event-payment-policy.js
+- route.js
+- event-checkout-validation.js
+- stripe-webhooks.js
+- event-payments.test.js
+- stripe-webhooks.test.js
+- event-dates.test.js
+- event-image-upload-route.test.js
+- event-payment-migration.test.js
+- event-refund-status-migration.test.js
+- event-review-refund-migration.test.js
+- role-migration.test.js
+- vercel.json
+- EVENT_MAX_CALENDAR_DAYS
 
 ## God Nodes (most connected - your core abstractions)
-1. `scripts` - 20 edges
-2. `DashboardLayout()` - 12 edges
-3. `EventsResults()` - 10 edges
-4. `parseFeatures()` - 10 edges
-5. `upsertSubscriptionFromStripeSubscription()` - 9 edges
-6. `normalizeEvent()` - 9 edges
-7. `createBusinessAction()` - 6 edges
-8. `EventCard()` - 6 edges
-9. `dateObj()` - 6 edges
-10. `dateWindowKeys()` - 6 edges
+1. `scripts` - 25 edges
+2. `EventsResults()` - 16 edges
+3. `DashboardLayout()` - 15 edges
+4. `persistEventRefund()` - 12 edges
+5. `verifyEventPostingReadiness()` - 11 edges
+6. `upsertSubscriptionFromStripeSubscription()` - 11 edges
+7. `withSerializableRetry()` - 10 edges
+8. `createEventCheckoutSessionInternal()` - 10 edges
+9. `parseFeatures()` - 10 edges
+10. `fail()` - 9 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `EventsResults()` --indirect_call--> `value()`  [INFERRED]
+  src/app/events/results/EventsResults.jsx → scripts/verify-event-posting-readiness.mjs
+- `getBillingPath()` --indirect_call--> `value()`  [INFERRED]
+  src/lib/billing.js → scripts/verify-event-posting-readiness.mjs
+- `getStripeSubscriptionPeriodEnd()` --indirect_call--> `value()`  [INFERRED]
+  src/lib/subscription-period.js → scripts/verify-event-posting-readiness.mjs
 - `main()` --references--> `@prisma/client`  [EXTRACTED]
   scripts/seed-event-data.mjs → package.json
 - `main()` --references--> `@prisma/client`  [EXTRACTED]
   scripts/seed-local-businesses.mjs → package.json
-- `AdminCreateForm()` --indirect_call--> `createAdminAction()`  [INFERRED]
-  src/app/admin/AdminCreateForm.jsx → src/app/actions/auth.js
-- `SignupForm()` --indirect_call--> `signUpAction()`  [INFERRED]
-  src/app/signup/SignupForm.jsx → src/app/actions/auth.js
-- `LoginForm()` --indirect_call--> `loginAction()`  [INFERRED]
-  src/app/login/LoginForm.jsx → src/app/actions/auth.js
 
 ## Import Cycles
 - None detected.
 
-## Communities (79 total, 19 thin omitted)
+## Communities (131 total, 34 thin omitted)
 
 ### Community 0 - "DashboardShell.jsx"
-Cohesion: 0.07
-Nodes (20): createEventAction(), getTextValue(), slugifyTag(), BillingPage(), getBillingStatusClass(), getNotice(), getSubscriptionDetail(), BusinessHoursEditor() (+12 more)
+Cohesion: 0.27
+Nodes (4): BusinessHoursEditor(), EditBusinessForm(), parseHiringRoles(), CreateBusinessForm()
 
 ### Community 1 - "index.js"
-Cohesion: 0.07
-Nodes (6): BADGE_TONES, BUSINESS_CATEGORIES, EVENT_CATEGORIES, DEFAULT_LINKS, NavbarMobileMenu(), PhotoUploader()
+Cohesion: 0.06
+Nodes (12): BADGE_TONES, BUSINESS_CATEGORIES, EVENT_CATEGORIES, LikeCount(), normalizeCount(), numberFormatter, DEFAULT_LINKS, NavbarMobileMenu() (+4 more)
 
 ### Community 2 - "scripts"
-Cohesion: 0.07
-Nodes (27): devDependencies, eslint, eslint-config-next, prisma, name, private, scripts, build (+19 more)
+Cohesion: 0.05
+Nodes (34): devDependencies, eslint, eslint-config-next, @playwright/test, prisma, vitest, name, private (+26 more)
 
 ### Community 3 - "ResultsExperience.jsx"
-Cohesion: 0.10
-Nodes (11): ArrowRightIcon(), CameraIcon(), LoaderIcon(), MapPinIcon(), PlusCircleIcon(), ShareIcon(), metadata, ResultsPage() (+3 more)
+Cohesion: 0.08
+Nodes (16): ArrowRightIcon(), CameraIcon(), PlusCircleIcon(), ShareIcon(), getFavoriteBusinessInclude(), metadata, ResultsPage(), toBusinessResult() (+8 more)
 
 ### Community 4 - "EventsResults.jsx"
 Cohesion: 0.14
-Nodes (21): addDays(), CATEGORY_COLORS, DATE_FILTERS, dateObj(), dateWindowKeys(), DAYS, eventDate(), EventsResults() (+13 more)
+Nodes (26): addDays(), CATEGORY_COLORS, DATE_FILTERS, dateObj(), dateWindowKeys(), DAYS, eventDate(), eventDateKeys() (+18 more)
 
 ### Community 5 - "createTagAction"
-Cohesion: 0.12
-Nodes (13): buildErrorState(), createTagAction(), getTextValue(), slugifyTag(), AdminCreateForm(), INITIAL_STATE, AdminShell(), AdminOverviewPage() (+5 more)
+Cohesion: 0.13
+Nodes (11): buildErrorState(), createTagAction(), getTextValue(), slugifyTag(), AdminShell(), AdminOverviewPage(), formatDate(), INITIAL_STATE (+3 more)
 
 ### Community 6 - "billing.js"
-Cohesion: 0.16
-Nodes (20): ACTIVE_SUBSCRIPTION_STATUSES, createStripeCheckoutSession(), createStripePortalSession(), ensureStripeCustomerForUser(), FEATURE_ACCESS_SUBSCRIPTION_STATUSES, getBillingDates(), getBillingPath(), getFreePlan() (+12 more)
+Cohesion: 0.14
+Nodes (24): ACTIVE_SUBSCRIPTION_STATUSES, createStripeCheckoutSession(), createStripePortalSession(), enforceComplimentaryCancellation(), ensureStripeCustomerForUser(), FEATURE_ACCESS_SUBSCRIPTION_STATUSES, findPlanForStripeSubscription(), getBillingPath() (+16 more)
 
 ### Community 7 - "dependencies"
-Cohesion: 0.08
-Nodes (23): dependencies, dotenv, @neondatabase/serverless, next, @prisma/adapter-neon, @prisma/client, react, react-dom (+15 more)
+Cohesion: 0.12
+Nodes (14): dependencies, date-fns-tz, dotenv, @neondatabase/serverless, next, @prisma/adapter-neon, react, react-dom (+6 more)
 
 ### Community 8 - "events.js"
-Cohesion: 0.19
-Nodes (20): addDays(), filterEvents(), formatCityLabel(), formatEventDateKey(), formatEventTime(), formatShortDateLabel(), getDateWindowKeys(), getEventById() (+12 more)
+Cohesion: 0.22
+Nodes (18): addDays(), filterEvents(), formatCityLabel(), formatShortDateLabel(), getDateWindowKeys(), getEventById(), getEventCategories(), getEventCities() (+10 more)
 
 ### Community 9 - "auth.js"
 Cohesion: 0.15
-Nodes (10): buildErrorState(), createAdminAction(), getTextValue(), loginAction(), signUpAction(), validateCredentials(), INITIAL_STATE, LoginForm() (+2 more)
+Nodes (10): buildErrorState(), createStaffAction(), getTextValue(), loginAction(), signUpAction(), validateCredentials(), INITIAL_STATE, LoginForm() (+2 more)
 
 ### Community 10 - "EventsLanding.jsx"
 Cohesion: 0.18
@@ -167,20 +206,20 @@ Cohesion: 0.25
 Nodes (6): BusinessDetailPage(), getDomain(), parseHiringRoles(), SOCIAL_ICONS, PhotoGallery(), ShareButton()
 
 ### Community 15 - "session.js"
-Cohesion: 0.33
-Nodes (8): clearCurrentSession(), createUserSession(), getCurrentSession(), getCurrentUser(), getSessionCookieOptions(), hashToken(), requireAdmin(), requireUser()
+Cohesion: 0.30
+Nodes (9): clearCurrentSession(), createUserSession(), getCurrentSession(), getCurrentUser(), getSessionCookieOptions(), hashToken(), requireAdmin(), requireStaff() (+1 more)
 
 ### Community 16 - "index.js"
 Cohesion: 0.42
 Nodes (10): btn(), emailShell(), listingPublishedTemplate(), listingSuspendedTemplate(), sendEmail(), sendListingPublishedEmail(), sendListingSuspendedEmail(), sendWelcomeEmail() (+2 more)
 
 ### Community 17 - "admin.js"
-Cohesion: 0.24
+Cohesion: 0.16
 Nodes (3): mapModerationChoice(), revalidateAdminModerationPaths(), updatePostModerationStatusAction()
 
 ### Community 18 - "page.js"
-Cohesion: 0.33
-Nodes (8): AdminPostsPage(), BUSINESS_REVIEW_STATUSES, EVENT_REVIEW_STATUSES, formatDate(), getModerationBadgeClass(), getModerationValue(), getOwnerLabel(), ModerationForm()
+Cohesion: 0.27
+Nodes (9): AdminPostsPage(), BUSINESS_HISTORY_STATUSES, EVENT_HISTORY_STATUSES, formatDate(), formatMoney(), getModerationBadgeClass(), getModerationValue(), getOwnerLabel() (+1 more)
 
 ### Community 19 - "business-hours.js"
 Cohesion: 0.50
@@ -223,8 +262,8 @@ Cohesion: 0.40
 Nodes (3): adapter, PHOTOS, prisma
 
 ### Community 30 - "seed-plans.mjs"
-Cohesion: 0.40
-Nodes (3): adapter, PLANS, prisma
+Cohesion: 0.33
+Nodes (4): adapter, PLANS, prisma, requireStripePrices
 
 ### Community 31 - "billing.js"
 Cohesion: 0.90
@@ -237,6 +276,10 @@ Nodes (4): ALLOWED_EXTENSIONS, hasAllowedExtension(), POST(), sanitizeFileName()
 ### Community 33 - "page.js"
 Cohesion: 0.40
 Nodes (3): BENEFITS, metadata, STEPS
+
+### Community 34 - "page.js"
+Cohesion: 0.12
+Nodes (40): ACTIVE_CHECKOUT_STATUSES, approveEventForPublication(), cancelEventPosting(), checkoutCreationPromises, compactError(), createEventCheckoutSession(), createEventCheckoutSessionInternal(), denyEventForRevision() (+32 more)
 
 ### Community 35 - "compilerOptions"
 Cohesion: 0.50
@@ -274,25 +317,122 @@ Nodes (4): Answer, Outcome, Q: Match the About page to the supplied visual refer
 Cohesion: 0.40
 Nodes (4): Answer, Outcome, Q: How is the how-it-works page composed, which shared components and routes does it depend on, and what must be preserved during a visual redesign?, Source Nodes
 
+### Community 79 - "verify-event-posting-readiness.mjs"
+Cohesion: 0.11
+Nodes (35): @prisma/client, adapter, main(), prisma, ACTIVE_PAYMENT_STATUSES, fail(), formatReadinessReport(), isLocalHostname() (+27 more)
+
+### Community 80 - "event-dates.js"
+Cohesion: 0.17
+Nodes (26): ALLOWED_EVENT_TIME_ZONES, ALLOWED_TIME_ZONE_SET, asValidDate(), dateKeyToUtcDate(), eventOccursOnDateKey(), formatEventDateKey(), formatEventDateRange(), formatEventTime() (+18 more)
+
+### Community 81 - "role-transitions.js"
+Cohesion: 0.15
+Nodes (24): ACCESS_FILTERS, AdminUsersPage(), formatDate(), pageHref(), toneClass(), formatDate(), formatMoney(), ROLE_LABELS (+16 more)
+
+### Community 82 - "DashboardShell.jsx"
+Cohesion: 0.16
+Nodes (4): DashboardLayout(), EVENT_POST_PRICE, metadata, metadata
+
+### Community 83 - "event-image-uploads.js"
+Cohesion: 0.26
+Nodes (9): claimError(), claimEventImageUpload(), cleanupEventImageUploadsByIds(), cleanupStaleEventImageUploads(), compactError(), deleteTrackedUpload(), deleteUploadBatch(), normalizeBatchLimit() (+1 more)
+
+### Community 84 - "events.js"
+Cohesion: 0.39
+Nodes (11): createEventAction(), deleteEventAction(), getTextValue(), getValidatedEventInput(), isSafeEventUrl(), resubmitEventAction(), retryEventCheckoutAction(), revalidateEventPaths() (+3 more)
+
+### Community 85 - "account-access.js"
+Cohesion: 0.30
+Nodes (10): billingDates(), deriveUserStatusTags(), getAccountAccess(), hasStripeFeatureAccess(), isStaffRole(), PAID_ACCESS_STATUSES, PLAN_SELECT, resolveAccountAccess() (+2 more)
+
+### Community 86 - "page.js"
+Cohesion: 0.24
+Nodes (5): metadata, CreateEventForm(), errorAttributes(), INITIAL_STATE, metadata
+
+### Community 87 - "pricing.js"
+Cohesion: 0.25
+Nodes (8): EVENT_POST_CHECKOUT_DISCLOSURE, EVENT_POST_PRICE_LABEL, getEventPostPriceId(), PRICING_OFFERS, retrieveAndValidateStripePrice(), secretUsesLiveMode(), validateEventPostPrice(), validateStripePriceObject()
+
+### Community 88 - "One-Time Event Posting Launch"
+Cohesion: 0.22
+Nodes (8): Acceptance test, Automated read-only preflight, Catalog decision, One-Time Event Posting Launch, Policy and operations, Production rollout and database deployment, Required production settings, Stripe webhook
+
+### Community 89 - "setup-stripe-catalog.mjs"
+Cohesion: 0.39
+Nodes (7): ensureEventPrice(), ensureEventProduct(), ensureMembershipPrice(), findPrice(), getConfiguredMembershipPrice(), secretKey, stripe
+
+### Community 90 - "seed-local-businesses.mjs"
+Cohesion: 0.38
+Nodes (6): AUSTIN, createPasswordHash(), LOCAL_BUSINESSES, main(), prisma, scrypt
+
+### Community 91 - "page.js"
+Cohesion: 0.38
+Nodes (3): FavoritesDashboard(), formatSavedDate(), SORT_OPTIONS
+
+### Community 92 - "event-disputes.js"
+Cohesion: 0.29
+Nodes (4): FAVORABLE_EVENT_DISPUTE_STATUSES, favorableStatuses, TERMINAL_EVENT_DISPUTE_STATUSES, terminalStatuses
+
+### Community 93 - "route.js"
+Cohesion: 0.60
+Nodes (5): ALLOWED_CONTENT_TYPES, compactError(), discardReservedUpload(), POST(), sanitizeFileName()
+
+### Community 94 - "page.js"
+Cohesion: 0.47
+Nodes (4): CancelEventButton(), DashboardEventsPage(), EVENT_POST_PRICE, getEventStatusClass()
+
+### Community 95 - "Q: Remove the toggle from the search on the results search bar, and when loading /results without a filter or search load 15 recently added businesses."
+Cohesion: 0.40
+Nodes (4): Answer, Outcome, Q: Remove the toggle from the search on the results search bar, and when loading /results without a filter or search load 15 recently added businesses., Source Nodes
+
+### Community 96 - "Q: Add a beautiful skeleton loader for the results page that looks like the cards."
+Cohesion: 0.40
+Nodes (4): Answer, Outcome, Q: Add a beautiful skeleton loader for the results page that looks like the cards., Source Nodes
+
+### Community 97 - "page.js"
+Cohesion: 0.70
+Nodes (4): BillingPage(), getBillingStatusClass(), getNotice(), getSubscriptionDetail()
+
+### Community 98 - "page.js"
+Cohesion: 0.40
+Nodes (3): eventPostPrice, membershipPrice, metadata
+
+### Community 99 - "PricingCards.jsx"
+Cohesion: 0.40
+Nodes (3): eventPostPrice, membershipPrice, plans
+
+### Community 101 - "event-payment-policy.test.js"
+Cohesion: 0.40
+Nodes (4): endDate, event, payment, startDate
+
+### Community 102 - "event-payment-policy.js"
+Cohesion: 0.83
+Nodes (3): NON_REFUNDING_CANCELLATION_REASONS, sameInstant(), shouldKeepSettledPaymentForCancelledEvent()
+
 ## Knowledge Gaps
-- **138 isolated node(s):** `eslintConfig`, `@/*`, `__dirname`, `nextConfig`, `name` (+133 more)
+- **206 isolated node(s):** `eslintConfig`, `@/*`, `__dirname`, `nextConfig`, `name` (+201 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **19 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **34 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+
+## Work-memory lessons
+
+**Preferred sources** — corroborated by past sessions; start here.
+- `ResultsPage()` (2× useful, score=1.07252975)
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `dependencies` connect `dependencies` to `scripts`?**
-  _High betweenness centrality (0.006) - this node is a cross-community bridge._
-- **Why does `DashboardLayout()` connect `DashboardShell.jsx` to `page.js`?**
-  _High betweenness centrality (0.003) - this node is a cross-community bridge._
+- **Why does `value()` connect `verify-event-posting-readiness.mjs` to `EventsResults.jsx`, `billing.js`?**
+  _High betweenness centrality (0.015) - this node is a cross-community bridge._
+- **Why does `@prisma/client` connect `verify-event-posting-readiness.mjs` to `seed-local-businesses.mjs`, `dependencies`?**
+  _High betweenness centrality (0.014) - this node is a cross-community bridge._
+- **Why does `dependencies` connect `dependencies` to `scripts`, `verify-event-posting-readiness.mjs`?**
+  _High betweenness centrality (0.014) - this node is a cross-community bridge._
 - **What connects `eslintConfig`, `@/*`, `__dirname` to the rest of the system?**
-  _138 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `DashboardShell.jsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.0666049953746531 - nodes in this community are weakly interconnected._
+  _206 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `index.js` be split into smaller, more focused modules?**
-  _Cohesion score 0.07126436781609195 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06006006006006006 - nodes in this community are weakly interconnected._
 - **Should `scripts` be split into smaller, more focused modules?**
-  _Cohesion score 0.06666666666666667 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05405405405405406 - nodes in this community are weakly interconnected._
 - **Should `ResultsExperience.jsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.09971509971509972 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.0784313725490196 - nodes in this community are weakly interconnected._

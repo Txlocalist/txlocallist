@@ -2,6 +2,7 @@ import { formatInTimeZone } from "date-fns-tz";
 import { notFound, redirect } from "next/navigation";
 
 import { getCurrentSession } from "@/lib/auth/session";
+import { getAccountAccess, isStaffRole } from "@/lib/account-access";
 import {
   fromEventCategoryTagName,
   isEventCategoryTagName,
@@ -26,7 +27,7 @@ export default async function EditEventPage({ params }) {
   const session = await getCurrentSession();
   if (!session?.user) redirect(`/login?next=${encodeURIComponent(`/dashboard/events/${id}/edit`)}`);
 
-  const [event, businesses] = await Promise.all([
+  const [event, businesses, access] = await Promise.all([
     prisma.event.findUnique({
       where: { id },
       include: { tags: { select: { name: true } } },
@@ -36,6 +37,7 @@ export default async function EditEventPage({ params }) {
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),
+    getAccountAccess(session.user.id),
   ]);
 
   if (!event || (event.creatorId !== session.user.id && session.user.role !== "ADMIN")) {
@@ -89,6 +91,8 @@ export default async function EditEventPage({ params }) {
           businesses={businesses}
           initialEvent={initialEvent}
           mode="edit"
+          hasMembership={Boolean(access?.hasMembershipAccess)}
+          isStaff={isStaffRole(session.user.role)}
           oneTimePostingEnabled={isEventPostingEnabled()}
           eventPostPrice={formatWholeDollarPrice(EVENT_POST_PRICE_CENTS)}
         />

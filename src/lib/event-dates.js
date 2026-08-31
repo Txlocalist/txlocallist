@@ -225,6 +225,7 @@ export function getPublicEventWhere(now = new Date()) {
 
   return {
     status: "PUBLISHED",
+    creator: { deletedAt: null },
     OR: [
       { endDate: { gte: cutoff } },
       { endDate: null, startDate: { gte: cutoff } },

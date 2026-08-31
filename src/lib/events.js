@@ -340,7 +340,7 @@ export async function getEventsPageData(filters = {}, { userId = null } = {}) {
 
 export async function getEventById(id) {
   const event = await prisma.event.findFirst({
-    where: { id, status: "PUBLISHED" },
+    where: { id, status: "PUBLISHED", creator: { deletedAt: null } },
     select: {
       id: true,
       title: true,

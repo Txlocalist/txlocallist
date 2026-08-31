@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-08-11T18:30:32.952962+00:00",
+  "generated_at": "2026-08-28T17:26:10.679485+00:00",
   "nodes": {
     "src_app_about_page_aboutpage": {
-      "code_fingerprint": "a7e9e5c816e1ea95e2b49a63c87164aab3567da9803df167e8248558074b256a",
+      "code_fingerprint": "6902cb912695aa958703cb884dd3ad318dbaec01ca7b3de97a94ce65cf89f420",
       "label": "AboutPage()",
       "last": "2026-07-15T19:15:31.884023+00:00",
       "provenance": [
@@ -12,7 +12,7 @@
           "q": "Match the About page to the supplied visual reference"
         }
       ],
-      "score": 0.536273643,
+      "score": 0.362452705,
       "source_file": "src/app/about/page.js",
       "status": "tentative",
       "uses": 1
@@ -28,7 +28,7 @@
           "q": "Trace the event detail page implementation, event image fields and fallback behavior, save/favorite counting system, and the equivalent real saved-count flow used on business landing pages."
         }
       ],
-      "score": 0.512923348,
+      "score": 0.346670879,
       "source_file": "src/app/dashboard/events/saved/page.js",
       "status": "tentative",
       "uses": 1
@@ -44,7 +44,7 @@
           "q": "How is the how-it-works page composed, which shared components and routes does it depend on, and what must be preserved during a visual redesign?"
         }
       ],
-      "score": 0.536771853,
+      "score": 0.362789432,
       "source_file": "src/app/how-it-works/page.js",
       "status": "tentative",
       "uses": 1
@@ -60,8 +60,45 @@
           "q": "Inspect graphify-out for context before redesigning the how it works page."
         }
       ],
-      "score": 0.535757897,
+      "score": 0.362104127,
       "source_file": "src/app/layout.js",
+      "status": "tentative",
+      "uses": 1
+    },
+    "src_app_pricing_page_pricingpage": {
+      "code_fingerprint": "f28bff7f656a6d882571ce396be4b899f391fae1c8eee81a107b5dab3cf0ff68",
+      "label": "PricingPage()",
+      "last": "2026-07-15T20:13:24.315412+00:00",
+      "provenance": [
+        {
+          "date": "2026-07-15T20:13:24.315412+00:00",
+          "outcome": "useful",
+          "q": "How is the how-it-works page composed, which shared components and routes does it depend on, and what must be preserved during a visual redesign?"
+        },
+        {
+          "date": "2026-07-15T18:15:33.830902+00:00",
+          "outcome": "useful",
+          "q": "Inspect graphify-out for context before redesigning the how it works page."
+        }
+      ],
+      "score": 0.724893559,
+      "source_file": "src/app/pricing/page.js",
+      "status": "preferred",
+      "uses": 2
+    },
+    "src_app_results_icons_loadericon": {
+      "code_fingerprint": "21ef9081cba90134bad27be67af7af474e6c06b525226880d75e1c842122ae68",
+      "label": "LoaderIcon()",
+      "last": "2026-08-11T18:35:02.631821+00:00",
+      "provenance": [
+        {
+          "date": "2026-08-11T18:35:02.631821+00:00",
+          "outcome": "useful",
+          "q": "Add a beautiful skeleton loader for the results page that looks like the cards."
+        }
+      ],
+      "score": 0.675921425,
+      "source_file": "src/app/results/icons.js",
       "status": "tentative",
       "uses": 1
     },
@@ -81,26 +118,31 @@
           "q": "Inspect graphify-out for context before redesigning the how it works page."
         }
       ],
-      "score": 1.07252975,
+      "score": 0.724893559,
       "source_file": "src/app/results/page.js",
       "status": "preferred",
       "uses": 2
     },
     "src_app_results_resultsexperience": {
-      "code_fingerprint": "3895021a5b51d901683618c9219f884f8c6615ae81b4262cedef41e23f0c1762",
+      "code_fingerprint": "06728a31ec20a975d4899c727b98be683c49786d9f6ffa23363ce015db679157",
       "label": "ResultsExperience.jsx",
-      "last": "2026-08-11T18:02:08.794515+00:00",
+      "last": "2026-08-11T18:35:02.631821+00:00",
       "provenance": [
+        {
+          "date": "2026-08-11T18:35:02.631821+00:00",
+          "outcome": "useful",
+          "q": "Add a beautiful skeleton loader for the results page that looks like the cards."
+        },
         {
           "date": "2026-08-11T18:02:08.794515+00:00",
           "outcome": "useful",
           "q": "Remove the toggle from the search on the results search bar, and when loading /results without a filter or search load 15 recently added businesses."
         }
       ],
-      "score": 0.999544381,
+      "score": 1.351486167,
       "source_file": "src/app/results/ResultsExperience.jsx",
-      "status": "tentative",
-      "uses": 1
+      "status": "preferred",
+      "uses": 2
     },
     "src_components_footer_footer_footer": {
       "code_fingerprint": "1e8de55b6b43824c8878d98642219431d5157bc7cb6cec4fdabb9e8de3b0b9e2",
@@ -113,13 +155,13 @@
           "q": "Inspect graphify-out for context before redesigning the how it works page."
         }
       ],
-      "score": 0.535757897,
+      "score": 0.362104127,
       "source_file": "src/components/Footer/Footer.jsx",
       "status": "tentative",
       "uses": 1
     },
     "src_components_navbar_navbar_navbar": {
-      "code_fingerprint": "79d8400b1f46e60c462df45e43e54cc4d2c57db4bdf7be36788a6856fd8e0b53",
+      "code_fingerprint": "d09caf9021c528446eb85877f5abae09b8c9fe073f039e5bada06c8e302cc408",
       "label": "Navbar()",
       "last": "2026-07-15T18:15:33.830902+00:00",
       "provenance": [
@@ -129,7 +171,7 @@
           "q": "Inspect graphify-out for context before redesigning the how it works page."
         }
       ],
-      "score": 0.535757897,
+      "score": 0.362104127,
       "source_file": "src/components/Navbar/Navbar.jsx",
       "status": "tentative",
       "uses": 1
@@ -145,7 +187,7 @@
           "q": "Remove the toggle from the search on the results search bar, and when loading /results without a filter or search load 15 recently added businesses."
         }
       ],
-      "score": 0.999544381,
+      "score": 0.675564742,
       "source_file": "src/components/SearchBar/SearchBar.jsx",
       "status": "tentative",
       "uses": 1
@@ -161,7 +203,7 @@
           "q": "Inspect graphify-out for context before redesigning the how it works page."
         }
       ],
-      "score": 0.535757897,
+      "score": 0.362104127,
       "source_file": "src/components/StaticPageLayout/StaticPageLayout.jsx",
       "status": "tentative",
       "uses": 1
@@ -177,7 +219,7 @@
           "q": "Trace the event detail page implementation, event image fields and fallback behavior, save/favorite counting system, and the equivalent real saved-count flow used on business landing pages."
         }
       ],
-      "score": 0.512923348,
+      "score": 0.346670879,
       "source_file": "src/lib/events.js",
       "status": "tentative",
       "uses": 1
@@ -193,8 +235,24 @@
           "q": "Trace the event detail page implementation, event image fields and fallback behavior, save/favorite counting system, and the equivalent real saved-count flow used on business landing pages."
         }
       ],
-      "score": 0.512923348,
+      "score": 0.346670879,
       "source_file": "src/lib/events.js",
+      "status": "tentative",
+      "uses": 1
+    },
+    "src_lib_prisma": {
+      "code_fingerprint": "e5dee2233c7b44ef4e5fd95199ef1c278cc94a0203b763b585e93030a5124b03",
+      "label": "prisma.js",
+      "last": "2026-08-28T17:06:56.792063+00:00",
+      "provenance": [
+        {
+          "date": "2026-08-28T17:06:56.792063+00:00",
+          "outcome": "useful",
+          "q": "i cant sign in can you fix this prisma issue"
+        }
+      ],
+      "score": 0.999691477,
+      "source_file": "src/lib/prisma.js",
       "status": "tentative",
       "uses": 1
     }

@@ -23,7 +23,7 @@ function errorAttributes(fieldErrors, field) {
 export function CreateEventForm({
   businesses = [],
   hasMembership = false,
-  isAdmin = false,
+  isStaff = false,
   oneTimePostingEnabled = false,
   eventPostPrice,
   initialEvent = null,
@@ -44,8 +44,8 @@ export function CreateEventForm({
     !isEditing && hasCoveredBusiness ? businesses[0].id : ""
   );
 
-  const postingNotice = isAdmin
-    ? "Admin event posts go directly to review without a separate charge."
+  const postingNotice = isStaff
+    ? "Staff event posts go directly to review without a separate charge."
     : hasCoveredBusiness
       ? oneTimePostingEnabled
         ? `Your membership will use ${businesses[0].name} by default. Choose the standalone option only if you want a separate ${eventPostPrice} Checkout.`

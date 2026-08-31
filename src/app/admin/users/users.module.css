@@ -1,0 +1,448 @@
+.toolbar {
+  display: grid;
+  grid-template-columns: minmax(14rem, 1fr) repeat(2, minmax(10rem, 13rem)) auto;
+  gap: 0.75rem;
+  align-items: end;
+  margin-bottom: 1.25rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.label {
+  color: var(--retro-brown);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.input,
+.roleSelect {
+  min-height: 2.75rem;
+  width: 100%;
+  border: 1px solid rgba(45, 36, 30, 0.24);
+  border-radius: var(--radius-md);
+  background: white;
+  color: var(--retro-brown);
+  padding: 0.55rem 0.7rem;
+  font: inherit;
+}
+
+.input:focus-visible,
+.roleSelect:focus-visible,
+.saveButton:focus-visible,
+.confirmButton:focus-visible,
+.cancelButton:focus-visible,
+.deleteButton:focus-visible,
+.destructiveButton:focus-visible,
+.deletionConfirmation input:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--retro-teal) 45%, transparent);
+  outline-offset: 2px;
+}
+
+.searchButton,
+.saveButton,
+.confirmButton {
+  min-height: 2.75rem;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--retro-teal);
+  color: white;
+  cursor: pointer;
+  font-weight: 800;
+  padding: 0.65rem 1rem;
+}
+
+.saveButton {
+  background: var(--retro-brown);
+  min-height: 2.5rem;
+}
+
+.searchButton:disabled,
+.saveButton:disabled,
+.confirmButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid rgba(45, 36, 30, 0.12);
+  border-radius: var(--radius-lg);
+  background: white;
+}
+
+.table {
+  width: 100%;
+  min-width: 68rem;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 0.9rem 0.85rem;
+  border-bottom: 1px solid rgba(45, 36, 30, 0.1);
+  text-align: left;
+  vertical-align: top;
+}
+
+.table th {
+  background: color-mix(in srgb, var(--retro-cream) 75%, white);
+  color: var(--retro-brown);
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.identity {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.identity strong {
+  color: var(--retro-brown);
+}
+
+.identity span,
+.muted {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.roleBadge,
+.statusTag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.65rem;
+  border-radius: 999px;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.025em;
+  white-space: nowrap;
+}
+
+.roleBadge {
+  background: rgba(45, 36, 30, 0.08);
+  color: var(--retro-brown);
+}
+
+.tagList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.toneSuccess { background: rgba(20, 129, 103, 0.12); color: #0b6a53; }
+.toneAccent { background: rgba(224, 120, 48, 0.15); color: #9a4c18; }
+.toneStaff { background: rgba(73, 91, 155, 0.14); color: #374b93; }
+.toneMuted { background: rgba(92, 84, 76, 0.1); color: #5d554e; }
+.toneNeutral { background: rgba(20, 116, 130, 0.1); color: #145f6b; }
+.toneWarning { background: rgba(190, 124, 11, 0.14); color: #835600; }
+.toneDanger { background: rgba(181, 48, 39, 0.12); color: #9f2c25; }
+
+.roleControl {
+  display: grid;
+  grid-template-columns: minmax(9rem, 1fr) auto;
+  gap: 0.45rem;
+  min-width: 15rem;
+}
+
+.inlineMessage {
+  grid-column: 1 / -1;
+  color: var(--retro-red);
+  font-size: 0.75rem;
+  margin: 0;
+}
+
+.roleDialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(38rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
+  overflow: auto;
+  border: 0;
+  border-radius: 1rem;
+  box-shadow: 0 1.5rem 5rem rgba(45, 36, 30, 0.3);
+  padding: 0;
+}
+
+.roleDialog::backdrop {
+  background: rgba(31, 25, 21, 0.62);
+}
+
+.dialogContent {
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.5rem;
+}
+
+.dialogEyebrow {
+  color: var(--retro-teal);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  margin: 0 0 0.35rem;
+  text-transform: uppercase;
+}
+
+.deleteEyebrow {
+  color: var(--retro-red);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  margin: 0 0 0.35rem;
+  text-transform: uppercase;
+}
+
+.dialogTitle {
+  color: var(--retro-brown);
+  font-size: clamp(1.35rem, 4vw, 1.9rem);
+  margin: 0;
+}
+
+.dialogDescription,
+.standardNotice,
+.warningPanel p {
+  color: var(--muted);
+  line-height: 1.55;
+  margin: 0.5rem 0 0;
+}
+
+.warningPanel {
+  border: 1px solid rgba(214, 73, 51, 0.3);
+  border-left: 4px solid var(--retro-red);
+  border-radius: var(--radius-md);
+  background: rgba(214, 73, 51, 0.055);
+  padding: 1rem;
+}
+
+.warningPanel h3 {
+  color: var(--retro-red);
+  margin: 0;
+}
+
+.subscriptionList {
+  display: grid;
+  gap: 0.45rem;
+  list-style: none;
+  margin: 1rem 0;
+  padding: 0;
+}
+
+.subscriptionList li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  border-radius: var(--radius-sm);
+  background: white;
+  padding: 0.65rem;
+  font-size: 0.78rem;
+  text-transform: capitalize;
+}
+
+.subscriptionList strong {
+  color: var(--retro-brown);
+  text-align: right;
+}
+
+.noSubscription {
+  border-radius: var(--radius-sm);
+  background: white;
+  padding: 0.75rem;
+}
+
+.confirmLabel {
+  display: grid;
+  grid-template-columns: 1.25rem 1fr;
+  gap: 0.65rem;
+  align-items: start;
+  color: var(--retro-brown);
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 700;
+  margin-top: 1rem;
+}
+
+.confirmLabel input {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-top: 0.12rem;
+}
+
+.dialogActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+}
+
+.dialogError {
+  border-radius: var(--radius-sm);
+  background: rgba(181, 48, 39, 0.1);
+  color: #8e2721;
+  font-weight: 700;
+  margin: 0;
+  padding: 0.75rem;
+}
+
+.deleteControl {
+  display: grid;
+  gap: 0.35rem;
+  grid-column: 1 / -1;
+}
+
+.deleteButton,
+.destructiveButton {
+  min-height: 2.5rem;
+  border: 1px solid rgba(181, 48, 39, 0.38);
+  border-radius: var(--radius-md);
+  background: white;
+  color: #9f2c25;
+  cursor: pointer;
+  font-weight: 800;
+  padding: 0.55rem 0.8rem;
+}
+
+.deleteButton:hover:not(:disabled) {
+  background: rgba(181, 48, 39, 0.07);
+}
+
+.destructiveButton {
+  min-height: 2.75rem;
+  border-color: #a92f27;
+  background: #a92f27;
+  color: white;
+  padding: 0.65rem 1rem;
+}
+
+.deleteButton:disabled,
+.destructiveButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.controlHint {
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.deletionImpact,
+.blockerPanel,
+.deletionConfirmation {
+  border-radius: var(--radius-md);
+  padding: 1rem;
+}
+
+.deletionImpact {
+  border: 1px solid rgba(45, 36, 30, 0.14);
+  background: color-mix(in srgb, var(--retro-cream) 60%, white);
+}
+
+.deletionImpact h3,
+.blockerPanel h3 {
+  color: var(--retro-brown);
+  margin: 0 0 0.65rem;
+}
+
+.deletionImpact ul,
+.blockerPanel ul {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.deletionImpact p {
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 0.8rem 0 0;
+}
+
+.blockerPanel {
+  border: 1px solid rgba(181, 48, 39, 0.28);
+  border-left: 4px solid var(--retro-red);
+  background: rgba(181, 48, 39, 0.07);
+  color: #842820;
+}
+
+.deletionConfirmation {
+  display: grid;
+  gap: 0.65rem;
+  border: 1px solid rgba(181, 48, 39, 0.24);
+  background: rgba(181, 48, 39, 0.045);
+}
+
+.deletionConfirmation > label:first-child {
+  color: var(--retro-brown);
+  line-height: 1.45;
+}
+
+.deletionConfirmation > input {
+  min-height: 2.75rem;
+  width: 100%;
+  border: 1px solid rgba(45, 36, 30, 0.3);
+  border-radius: var(--radius-md);
+  background: white;
+  color: var(--retro-brown);
+  padding: 0.6rem 0.75rem;
+  font: inherit;
+}
+
+.cancelButton {
+  min-height: 2.75rem;
+  border: 1px solid rgba(45, 36, 30, 0.24);
+  border-radius: var(--radius-md);
+  background: white;
+  color: var(--retro-brown);
+  cursor: pointer;
+  font-weight: 800;
+  padding: 0.65rem 1rem;
+}
+
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.pagination a {
+  color: var(--retro-teal);
+  font-weight: 800;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 900px) {
+  .toolbar { grid-template-columns: 1fr 1fr; }
+  .searchButton { width: 100%; }
+}
+
+@media (max-width: 600px) {
+  .toolbar { grid-template-columns: 1fr; }
+  .dialogContent { padding: 1.1rem; }
+  .dialogActions { flex-direction: column-reverse; }
+  .dialogActions button { width: 100%; }
+  .subscriptionList li { flex-direction: column; gap: 0.2rem; }
+  .subscriptionList strong { text-align: left; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .roleDialog { scroll-behavior: auto; }
+}

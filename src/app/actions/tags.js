@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requireAdmin } from "@/lib/auth/session";
+import { requireStaff } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 
 const MIN_TAG_LENGTH = 2;
@@ -28,7 +28,7 @@ function slugifyTag(name) {
 }
 
 export async function createTagAction(_prevState, formData) {
-  await requireAdmin();
+  await requireStaff();
 
   const name = getTextValue(formData, "name");
   const slug = slugifyTag(name);

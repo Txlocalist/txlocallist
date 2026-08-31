@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { requireUser } from "@/lib/auth/session";
-import { getOwnerBillingState } from "@/lib/billing";
+import { getAccountAccess } from "@/lib/account-access";
 import { normalizeBusinessHoursInput } from "@/lib/business-hours";
 import { prisma } from "@/lib/prisma";
 import { isMissingPrismaTableError, phase3SchemaMessage } from "@/lib/prisma-errors";
@@ -96,9 +96,9 @@ function generateSlug(name, city) {
 export async function createBusinessAction(_prevState, formData) {
   const user = await requireUser();
 
-  const billingState = await getOwnerBillingState(user.id);
-  if (!billingState?.hasPaidAccess) {
-    return buildErrorState("Upgrade to the paid plan before creating a listing.");
+  const billingState = await getAccountAccess(user.id);
+  if (!billingState?.hasCreatorAccess) {
+    return buildErrorState("Creator access is required before creating a listing.");
   }
 
   // Extract form fields
@@ -294,10 +294,10 @@ export async function createBusinessAction(_prevState, formData) {
  */
 export async function publishBusinessAction(businessId) {
   const user = await requireUser();
-  const billingState = await getOwnerBillingState(user.id);
+  const billingState = await getAccountAccess(user.id);
 
-  if (!billingState?.hasPaidAccess) {
-    return { success: false, message: "Upgrade to the paid plan before submitting a listing." };
+  if (!billingState?.hasCreatorAccess) {
+    return { success: false, message: "Creator access is required before submitting a listing." };
   }
 
   const business = await prisma.business.findUnique({
@@ -347,6 +347,10 @@ export async function publishBusinessAction(businessId) {
  */
 export async function pauseBusinessAction(businessId) {
   const user = await requireUser();
+  const access = await getAccountAccess(user.id);
+  if (!access?.hasCreatorAccess) {
+    return buildErrorState("Creator access is required to manage this business.");
+  }
 
   const business = await prisma.business.findUnique({
     where: { id: businessId },
@@ -381,6 +385,10 @@ export async function pauseBusinessAction(businessId) {
  */
 export async function archiveBusinessAction(businessId) {
   const user = await requireUser();
+  const access = await getAccountAccess(user.id);
+  if (!access?.hasCreatorAccess) {
+    return buildErrorState("Creator access is required to manage this business.");
+  }
 
   const business = await prisma.business.findUnique({
     where: { id: businessId },
@@ -416,9 +424,9 @@ export async function createBusinessFromFormAction(data) {
   const isHiring = Boolean(data.isHiring);
   const hiringRoles = normalizeHiringRoles(data.hiringRoles);
 
-  const billingState = await getOwnerBillingState(user.id);
-  if (!billingState?.hasPaidAccess) {
-    return { success: false, message: "Upgrade to the paid plan before creating a listing." };
+  const billingState = await getAccountAccess(user.id);
+  if (!billingState?.hasCreatorAccess) {
+    return { success: false, message: "Creator access is required before creating a listing." };
   }
 
   // Validation
@@ -606,6 +614,10 @@ export async function createBusinessFromFormAction(data) {
  */
 export async function updateBusinessAction(businessId, data) {
   const user = await requireUser();
+  const access = await getAccountAccess(user.id);
+  if (!access?.hasCreatorAccess) {
+    return { success: false, message: "Creator access is required to edit this business." };
+  }
   const categoryIds = normalizeIdList(data.categoryIds);
   const tagIds = normalizeIdList(data.tagIds);
   const isHiring = Boolean(data.isHiring);

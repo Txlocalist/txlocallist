@@ -4,7 +4,7 @@ import Link from "next/link";
 import logo from "@/app/assets/Tx-Localist-01.png";
 import { logoutAction } from "@/app/actions/auth";
 import { getCurrentSession } from "@/lib/auth/session";
-import { getOwnerBillingState } from "@/lib/billing";
+import { getAccountAccess } from "@/lib/account-access";
 import {
   EVENT_POST_PRICE_CENTS,
   formatWholeDollarPrice,
@@ -19,10 +19,22 @@ import styles from "./DashboardShell.module.css";
 export async function DashboardLayout({ children, activeTab = "overview" }) {
   const session = await getCurrentSession().catch(() => null);
   const user = session?.user ?? null;
-  const billingState = user?.id ? await getOwnerBillingState(user.id).catch(() => null) : null;
-  const hasCreatorAccess = user?.role === "ADMIN" || Boolean(billingState?.hasPaidAccess);
+  const billingState = user?.id ? await getAccountAccess(user.id).catch(() => null) : null;
+  const hasCreatorAccess = Boolean(billingState?.hasCreatorAccess);
   const eventPostPrice = formatWholeDollarPrice(EVENT_POST_PRICE_CENTS);
   const oneTimePostingEnabled = isEventPostingEnabled();
+  const creatorAccessLabel = billingState?.hasComplimentaryAccess
+    ? "Complimentary Access"
+    : billingState?.hasStaffAccess
+      ? "Staff Access"
+      : "Creator Access";
+  const creatorAccessText = billingState?.hasComplimentaryAccess
+    ? "TX Localist has provided your creator tools at no charge."
+    : billingState?.hasStaffAccess
+      ? "Your staff role includes creator tools without a paid subscription."
+      : oneTimePostingEnabled
+        ? "Your membership includes business-linked events. Standalone event posts are also available."
+        : "Your membership includes business-linked events. One-time Checkout is currently paused.";
   const navSections = [
     {
       title: "Posts",
@@ -101,7 +113,7 @@ export async function DashboardLayout({ children, activeTab = "overview" }) {
   };
 
   const userInitial = user?.email?.trim()?.charAt(0)?.toUpperCase() || "T";
-  const userLabel = user?.email || "Owner account";
+  const userLabel = user?.email || "User account";
 
   return (
     <div className={styles.dashboardWrapper}>
@@ -166,12 +178,10 @@ export async function DashboardLayout({ children, activeTab = "overview" }) {
 
           <div className={styles.sidebarFooter}>
             <div className={styles.helpCard}>
-              <p className={styles.helpEyebrow}>{hasCreatorAccess ? "Creator Access" : "Billing Access"}</p>
+              <p className={styles.helpEyebrow}>{hasCreatorAccess ? creatorAccessLabel : "Billing Access"}</p>
               <p className={styles.helpText}>
                 {hasCreatorAccess
-                  ? oneTimePostingEnabled
-                    ? "Your membership includes business-linked events. Standalone event posts are also available."
-                    : "Your membership includes business-linked events. One-time Checkout is currently paused."
+                  ? creatorAccessText
                   : oneTimePostingEnabled
                     ? `Browse and save for free, or post one event for a ${eventPostPrice} one-time fee.`
                     : "Browse local businesses and save favorites for free."}

@@ -71,6 +71,7 @@ export async function GET(request) {
     const where = {
       status: "ACTIVE", // Only show published listings
       publishedAt: { not: null },
+      owner: { deletedAt: null },
     };
 
     // Filter by city

@@ -20,7 +20,14 @@ export default async function FavoritesPage() {
 
   try {
     favorites = await prisma.favorite.findMany({
-      where: { userId: user.id },
+      where: {
+        userId: user.id,
+        business: {
+          status: "ACTIVE",
+          publishedAt: { not: null },
+          owner: { deletedAt: null },
+        },
+      },
       orderBy: { createdAt: "desc" },
       include: {
         business: {

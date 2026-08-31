@@ -1,12 +1,15 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import {
+  activateBusinessAction,
   issueEventPaymentRefundAction,
   restoreEventAfterDisputeAction,
+  suspendBusinessAction,
   updatePostModerationStatusAction,
 } from "@/app/actions/admin";
 import { AdminShell } from "@/app/admin/AdminShell";
-import { requireAdmin } from "@/lib/auth/session";
+import { requireStaff } from "@/lib/auth/session";
 import { getBlobImageUrl } from "@/lib/blob";
 import { formatEventDateRange, formatEventTime } from "@/lib/event-dates";
 import {
@@ -17,7 +20,7 @@ import { prisma } from "@/lib/prisma";
 import { isMissingPrismaTableError } from "@/lib/prisma-errors";
 import styles from "@/app/dashboard/dashboard.module.css";
 
-const BUSINESS_HISTORY_STATUSES = ["DENIED", "ACTIVE"];
+const BUSINESS_HISTORY_STATUSES = ["DENIED", "ACTIVE", "SUSPENDED"];
 const EVENT_HISTORY_STATUSES = ["DENIED", "PUBLISHED", "CANCELLED"];
 const PAGE_SIZE = 100;
 
@@ -114,10 +117,14 @@ function EventModerationForm({ eventId, canApprove = true }) {
 }
 
 export default async function AdminPostsPage({ searchParams }) {
-  await requireAdmin();
+  const staff = await requireStaff();
+  const isAdmin = staff.role === "ADMIN";
 
   const params = await searchParams;
-  const view = ["history", "payments"].includes(params?.view)
+  if (!isAdmin && params?.view === "payments") {
+    redirect("/admin/posts?type=events&view=queue&page=1");
+  }
+  const view = ["history", ...(isAdmin ? ["payments"] : [])].includes(params?.view)
     ? params.view
     : "queue";
   const type = view === "payments" || params?.type === "events" ? "events" : "businesses";
@@ -193,24 +200,28 @@ export default async function AdminPostsPage({ searchParams }) {
         include: {
           creator: { select: { email: true, name: true } },
           business: { select: { name: true } },
-          payments: {
-            orderBy: { createdAt: "desc" },
-            select: {
-              id: true,
-              status: true,
-              amountCents: true,
-              chargedAmountCents: true,
-              taxAmountCents: true,
-              currency: true,
-              paidAt: true,
-              refundedAmountCents: true,
-              refundApprovedAt: true,
-              refundReason: true,
-              stripeDisputeId: true,
-              stripeDisputeStatus: true,
-              failureReason: true,
-            },
-          },
+          ...(isAdmin
+            ? {
+                payments: {
+                  orderBy: { createdAt: "desc" },
+                  select: {
+                    id: true,
+                    status: true,
+                    amountCents: true,
+                    chargedAmountCents: true,
+                    taxAmountCents: true,
+                    currency: true,
+                    paidAt: true,
+                    refundedAmountCents: true,
+                    refundApprovedAt: true,
+                    refundReason: true,
+                    stripeDisputeId: true,
+                    stripeDisputeStatus: true,
+                    failureReason: true,
+                  },
+                },
+              }
+            : {}),
           reviews: {
             orderBy: { createdAt: "desc" },
             include: {
@@ -289,12 +300,14 @@ export default async function AdminPostsPage({ searchParams }) {
         >
           Published / Denied History
         </Link>
-        <Link
-          href="/admin/posts?type=events&view=payments&page=1"
-          className={`${styles.filterTab} ${view === "payments" ? styles.filterTabActive : ""}`}
-        >
-          Payment Exceptions
-        </Link>
+        {isAdmin ? (
+          <Link
+            href="/admin/posts?type=events&view=payments&page=1"
+            className={`${styles.filterTab} ${view === "payments" ? styles.filterTabActive : ""}`}
+          >
+            Payment Exceptions
+          </Link>
+        ) : null}
       </div>
 
       <p className={styles.businessMeta}>Page {page}, up to {PAGE_SIZE} records.</p>
@@ -362,6 +375,16 @@ export default async function AdminPostsPage({ searchParams }) {
                         entityType="business"
                         currentStatus={business.status}
                       />
+                    ) : business.status === "ACTIVE" ? (
+                      <form action={suspendBusinessAction}>
+                        <input type="hidden" name="id" value={business.id} />
+                        <button type="submit" className={styles.deleteButton}>Suspend</button>
+                      </form>
+                    ) : business.status === "SUSPENDED" ? (
+                      <form action={activateBusinessAction}>
+                        <input type="hidden" name="id" value={business.id} />
+                        <button type="submit" className={styles.actionButtonSecondary}>Reactivate</button>
+                      </form>
                     ) : null}
                   </div>
                 </div>
@@ -392,20 +415,21 @@ export default async function AdminPostsPage({ searchParams }) {
           </div>
           <div className={styles.tableBody}>
             {events.map((event) => {
-              const latestPayment = event.payments[0];
+              const payments = event.payments ?? [];
+              const latestPayment = payments[0];
               const ended = Boolean(event.endDate && event.endDate <= new Date());
               const canRestoreAfterDispute = Boolean(
                 !ended &&
                 event.status === "CANCELLED" &&
                 event.cancellationReason === "PAYMENT_DISPUTE" &&
-                event.payments.some(
+                payments.some(
                   (payment) =>
                     payment.status === "REVIEW_REQUIRED" &&
                     payment.paidAt &&
                     isFavorableEventDisputeStatus(payment.stripeDisputeStatus),
                 )
               );
-              const refundablePayments = event.payments.filter(
+              const refundablePayments = payments.filter(
                 (payment) =>
                   ["PAID", "REVIEW_REQUIRED", "REFUND_PENDING", "REFUND_FAILED"].includes(
                     payment.status,
@@ -415,8 +439,8 @@ export default async function AdminPostsPage({ searchParams }) {
                     isTerminalEventDisputeStatus(payment.stripeDisputeStatus)
                   ),
               );
-              const paymentSummary = event.payments.length > 0
-                ? event.payments.map((payment) => {
+              const paymentSummary = payments.length > 0
+                ? payments.map((payment) => {
                     const total = payment.chargedAmountCents ?? payment.amountCents;
                     return `${payment.status} ${formatMoney(total, payment.currency)}`;
                   }).join(", ")
@@ -429,8 +453,12 @@ export default async function AdminPostsPage({ searchParams }) {
                       <p className={styles.businessName}>{event.title}</p>
                       <p className={styles.businessMeta}>{formatDate(event.createdAt)}</p>
                       <p className={styles.businessMeta}>
-                        {event.postingMethod === "ONE_TIME" ? "One-time post" : "Membership post"}
-                        {` | Payments: ${paymentSummary}`}
+                        {event.postingMethod === "ONE_TIME"
+                          ? "One-time post"
+                          : event.postingMethod === "ADMIN"
+                            ? "Staff post"
+                            : "Membership post"}
+                        {isAdmin ? ` | Payments: ${paymentSummary}` : ""}
                       </p>
                       {latestPayment?.failureReason ? (
                         <p className={styles.businessMeta}>{latestPayment.failureReason}</p>
@@ -487,11 +515,11 @@ export default async function AdminPostsPage({ searchParams }) {
                             </ol>
                           </section>
                         ) : null}
-                        {event.payments.length > 0 ? (
+                        {isAdmin && payments.length > 0 ? (
                           <section className={styles.reviewTimeline} aria-label="Payment history">
                             <h4 className={styles.reviewTimelineTitle}>Payment History</h4>
                             <ol className={styles.reviewTimelineList}>
-                              {event.payments.map((payment) => (
+                              {payments.map((payment) => (
                                 <li key={payment.id} className={styles.reviewTimelineItem}>
                                   <strong>{payment.status}</strong>
                                   {` · Subtotal ${formatMoney(payment.amountCents, payment.currency)}`}
@@ -530,7 +558,7 @@ export default async function AdminPostsPage({ searchParams }) {
                       {view === "queue" ? (
                         <EventModerationForm eventId={event.id} canApprove={!ended} />
                       ) : null}
-                      {canRestoreAfterDispute ? (
+                      {isAdmin && canRestoreAfterDispute ? (
                         <form action={restoreEventAfterDisputeAction}>
                           <input type="hidden" name="eventId" value={event.id} />
                           <button type="submit" className={styles.actionButtonSecondary}>
@@ -538,7 +566,7 @@ export default async function AdminPostsPage({ searchParams }) {
                           </button>
                         </form>
                       ) : null}
-                      {refundablePayments.map((payment) => {
+                      {isAdmin ? refundablePayments.map((payment) => {
                         const reasonId = `refund-reason-${payment.id}`;
                         const confirmId = `refund-confirm-${payment.id}`;
                         return (
@@ -583,7 +611,7 @@ export default async function AdminPostsPage({ searchParams }) {
                             </button>
                           </form>
                         );
-                      })}
+                      }) : null}
                     </div>
                   </div>
                 </div>

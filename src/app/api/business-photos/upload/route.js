@@ -1,7 +1,7 @@
 import { put } from "@vercel/blob";
 
 import { getCurrentUser } from "@/lib/auth/session";
-import { getOwnerBillingState } from "@/lib/billing";
+import { getAccountAccess } from "@/lib/account-access";
 
 const MAX_FILE_SIZE_BYTES = 8 * 1024 * 1024;
 const MAX_FILES_PER_REQUEST = 20;
@@ -30,10 +30,10 @@ export async function POST(request) {
     );
   }
 
-  const billingState = await getOwnerBillingState(user.id).catch(() => null);
-  if (user.role !== "ADMIN" && !billingState?.hasPaidAccess) {
+  const billingState = await getAccountAccess(user.id).catch(() => null);
+  if (!billingState?.hasCreatorAccess) {
     return Response.json(
-      { success: false, message: "Upgrade to the paid plan before uploading photos." },
+      { success: false, message: "Creator access is required before uploading photos." },
       { status: 403 }
     );
   }

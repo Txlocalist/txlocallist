@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
 import { isMissingPrismaTableError } from "@/lib/prisma-errors";
+import { isStaffRole } from "@/lib/account-access";
 
 const SESSION_COOKIE_NAME = "txlocallist_session";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
@@ -28,7 +29,7 @@ export function normalizeEmail(email) {
 }
 
 export function getDashboardPath(role) {
-  return role === "ADMIN" ? "/admin" : "/dashboard";
+  return isStaffRole(role) ? "/admin" : "/dashboard";
 }
 
 export async function createUserSession(userId) {
@@ -37,6 +38,12 @@ export async function createUserSession(userId) {
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
 
   try {
+    const activeUser = await prisma.user.findFirst({
+      where: { id: userId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!activeUser) return false;
+
     await prisma.session.deleteMany({
       where: {
         OR: [
@@ -116,6 +123,7 @@ export async function getCurrentSession() {
             role: true,
             accountPlanId: true,
             billingStatus: true,
+            deletedAt: true,
             createdAt: true,
             lastLoginAt: true,
           },
@@ -130,7 +138,7 @@ export async function getCurrentSession() {
     return null;
   }
 
-  if (!session || session.expiresAt <= new Date()) {
+  if (!session || session.user.deletedAt || session.expiresAt <= new Date()) {
     return null;
   }
 
@@ -157,6 +165,16 @@ export async function requireAdmin() {
   const user = await requireUser();
 
   if (user.role !== "ADMIN") {
+    redirect("/dashboard");
+  }
+
+  return user;
+}
+
+export async function requireStaff() {
+  const user = await requireUser();
+
+  if (!isStaffRole(user.role)) {
     redirect("/dashboard");
   }
 

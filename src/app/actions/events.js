@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { requireUser } from "@/lib/auth/session";
-import { getOwnerBillingState } from "@/lib/billing";
+import { getAccountAccess, isStaffRole } from "@/lib/account-access";
 import {
   isEventCategory,
   isEventCategoryTagName,
@@ -199,31 +199,30 @@ export async function createEventAction(prevState, formData) {
   if (input.error) return input;
 
   let billingState = null;
-  if (user.role !== "ADMIN") {
-    try {
-      billingState = await getOwnerBillingState(user.id);
-    } catch (error) {
-      console.error("[events] billing entitlement lookup failed:", error);
-      return {
-        error: "We could not verify your membership right now. Please try again before posting.",
-        fieldErrors: {},
-      };
-    }
-
-    if (!billingState) {
-      console.error(`[events] billing entitlement lookup returned no user for ${user.id}.`);
-      return {
-        error: "We could not verify your membership right now. Please try again before posting.",
-        fieldErrors: {},
-      };
-    }
+  try {
+    billingState = await getAccountAccess(user.id);
+  } catch (error) {
+    console.error("[events] billing entitlement lookup failed:", error);
+    return {
+      error: "We could not verify your creator access right now. Please try again before posting.",
+      fieldErrors: {},
+    };
   }
+
+  if (!billingState) {
+    console.error(`[events] billing entitlement lookup returned no user for ${user.id}.`);
+    return {
+      error: "We could not verify your creator access right now. Please try again before posting.",
+      fieldErrors: {},
+    };
+  }
+  const isStaff = isStaffRole(user.role);
   const usesMembership = Boolean(
-    user.role !== "ADMIN" &&
-    billingState?.hasPaidAccess &&
+    !isStaff &&
+    billingState?.hasMembershipAccess &&
     input.business?.ownerId === user.id,
   );
-  const postingMethod = user.role === "ADMIN"
+  const postingMethod = isStaff
     ? "ADMIN"
     : usesMembership
       ? "SUBSCRIPTION"
@@ -367,10 +366,10 @@ export async function resubmitEventAction(formData) {
     ) {
       redirect("/dashboard/events?resubmit=payment");
     }
-  } else if (event.postingMethod === "SUBSCRIPTION" && user.role !== "ADMIN") {
-    const billingState = await getOwnerBillingState(user.id).catch(() => null);
+  } else if (event.postingMethod === "SUBSCRIPTION" && !isStaffRole(user.role)) {
+    const billingState = await getAccountAccess(user.id).catch(() => null);
     if (
-      !billingState?.hasPaidAccess ||
+      !billingState?.hasMembershipAccess ||
       !event.business ||
       event.business.ownerId !== user.id ||
       event.business.status !== "ACTIVE"
@@ -416,10 +415,10 @@ export async function updateEventAction(prevState, formData) {
   const input = await getValidatedEventInput(formData, user, event);
   if (input.error) return input;
 
-  if (event.postingMethod === "SUBSCRIPTION" && user.role !== "ADMIN") {
-    const billingState = await getOwnerBillingState(user.id).catch(() => null);
+  if (event.postingMethod === "SUBSCRIPTION" && !isStaffRole(user.role)) {
+    const billingState = await getAccountAccess(user.id).catch(() => null);
     if (
-      !billingState?.hasPaidAccess ||
+      !billingState?.hasMembershipAccess ||
       !input.business ||
       input.business.ownerId !== user.id
     ) {

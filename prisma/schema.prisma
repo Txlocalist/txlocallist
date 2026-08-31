@@ -12,9 +12,29 @@ datasource db {
 // =============================================================================
 
 enum Role {
-  USER // Standard Localist (consumer browsing directory + jobs)
-  OWNER // Business owner who can create/manage listings + post jobs
-  ADMIN // Staff who can moderate and manage the platform
+  USER // Standard Localist; creator tools require paid access
+  COMPLIMENTARY // Admin-granted Starter creator access without payment
+  MANAGER // Operational staff with moderation and read-only user access
+  ADMIN // Full platform administration
+}
+
+enum RoleTransitionStatus {
+  PREVIEWED
+  PROCESSING
+  PARTIAL
+  STRIPE_VERIFIED
+  COMPLETED
+  NEEDS_ATTENTION
+  EXPIRED
+}
+
+enum RoleTransitionSubscriptionResult {
+  PENDING
+  ALREADY_SCHEDULED
+  SCHEDULED
+  TERMINAL
+  FAILED
+  AMBIGUOUS
 }
 
 enum BusinessStatus {
@@ -87,6 +107,7 @@ model User {
   email                String              @unique
   passwordHash         String
   role                 Role                @default(USER)
+  roleVersion          Int                 @default(0)
   name                 String?
   avatarUrl            String?
   stripeCustomerId     String?             @unique
@@ -104,8 +125,11 @@ model User {
   eventFavorites EventFavorite[]
   eventLikes     EventLike[]
 
-  // Owner info (only filled if role includes OWNER)
+  // Business ownership is relationship-based, not role-based.
   ownedBusinesses Business[]
+
+  roleTransitionsAsActor  RoleTransitionOperation[] @relation("RoleTransitionActor")
+  roleTransitionsAsTarget RoleTransitionOperation[] @relation("RoleTransitionTarget")
 
   // Events created by this user
   events                    Event[]
@@ -117,6 +141,7 @@ model User {
 
   // Session management
   lastLoginAt DateTime?
+  deletedAt   DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   sessions    Session[]
@@ -127,6 +152,7 @@ model User {
   @@index([stripeSubscriptionId])
   @@index([accountPlanId])
   @@index([billingStatus])
+  @@index([deletedAt])
 }
 
 model Session {
@@ -499,6 +525,54 @@ model AuditLog {
 
   @@index([entityId])
   @@index([createdAt])
+}
+
+model RoleTransitionOperation {
+  id                String                       @id @default(cuid())
+  actorId           String
+  actor             User                         @relation("RoleTransitionActor", fields: [actorId], references: [id], onDelete: Restrict)
+  targetUserId      String
+  targetUser        User                         @relation("RoleTransitionTarget", fields: [targetUserId], references: [id], onDelete: Restrict)
+  fromRole          Role
+  toRole            Role
+  targetRoleVersion Int
+  status            RoleTransitionStatus         @default(PREVIEWED)
+  activeTargetKey   String?                      @unique
+  expiresAt         DateTime
+  completedAt       DateTime?
+  errorCode         String?
+  errorMessage      String?
+  createdAt         DateTime                     @default(now())
+  updatedAt         DateTime                     @updatedAt
+  subscriptions     RoleTransitionSubscription[]
+
+  @@index([actorId, createdAt])
+  @@index([targetUserId, createdAt])
+  @@index([status, expiresAt])
+}
+
+model RoleTransitionSubscription {
+  id                     String                           @id @default(cuid())
+  operationId            String
+  operation              RoleTransitionOperation          @relation(fields: [operationId], references: [id], onDelete: Cascade)
+  stripeSubscriptionId   String
+  sources                String                           @default("[]")
+  stripeStatus           String
+  amountCents            Int?
+  currency               String?
+  priorCancelAtPeriodEnd Boolean                          @default(false)
+  currentPeriodEnd       DateTime?
+  result                 RoleTransitionSubscriptionResult @default(PENDING)
+  attemptCount           Int                              @default(0)
+  stripeRequestId        String?
+  errorCode              String?
+  errorMessage           String?
+  createdAt              DateTime                         @default(now())
+  updatedAt              DateTime                         @updatedAt
+
+  @@unique([operationId, stripeSubscriptionId])
+  @@index([stripeSubscriptionId])
+  @@index([result])
 }
 
 // =============================================================================

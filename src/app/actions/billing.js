@@ -4,11 +4,11 @@ import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { redirect } from "next/navigation";
 
 import { requireUser } from "@/lib/auth/session";
+import { getAccountAccess } from "@/lib/account-access";
 import {
   createStripeCheckoutSession,
   createStripePortalSession,
   getBillingPath,
-  getOwnerBillingState,
 } from "@/lib/billing";
 import { isMissingPrismaTableError } from "@/lib/prisma-errors";
 import { prisma } from "@/lib/prisma";
@@ -28,6 +28,7 @@ async function requireBillingUserContext() {
       name: true,
       role: true,
       stripeCustomerId: true,
+      deletedAt: true,
     },
   }).catch((error) => {
     if (isMissingPrismaTableError(error)) {
@@ -37,7 +38,7 @@ async function requireBillingUserContext() {
     throw error;
   });
 
-  if (!user) {
+  if (!user || user.deletedAt) {
     redirect("/login");
   }
 
@@ -53,7 +54,7 @@ export async function createCheckoutSessionAction(formData) {
   }
 
   const [billingState, plan] = await Promise.all([
-    getOwnerBillingState(user.id),
+    getAccountAccess(user.id),
     prisma.plan.findUnique({
       where: { id: planId },
     }),
@@ -73,7 +74,7 @@ export async function createCheckoutSessionAction(formData) {
     redirect("/login");
   }
 
-  if (billingState.hasPaidAccess || billingState.stripeSubscriptionId) {
+  if (!billingState.canStartCheckout) {
     redirectToBilling({ error: "manage_existing_subscription" });
   }
 
@@ -100,6 +101,15 @@ export async function createCheckoutSessionAction(formData) {
 
 export async function createBillingPortalSessionAction(formData) {
   const user = await requireBillingUserContext();
+  const access = await getAccountAccess(user.id).catch((error) => {
+    if (isMissingPrismaTableError(error)) {
+      redirectToBilling({ error: "schema_update_required" });
+    }
+    throw error;
+  });
+  if (!access?.canOpenPortal) {
+    redirectToBilling({ error: "portal_unavailable" });
+  }
   const businessId = formData.get("businessId")?.toString().trim();
 
   if (businessId) {

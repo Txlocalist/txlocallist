@@ -6,10 +6,10 @@ import {
   createCheckoutSessionAction,
 } from "@/app/actions/billing";
 import { getCurrentSession } from "@/lib/auth/session";
+import { getAccountAccess } from "@/lib/account-access";
 import {
   formatPriceFromCents,
   formatSubscriptionStatus,
-  getOwnerBillingState,
   syncSubscriptionFromCheckoutSessionId,
 } from "@/lib/billing";
 import { isMissingPrismaTableError, phase3SchemaMessage } from "@/lib/prisma-errors";
@@ -127,7 +127,7 @@ export default async function BillingPage({ searchParams }) {
 
   try {
     [billingState, businesses, plans] = await Promise.all([
-      getOwnerBillingState(session.user.id),
+      getAccountAccess(session.user.id),
       prisma.business.findMany({
         where: {
           ownerId: session.user.id,
@@ -162,10 +162,29 @@ export default async function BillingPage({ searchParams }) {
   const paidPlan = plans.find((plan) => plan.slug === "starter") ?? null;
   const unconfiguredPlans = paidPlan && !paidPlan.stripePriceId ? [paidPlan] : [];
   const hasPaidAccess = Boolean(billingState?.hasPaidAccess);
-  const hasCustomerPortalAccess = Boolean(billingState?.stripeCustomerId);
-  const currentTierLabel = billingState?.activePlan?.name ?? "Free";
+  const hasCreatorAccess = Boolean(billingState?.hasCreatorAccess);
+  const hasCustomerPortalAccess = Boolean(billingState?.canOpenPortal);
+  const canStartCheckout = Boolean(billingState?.canStartCheckout);
+  const currentTierLabel = hasPaidAccess
+    ? billingState?.activePlan?.name ?? "Paid"
+    : billingState?.hasComplimentaryAccess
+      ? "Complimentary Access"
+      : billingState?.hasStaffAccess
+        ? "Staff Access"
+        : "Free";
   const totalMonthlySpend = hasPaidAccess ? (billingState?.activePlan?.priceCents ?? 0) / 100 : 0;
-  const canCreateListing = hasPaidAccess;
+  const canCreateListing = hasCreatorAccess;
+  const accessDescription = hasPaidAccess
+    ? billingState?.hasComplimentaryAccess
+      ? "Your paid plan is active and Complimentary access remains available as a fallback after it ends."
+      : billingState?.hasStaffAccess
+        ? "Your paid plan is active. Staff creator access remains available independently of billing."
+        : "Your paid account is active. You can create listings and manage billing in Stripe."
+    : billingState?.hasComplimentaryAccess
+      ? "TX Localist has provided full Starter creator access at no charge for as long as the Complimentary role remains assigned."
+      : billingState?.hasStaffAccess
+        ? "Your staff role includes creator tools at no charge. This is not a paid subscription."
+        : "This account is on the free tier. Upgrade to create and publish business listings.";
 
   return (
     <DashboardLayout activeTab="billing">
@@ -173,7 +192,7 @@ export default async function BillingPage({ searchParams }) {
         <div>
           <h1 className={styles.pageTitle}>Billing & Subscriptions</h1>
           <p className={styles.pageSubtitle}>
-            Listing creation is unlocked at the account level after you start the paid plan.
+            Review paid subscriptions and any role-provided creator access on this account.
           </p>
         </div>
       </div>
@@ -183,9 +202,7 @@ export default async function BillingPage({ searchParams }) {
           <div>
             <h2 className={styles.cardTitle}>Current Tier</h2>
             <p className={styles.cardContent}>
-              {hasPaidAccess
-                ? "Your paid account is active. You can create listings now and manage billing in Stripe at any time."
-                : "This account is currently on the free tier. Upgrade first, then create and publish listings from your dashboard."}
+              {accessDescription}
             </p>
           </div>
           <div className={styles.billingTierPill}>{currentTierLabel}</div>
@@ -200,7 +217,7 @@ export default async function BillingPage({ searchParams }) {
             </form>
           ) : null}
 
-          {!hasPaidAccess && paidPlan ? (
+          {canStartCheckout && paidPlan ? (
             <form action={createCheckoutSessionAction} className={styles.inlineForm}>
               <input type="hidden" name="planId" value={paidPlan.id} />
               <button
@@ -288,18 +305,32 @@ export default async function BillingPage({ searchParams }) {
           <div className={styles.subscriptionItem}>
             <div>
               <h3 className={styles.subscriptionName}>
-                {hasPaidAccess ? billingState?.activePlan?.name ?? "Paid" : "Free"}
+                {currentTierLabel}
               </h3>
               <p className={styles.subscriptionMeta}>
-                <strong>{formatSubscriptionStatus(billingState?.activeStatus)}</strong>
-                {" - "}
-                ${formatPriceFromCents(billingState?.activePlan?.priceCents ?? 0)}/
-                {billingState?.activePlan?.billingPeriod ?? "monthly"}
+                {hasPaidAccess ? (
+                  <>
+                    <strong>{formatSubscriptionStatus(billingState?.activeStatus)}</strong>
+                    {" - "}
+                    ${formatPriceFromCents(billingState?.activePlan?.priceCents ?? 0)}/
+                    {billingState?.activePlan?.billingPeriod ?? "monthly"}
+                  </>
+                ) : hasCreatorAccess ? (
+                  <><strong>Role-provided access</strong>{" - $0/month"}</>
+                ) : (
+                  <><strong>Free</strong>{" - $0/month"}</>
+                )}
               </p>
-              <p className={styles.subscriptionDate}>{getSubscriptionDetail(billingState)}</p>
+              <p className={styles.subscriptionDate}>
+                {hasPaidAccess
+                  ? getSubscriptionDetail(billingState)
+                  : hasCreatorAccess
+                    ? "Provided by TX Localist; no Stripe subscription is required."
+                    : "No Stripe subscription yet."}
+              </p>
             </div>
 
-            {!hasPaidAccess && paidPlan ? (
+            {canStartCheckout && paidPlan ? (
               <form action={createCheckoutSessionAction} className={styles.inlineForm}>
                 <input type="hidden" name="planId" value={paidPlan.id} />
                 <button
@@ -366,7 +397,7 @@ export default async function BillingPage({ searchParams }) {
             <h3 className={styles.emptyStateTitle}>No listings yet</h3>
             <p className={styles.emptyStateDescription}>
               {canCreateListing
-                ? "Your paid account is active. Create your first listing whenever you're ready."
+                ? "Your creator access is active. Create your first listing whenever you're ready."
                 : "Upgrade your account first. Listing creation stays locked until the paid plan is active."}
             </p>
             <Link
@@ -399,10 +430,10 @@ export default async function BillingPage({ searchParams }) {
       <div className={styles.card} style={{ backgroundColor: "rgba(248, 237, 210, 0.2)" }}>
         <h3 className={styles.cardTitle}>Billing Information</h3>
         <ul className={styles.billingChecklist}>
-          <li>Any signed-in user account can upgrade to the paid creator plan.</li>
-          <li>Listing creation and publishing stay locked until the paid plan is active.</li>
-          <li>Stripe webhooks keep local account access synchronized after renewals and cancellations.</li>
-          <li>Cancel-at-period-end stays active locally until Stripe marks the subscription as ended.</li>
+          <li>User accounts can upgrade to the paid creator plan.</li>
+          <li>Complimentary, Manager, and Admin roles include creator tools without creating a paid subscription.</li>
+          <li>One-time event purchases cover only the purchased event.</li>
+          <li>Stripe webhooks preserve role-provided access after subscription changes.</li>
         </ul>
       </div>
     </DashboardLayout>

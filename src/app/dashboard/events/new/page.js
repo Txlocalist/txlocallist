@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { getCurrentSession } from "@/lib/auth/session";
-import { getOwnerBillingState } from "@/lib/billing";
+import { getAccountAccess, isStaffRole } from "@/lib/account-access";
 import { prisma } from "@/lib/prisma";
 import { isMissingPrismaTableError } from "@/lib/prisma-errors";
 import {
@@ -24,17 +24,16 @@ export default async function NewEventPage() {
   if (!session?.user) redirect("/login?next=/dashboard/events/new");
 
   const user = session.user;
+  const isStaff = isStaffRole(user.role);
   let billingState = null;
   let billingUnavailable = false;
 
-  if (user.role !== "ADMIN") {
-    try {
-      billingState = await getOwnerBillingState(user.id);
-      billingUnavailable = !billingState;
-    } catch (error) {
-      console.error("[events] billing entitlement lookup failed:", error);
-      billingUnavailable = true;
-    }
+  try {
+    billingState = await getAccountAccess(user.id);
+    billingUnavailable = !billingState && !isStaff;
+  } catch (error) {
+    console.error("[events] billing entitlement lookup failed:", error);
+    billingUnavailable = !isStaff;
   }
 
   const oneTimePostingEnabled = isEventPostingEnabled();
@@ -70,8 +69,8 @@ export default async function NewEventPage() {
       {schemaNotice ||
       billingUnavailable ||
       (!oneTimePostingEnabled &&
-        !(billingState?.hasPaidAccess && businesses.length > 0) &&
-        user.role !== "ADMIN") ? (
+        !(billingState?.hasMembershipAccess && businesses.length > 0) &&
+        !isStaff) ? (
         <div className={styles.card}>
           <div className={styles.emptyState}>
             <h2 className={styles.emptyStateTitle}>Posting Unavailable</h2>
@@ -87,8 +86,8 @@ export default async function NewEventPage() {
         <div className={styles.card}>
           <CreateEventForm
             businesses={businesses}
-            hasMembership={Boolean(billingState?.hasPaidAccess)}
-            isAdmin={user.role === "ADMIN"}
+            hasMembership={Boolean(billingState?.hasMembershipAccess)}
+            isStaff={isStaff}
             oneTimePostingEnabled={oneTimePostingEnabled}
             eventPostPrice={eventPostPrice}
           />

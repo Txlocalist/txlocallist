@@ -1,6 +1,6 @@
 import { AdminShell } from "../AdminShell";
 import { requireAdmin } from "@/lib/auth/session";
-import { AdminCreateForm } from "../AdminCreateForm";
+import { StaffCreateForm } from "../StaffCreateForm";
 import { reconcileStripeSubscriptionsAction } from "@/app/actions/admin";
 import styles from "@/app/dashboard/dashboard.module.css";
 
@@ -18,12 +18,12 @@ export default async function AdminSettingsPage() {
 
       <div className={styles.card} style={{ marginBottom: "2rem" }}>
         <h2 style={{ fontFamily: "var(--font-display), cursive", color: "var(--retro-brown)", marginTop: 0 }}>
-          Create Admin Account
+          Create Staff Account
         </h2>
         <p style={{ color: "var(--muted)", marginBottom: "1.5rem", fontSize: "0.95rem" }}>
-          Only admins can create other admin accounts. These credentials bypass the public signup flow.
+          Create a Manager by default, or choose Admin for full platform control. These credentials bypass public signup.
         </p>
-        <AdminCreateForm />
+        <StaffCreateForm />
       </div>
 
       <div className={styles.card} style={{ marginBottom: "2rem" }}>

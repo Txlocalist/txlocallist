@@ -28,7 +28,9 @@ const prisma  = new PrismaClient({ adapter });
  *  Role   Email                        Password
  *  -----  ---------------------------  ----------------
  *  USER   testuser@txlocallist.dev     TestUser123!
- *  OWNER  testowner@txlocallist.dev    TestOwner123!
+ *  USER   testowner@txlocallist.dev    TestOwner123! (owns a business by relation)
+ *  COMPLIMENTARY complimentary@txlocallist.dev Complimentary123!
+ *  MANAGER manager@txlocallist.dev    TestManager123!
  *  ADMIN  admin@txlocallist.dev        (see seed-admin.mjs / SEED_ADMIN_PASSWORD env)
  *
  * Run:  npm run db:seed-test-users
@@ -43,8 +45,20 @@ const TEST_ACCOUNTS = [
   {
     email:    "testowner@txlocallist.dev",
     password: "TestOwner123!",
-    role:     "OWNER",
+    role:     "USER",
     name:     "Test Business Owner",
+  },
+  {
+    email:    "complimentary@txlocallist.dev",
+    password: "Complimentary123!",
+    role:     "COMPLIMENTARY",
+    name:     "Complimentary Creator",
+  },
+  {
+    email:    "manager@txlocallist.dev",
+    password: "TestManager123!",
+    role:     "MANAGER",
+    name:     "Test Manager",
   },
 ];
 
@@ -63,6 +77,8 @@ try {
   console.log("\n--- Test credentials ---");
   console.log("Basic consumer : testuser@txlocallist.dev  / TestUser123!");
   console.log("Business owner : testowner@txlocallist.dev / TestOwner123!");
+  console.log("Complimentary  : complimentary@txlocallist.dev / Complimentary123!");
+  console.log("Manager        : manager@txlocallist.dev / TestManager123!");
   console.log("Admin          : use SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD via seed-admin.mjs");
 } finally {
   await prisma.$disconnect();

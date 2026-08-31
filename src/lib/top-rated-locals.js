@@ -5,7 +5,7 @@ export async function getTopRatedLocals() {
   try {
     const businesses = await prisma.business.findMany({
       where: {
-        owner: { email: DIRECTORY_DEMO_OWNER_EMAIL },
+        owner: { email: DIRECTORY_DEMO_OWNER_EMAIL, deletedAt: null },
         slug: { in: TOP_RATED_LOCAL_SLUGS },
         status: "ACTIVE",
         publishedAt: { not: null },

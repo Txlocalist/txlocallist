@@ -15,8 +15,13 @@ import styles from "./page.module.css";
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
-  const business = await prisma.business.findUnique({
-    where: { slug },
+  const business = await prisma.business.findFirst({
+    where: {
+      slug,
+      status: "ACTIVE",
+      publishedAt: { not: null },
+      owner: { deletedAt: null },
+    },
     select: { name: true, description: true, city: { select: { name: true } } },
   });
   if (!business) return { title: "Business not found" };
@@ -30,7 +35,11 @@ export async function generateMetadata({ params }) {
 export async function generateStaticParams() {
   try {
     const businesses = await prisma.business.findMany({
-      where: { status: "ACTIVE", publishedAt: { not: null } },
+      where: {
+        status: "ACTIVE",
+        publishedAt: { not: null },
+        owner: { deletedAt: null },
+      },
       select: { slug: true },
       take: 100,
       orderBy: { publishedAt: "desc" },
@@ -74,8 +83,13 @@ export default async function BusinessDetailPage({ params }) {
 
   const user = await getCurrentUser().catch(() => null);
 
-  const business = await prisma.business.findUnique({
-    where: { slug },
+  const business = await prisma.business.findFirst({
+    where: {
+      slug,
+      status: "ACTIVE",
+      publishedAt: { not: null },
+      owner: { deletedAt: null },
+    },
     include: {
       city:        { select: { id: true, name: true, slug: true } },
       plan:        { select: { slug: true, features: true } },
