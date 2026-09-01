@@ -2,8 +2,20 @@ import { prisma } from "@/lib/prisma";
 import {
   syncEffectiveAccessPlans,
 } from "@/lib/account-access";
-import { retrieveAndValidateStripePrice } from "@/lib/pricing";
+import {
+  MEMBERSHIP_PRICE_CATALOG_KEY,
+  MEMBERSHIP_PRODUCT_CATALOG_KEY,
+  retrieveAndValidateStripePrice,
+} from "@/lib/pricing";
+import { getRuntimeEnvironment } from "@/lib/runtime-config.mjs";
 import { getSiteUrl, getStripe, isStripeConfigured } from "@/lib/stripe";
+import {
+  getStripePriceIdFromSubscription,
+  getStripeProductIdFromSubscription,
+  isCompatibleStarterPlan,
+  isCompatibleStarterPrice,
+  isCompatibleStarterSubscriptionPrice,
+} from "@/lib/stripe-subscription-price";
 import { getStripeSubscriptionPeriodEnd } from "@/lib/subscription-period";
 
 export { getStripeSubscriptionPeriodEnd } from "@/lib/subscription-period";
@@ -87,12 +99,46 @@ async function getFreePlanId() {
   return freePlan.id;
 }
 
+export function isSandboxStripeCustomerRepairAllowed(env = process.env) {
+  return Boolean(
+    getRuntimeEnvironment(env) !== "production" &&
+    env.STRIPE_SECRET_KEY?.trim().startsWith("sk_test_")
+  );
+}
+
 export async function ensureStripeCustomerForUser(user) {
+  const stripe = getStripe();
+
   if (user.stripeCustomerId) {
-    return user.stripeCustomerId;
+    try {
+      const existingCustomer = await stripe.customers.retrieve(user.stripeCustomerId);
+
+      if (!existingCustomer.deleted) {
+        const metadataUserId = existingCustomer.metadata?.userId;
+        if (metadataUserId && metadataUserId !== user.id) {
+          throw new Error("The stored Stripe customer belongs to another account.");
+        }
+
+        return existingCustomer.id;
+      }
+
+      if (!isSandboxStripeCustomerRepairAllowed()) {
+        throw new Error("The stored Stripe customer has been deleted.");
+      }
+    } catch (error) {
+      // A Customer ID is scoped to one Stripe account and mode. Development
+      // databases can retain a test Customer from a replaced sandbox. Repair
+      // only Stripe's explicit missing-resource response; every other error is
+      // surfaced so an outage or ownership problem cannot create duplicates.
+      if (
+        error?.code !== "resource_missing" ||
+        !isSandboxStripeCustomerRepairAllowed()
+      ) {
+        throw error;
+      }
+    }
   }
 
-  const stripe = getStripe();
   const customer = await stripe.customers.create({
     email: user.email,
     name: user.name || undefined,
@@ -140,6 +186,10 @@ export async function createStripeCheckoutSession({ user, plan }) {
     priceId: plan.stripePriceId,
     amountCents: plan.priceCents,
     recurring: true,
+    recurringInterval: "month",
+    recurringIntervalCount: 1,
+    priceCatalogKey: MEMBERSHIP_PRICE_CATALOG_KEY,
+    productCatalogKey: MEMBERSHIP_PRODUCT_CATALOG_KEY,
   });
 
   const customerId = await ensureStripeCustomerForUser(user);
@@ -223,33 +273,44 @@ export async function createStripePortalSession({ user }) {
   });
 }
 
-function getStripePriceIdFromSubscription(stripeSubscription) {
-  return stripeSubscription.items?.data?.[0]?.price?.id ?? null;
-}
+export async function findPlanForStripeSubscription(stripeSubscription, stripePriceId) {
+  // Never let an exact local Price ID bypass the paid Starter contract. This
+  // is especially important when the membership Product also has a $0 Price.
+  if (!isCompatibleStarterSubscriptionPrice(stripeSubscription)) return null;
 
-function getStripeProductIdFromSubscription(stripeSubscription) {
-  const product = stripeSubscription.items?.data?.[0]?.price?.product;
-  if (!product) return null;
-  return typeof product === "string" ? product : product.id;
-}
-
-async function findPlanForStripeSubscription(stripeSubscription, stripePriceId) {
   const exactPlan = await prisma.plan.findFirst({
     where: { stripePriceId },
-    select: { id: true },
+    select: {
+      id: true,
+      slug: true,
+      priceCents: true,
+      billingPeriod: true,
+    },
   });
-  if (exactPlan) return exactPlan;
+  if (exactPlan) {
+    return isCompatibleStarterPlan(exactPlan) ? { id: exactPlan.id } : null;
+  }
 
+  // Historical $10/month Prices on the same membership Product may continue
+  // renewing after a catalog Price replacement. Never use this fallback for a
+  // free, annual, or otherwise incompatible Price on that Product.
   const incomingProductId = getStripeProductIdFromSubscription(stripeSubscription);
   if (!incomingProductId || !isStripeConfigured()) return null;
 
   const starterPlan = await prisma.plan.findUnique({
     where: { slug: "starter" },
-    select: { id: true, stripePriceId: true },
+    select: {
+      id: true,
+      slug: true,
+      stripePriceId: true,
+      priceCents: true,
+      billingPeriod: true,
+    },
   });
-  if (!starterPlan?.stripePriceId) return null;
+  if (!starterPlan?.stripePriceId || !isCompatibleStarterPlan(starterPlan)) return null;
 
   const configuredPrice = await getStripe().prices.retrieve(starterPlan.stripePriceId);
+  if (!isCompatibleStarterPrice(configuredPrice)) return null;
   const configuredProductId = typeof configuredPrice.product === "string"
     ? configuredPrice.product
     : configuredPrice.product?.id;

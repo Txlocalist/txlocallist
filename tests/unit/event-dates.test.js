@@ -54,18 +54,18 @@ describe("organizer event dates", () => {
     )).toHaveLength(5);
   });
 
-  test("accepts 31 inclusive calendar days", () => {
-    const result = validateRange("2026-01-01T09:00", "2026-01-31T17:00");
+  test("accepts 30 inclusive calendar days", () => {
+    const result = validateRange("2026-01-01T09:00", "2026-01-30T17:00");
 
-    expect(result.dateKeys).toHaveLength(31);
+    expect(result.dateKeys).toHaveLength(30);
     expect(result.dateKeys.at(0)).toBe("2026-01-01");
-    expect(result.dateKeys.at(-1)).toBe("2026-01-31");
+    expect(result.dateKeys.at(-1)).toBe("2026-01-30");
   });
 
-  test("rejects 32 inclusive calendar days", () => {
+  test("rejects 31 inclusive calendar days", () => {
     expect(() =>
-      validateRange("2026-01-01T09:00", "2026-02-01T17:00")
-    ).toThrow("Events can span no more than 31 calendar days.");
+      validateRange("2026-01-01T09:00", "2026-01-31T17:00")
+    ).toThrow("Events can span no more than 30 calendar days.");
   });
 
   test.each([

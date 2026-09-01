@@ -3,7 +3,7 @@
  * Run: node scripts/seed-cities.mjs
  */
 
-import "dotenv/config";
+import "./load-next-environment.mjs";
 
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "@prisma/client";

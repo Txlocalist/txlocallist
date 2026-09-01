@@ -17,6 +17,13 @@ import { processStripeWebhookOnce } from "@/lib/stripe-webhooks";
 
 export const runtime = "nodejs";
 
+function errorKind(error) {
+  if (!error || typeof error !== "object") return "unknown";
+  if (typeof error.type === "string" && error.type) return error.type;
+  if (typeof error.name === "string" && error.name) return error.name;
+  return "unknown";
+}
+
 async function syncEventDispute(disputeId) {
   const stripe = getStripe();
   const dispute = await stripe.disputes.retrieve(disputeId);
@@ -64,7 +71,11 @@ export async function POST(request) {
       process.env.STRIPE_WEBHOOK_SECRET,
     );
   } catch (error) {
-    console.error("[stripe] webhook signature verification failed:", error);
+    // Stripe signature errors carry the raw payload and signature header. Log
+    // only a non-sensitive classification, never the full error object.
+    console.error(
+      `[stripe] webhook signature verification failed (${errorKind(error)}).`,
+    );
     return Response.json(
       { error: "Invalid Stripe signature." },
       { status: 400 },
@@ -145,7 +156,7 @@ export async function POST(request) {
 
     return Response.json({ received: true, duplicate: result.duplicate });
   } catch (error) {
-    console.error("[stripe] webhook handling failed:", error);
+    console.error(`[stripe] webhook handling failed (${errorKind(error)}).`);
     return Response.json(
       { error: "Stripe webhook handling failed." },
       { status: 500 },

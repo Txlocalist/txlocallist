@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "./load-next-environment.mjs";
 
 import { randomBytes, scrypt as scryptCallback } from "node:crypto";
 import { promisify } from "node:util";

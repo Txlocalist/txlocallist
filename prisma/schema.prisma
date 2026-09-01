@@ -719,7 +719,7 @@ model EventImageUploadRateLimit {
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   windowStartedAt DateTime
   attempts        Int      @default(0)
-  updatedAt       DateTime @updatedAt
+  updatedAt       DateTime @default(now()) @updatedAt
 
   @@index([windowStartedAt])
 }

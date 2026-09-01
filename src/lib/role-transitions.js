@@ -1,6 +1,7 @@
 import { ACCOUNT_ROLES, syncEffectiveAccessPlans } from "@/lib/account-access";
 import { syncStripeSubscriptionObject } from "@/lib/billing";
 import { prisma } from "@/lib/prisma";
+import { assertComplimentaryRoleMutationEnabled } from "@/lib/runtime-config.mjs";
 import { getStripe, isStripeConfigured } from "@/lib/stripe";
 import { getStripeSubscriptionPeriodEnd } from "@/lib/subscription-period";
 
@@ -63,6 +64,17 @@ async function assertRoleTransitionAllowed({ actorId, target, toRole, db = prism
       });
     }
   }
+}
+
+export function roleTransitionMayHaveStripeSideEffects(operation) {
+  if (["PROCESSING", "PARTIAL", "STRIPE_VERIFIED"].includes(operation.status)) {
+    return true;
+  }
+
+  return operation.subscriptions?.some(
+    (subscription) =>
+      subscription.result === "SCHEDULED" || subscription.attemptCount > 0,
+  ) ?? false;
 }
 
 function priceIdForSubscription(subscription) {
@@ -241,6 +253,10 @@ async function writeAudit({ actorId, action, targetUserId, meta = {} }, db = pri
 export async function previewRoleTransition({ actorId, targetUserId, toRole }) {
   const target = await loadTransitionTarget(targetUserId);
   await assertRoleTransitionAllowed({ actorId, target, toRole });
+  assertComplimentaryRoleMutationEnabled({
+    fromRole: target.role,
+    toRole,
+  });
   const subscriptions = roleTransitionRequiresCancellation(toRole)
     ? await discoverStripeSubscriptions(target)
     : [];
@@ -365,7 +381,8 @@ export async function confirmRoleTransition({ actorId, operationId, confirmed })
     throw Object.assign(new Error("Role-change preview not found."), { code: "PREVIEW_NOT_FOUND" });
   }
   if (operation.status === "COMPLETED") return operation;
-  if (operation.expiresAt <= new Date()) {
+  const mayHaveStripeSideEffects = roleTransitionMayHaveStripeSideEffects(operation);
+  if (operation.expiresAt <= new Date() && !mayHaveStripeSideEffects) {
     return failOperation(operation, "EXPIRED", Object.assign(new Error("This preview expired. Review the role change again."), { code: "PREVIEW_EXPIRED" }));
   }
   if (
@@ -384,6 +401,12 @@ export async function confirmRoleTransition({ actorId, operationId, confirmed })
 
   const target = await loadTransitionTarget(operation.targetUserId);
   try {
+    if (!mayHaveStripeSideEffects) {
+      assertComplimentaryRoleMutationEnabled({
+        fromRole: operation.fromRole,
+        toRole: operation.toRole,
+      });
+    }
     await assertRoleTransitionAllowed({ actorId, target, toRole: operation.toRole });
   } catch (error) {
     return failOperation(operation, "EXPIRED", error);

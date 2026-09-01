@@ -1,0 +1,112 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Quality and test gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: txlocalist_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d txlocalist_e2e"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      TX_LOCALIST_ENV: test
+      TX_LOCALIST_DATABASE_ENV: test
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/txlocalist_e2e
+      DATABASE_URL_UNPOOLED: postgresql://postgres:postgres@127.0.0.1:5432/txlocalist_e2e
+      E2E_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/txlocalist_e2e
+      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3100
+      NEXT_TELEMETRY_DISABLED: "1"
+      STRIPE_SECRET_KEY: ""
+      NEXT_PUBLIC_STRIPE_PK: ""
+      STRIPE_WEBHOOK_SECRET: ""
+      STRIPE_PRICE_STARTER: ""
+      STRIPE_PRICE_EVENT_POST: ""
+      BLOB_READ_WRITE_TOKEN: ""
+      RESEND_API_KEY: ""
+      CRON_SECRET: ""
+      NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ""
+      NEXT_PUBLIC_GEMINI_API_KEY: ""
+      SENTRY_DSN: ""
+      NEXT_PUBLIC_POSTHOG_KEY: ""
+      EVENT_POSTING_ENABLED: "false"
+      SUBSCRIPTION_INVOICE_EVENTS_ENABLED: "false"
+      PAST_DUE_ACCESS_ENABLED: "false"
+      BILLING_MUTATION_FENCE_ENABLED: "false"
+      COMPLIMENTARY_ROLE_MUTATIONS_ENABLED: "false"
+      BUSINESS_PHOTO_UPLOAD_V2_ENABLED: "false"
+      EVENT_IMAGE_UPLOAD_V2_ENABLED: "false"
+      RESUME_UPLOAD_V2_ENABLED: "false"
+      PUBLIC_MEDIA_READ_V2_ENABLED: "false"
+      RESUME_RETENTION_DELETE_ENABLED: "false"
+      LEGACY_BLOB_PROXY_ENABLED: "true"
+      EVENT_PAYMENT_RECONCILIATION_MODE: off
+      RATE_LIMIT_MODE: observe
+      CSP_MODE: report-only
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Report production dependency vulnerabilities
+        continue-on-error: true
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Verify isolated runtime configuration
+        run: npm run env:verify
+
+      - name: Validate Prisma schema
+        run: npm exec -- prisma validate
+
+      - name: Apply migrations to disposable database
+        run: npm run db:migrate
+
+      - name: Verify migration state
+        run: npm exec -- prisma migrate status
+
+      - name: Detect migration and schema drift
+        run: npm exec -- prisma migrate diff --from-config-datasource --to-schema=prisma/schema.prisma --exit-code
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Run unit and integration tests
+        run: npm test
+
+      - name: Build production artifact
+        run: npm run build
+
+      - name: Run health smoke test
+        run: npm run test:e2e

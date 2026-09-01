@@ -190,11 +190,23 @@ because the automated preflight exits successfully.
 
 ## Acceptance test
 
-1. Use Stripe test keys and enable event posting.
+1. Use Stripe test keys and enable event posting only in the sandbox process.
 2. Create a one-day event and confirm hosted Checkout shows a $10 subtotal plus the applicable Texas tax.
-3. Repeat with a five-day event and confirm the same $10 subtotal plus applicable tax.
-4. Complete payment with a Stripe test card.
-5. Confirm the payment becomes `PAID` and the event becomes `PENDING`, never public before review.
+3. Repeat with a 30-day event to exercise the maximum duration boundary and confirm the same $10 subtotal plus applicable tax. A zero tax amount is acceptable only when Stripe reports Automatic Tax as complete for the resolved customer location and the documented tax decision supports that result.
+4. Complete payment with a Stripe test card while the success URL points to an unavailable local port. This proves the webhook, rather than the browser return page, performs fulfillment.
+5. Confirm the payment becomes `PAID`, the event becomes `PENDING`, and the matching `StripeWebhookEvent` is processed without an error. Run the sandbox payment verifier against the event ID:
+
+   ```bash
+   npm run event-posting:verify-sandbox-payment -- --confirm-sandbox-readonly --event-id=<event-id>
+   ```
+
+   Replay the exact sandbox Stripe event against the local webhook and confirm the response reports `duplicate: true`; the receipt attempt count and event/payment state must remain unchanged:
+
+   ```bash
+   npm run stripe:webhook:replay-sandbox -- --confirm-sandbox-local-replay --event-id=<stripe-event-id> --target=http://127.0.0.1:3000/api/stripe/webhook
+   ```
+
+   Never pass a live event to the replay command. The command refuses production keys, live events, and non-loopback targets.
 6. Approve it and confirm every inclusive calendar day finds the event.
 7. Deny a new paid submission with a required admin comment. Confirm the payment remains `PAID`, the event returns to `DRAFT`, and the owner can see the comment, edit, and resubmit without another fee.
 8. Open Checkout, cancel the draft in another tab, then attempt the stale payment. Confirm the session is expired or the late payment becomes `REVIEW_REQUIRED`; it must never trigger an automatic refund.
@@ -205,7 +217,7 @@ because the automated preflight exits successfully.
 
 ## Policy and operations
 
-- One purchase covers one continuous event spanning 1 to 31 calendar days.
+- One purchase covers one continuous event spanning 1 to 30 calendar days.
 - Separate occurrences and recurring dates require separate posts.
 - An admin denial requires a comment and returns the event to an editable draft. The owner may correct and resubmit the same event as many times as needed without another fee, provided its dates remain within the original purchased range.
 - Refunds and dispute compensation are never automatic. The customer must contact support, and only an administrator may approve and issue a full refund. The refund includes collected tax and requires an explicit confirmation, reason, approver, and timestamp.

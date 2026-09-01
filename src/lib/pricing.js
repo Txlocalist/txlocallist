@@ -1,11 +1,15 @@
 import { getStripe } from "@/lib/stripe";
 import { MAX_EVENT_CALENDAR_DAYS } from "@/lib/event-dates";
+import { isEventPostingEnabled as isRuntimeEventPostingEnabled } from "@/lib/runtime-config.mjs";
 
 export const BILLING_CURRENCY = "usd";
 export const MEMBERSHIP_PRICE_CENTS = 1000;
 export const EVENT_POST_PRICE_CENTS = 1000;
 export const EVENT_MAX_CALENDAR_DAYS = MAX_EVENT_CALENDAR_DAYS;
 export const EVENT_POST_TAX_CODE = "txcd_10701000";
+export const MEMBERSHIP_PRODUCT_CATALOG_KEY = "tx_localist_membership";
+export const MEMBERSHIP_PRICE_CATALOG_KEY = "tx_localist_membership_monthly";
+export const EVENT_POST_CATALOG_KEY = "tx_localist_event_post";
 
 export function formatWholeDollarPrice(priceCents) {
   return `$${(priceCents / 100).toFixed(0)}`;
@@ -44,7 +48,7 @@ export const PRICING_OFFERS = Object.freeze({
 });
 
 export function isEventPostingEnabled() {
-  return process.env.EVENT_POSTING_ENABLED?.trim().toLowerCase() === "true";
+  return isRuntimeEventPostingEnabled();
 }
 
 export function getEventPostPriceId() {
@@ -61,8 +65,12 @@ export function validateStripePriceObject(
     amountCents,
     currency = BILLING_CURRENCY,
     recurring,
+    recurringInterval = recurring ? "month" : null,
+    recurringIntervalCount = recurring ? 1 : null,
     taxBehavior = null,
     productTaxCode = null,
+    priceCatalogKey = null,
+    productCatalogKey = null,
   },
 ) {
   if (!price?.active) {
@@ -77,6 +85,16 @@ export function validateStripePriceObject(
     throw new Error("The configured Stripe price has the wrong billing type.");
   }
 
+  if (
+    recurring &&
+    (
+      price.recurring?.interval !== recurringInterval ||
+      (price.recurring?.interval_count ?? 1) !== recurringIntervalCount
+    )
+  ) {
+    throw new Error("The configured Stripe price has the wrong recurring interval.");
+  }
+
   if (price.livemode !== secretUsesLiveMode()) {
     throw new Error("The configured Stripe price belongs to the wrong Stripe mode.");
   }
@@ -87,6 +105,22 @@ export function validateStripePriceObject(
 
   if (taxBehavior && price.tax_behavior !== taxBehavior) {
     throw new Error("The configured Stripe price has the wrong tax behavior.");
+  }
+
+
+  if (priceCatalogKey && price.metadata?.catalogKey !== priceCatalogKey) {
+    throw new Error("The configured Stripe price has the wrong catalog metadata.");
+  }
+
+  if (
+    productCatalogKey &&
+    (
+      !price.product ||
+      typeof price.product === "string" ||
+      price.product.metadata?.catalogKey !== productCatalogKey
+    )
+  ) {
+    throw new Error("The configured Stripe product has the wrong catalog metadata.");
   }
 
   if (
@@ -107,8 +141,12 @@ export async function retrieveAndValidateStripePrice({
   priceId,
   amountCents,
   recurring,
+  recurringInterval = recurring ? "month" : null,
+  recurringIntervalCount = recurring ? 1 : null,
   taxBehavior = null,
   productTaxCode = null,
+  priceCatalogKey = null,
+  productCatalogKey = null,
 }) {
   if (!priceId) {
     throw new Error("A required Stripe price ID is not configured.");
@@ -121,8 +159,12 @@ export async function retrieveAndValidateStripePrice({
   return validateStripePriceObject(price, {
     amountCents,
     recurring,
+    recurringInterval,
+    recurringIntervalCount,
     taxBehavior,
     productTaxCode,
+    priceCatalogKey,
+    productCatalogKey,
   });
 }
 
@@ -135,6 +177,8 @@ export async function validateEventPostPrice() {
     recurring: false,
     taxBehavior: "exclusive",
     productTaxCode: EVENT_POST_TAX_CODE,
+    priceCatalogKey: EVENT_POST_CATALOG_KEY,
+    productCatalogKey: EVENT_POST_CATALOG_KEY,
   });
 
   return priceId;

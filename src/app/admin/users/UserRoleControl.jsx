@@ -30,7 +30,12 @@ function formatMoney(amountCents, currency = "usd") {
   }).format(amountCents / 100);
 }
 
-export function UserRoleControl({ userId, email, currentRole }) {
+export function UserRoleControl({
+  userId,
+  email,
+  currentRole,
+  complimentaryRoleMutationsEnabled = false,
+}) {
   const router = useRouter();
   const dialogRef = useRef(null);
   const [selectedRole, setSelectedRole] = useState(currentRole);
@@ -104,7 +109,9 @@ export function UserRoleControl({ userId, email, currentRole }) {
         disabled={isPending}
       >
         <option value="USER">User</option>
-        <option value="COMPLIMENTARY">Complimentary</option>
+        <option value="COMPLIMENTARY" disabled={!complimentaryRoleMutationsEnabled}>
+          Complimentary{complimentaryRoleMutationsEnabled ? "" : " (assignment paused)"}
+        </option>
         <option value="MANAGER">Manager</option>
         <option value="ADMIN">Admin</option>
       </select>

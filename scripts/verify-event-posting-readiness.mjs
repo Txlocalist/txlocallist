@@ -2,6 +2,10 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
+import { REQUIRED_STRIPE_WEBHOOK_EVENTS } from "../src/lib/stripe-webhook-events.mjs";
+
+export { REQUIRED_STRIPE_WEBHOOK_EVENTS };
+
 const EXPECTED_AMOUNT_CENTS = 1000;
 const EXPECTED_CURRENCY = "usd";
 const ACTIVE_PAYMENT_STATUSES = Object.freeze(["CREATED", "PROCESSING"]);
@@ -22,23 +26,6 @@ export const REQUIRED_EVENT_POSTING_MIGRATIONS = Object.freeze([
   "20260810003000_event_image_upload_lifecycle",
   "20260810004000_track_event_refund_status",
   "20260819000000_manual_event_refunds_and_reviews",
-]);
-
-export const REQUIRED_STRIPE_WEBHOOK_EVENTS = Object.freeze([
-  "checkout.session.completed",
-  "checkout.session.async_payment_succeeded",
-  "checkout.session.async_payment_failed",
-  "checkout.session.expired",
-  "customer.subscription.created",
-  "customer.subscription.updated",
-  "customer.subscription.deleted",
-  "charge.refunded",
-  "charge.dispute.created",
-  "charge.dispute.updated",
-  "charge.dispute.closed",
-  "refund.created",
-  "refund.updated",
-  "refund.failed",
 ]);
 
 const MIGRATION_STATE_QUERY = `

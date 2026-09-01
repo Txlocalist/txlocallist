@@ -1,4 +1,7 @@
-import { ensureStripeCustomerForUser } from "@/lib/billing";
+import {
+  ensureStripeCustomerForUser,
+  isSandboxStripeCustomerRepairAllowed,
+} from "@/lib/billing";
 import { assertEventCheckoutSession } from "@/lib/event-checkout-validation";
 import {
   isFavorableEventDisputeStatus,
@@ -504,7 +507,36 @@ async function findStripeCheckoutSessionForPayment(payment) {
 }
 
 async function recoverSessionlessCheckoutReservation(payment) {
-  const stripeSession = await findStripeCheckoutSessionForPayment(payment);
+  let stripeSession;
+  try {
+    stripeSession = await findStripeCheckoutSessionForPayment(payment);
+  } catch (error) {
+    const missingCustomer = Boolean(
+      error?.code === "resource_missing" && error?.param === "customer"
+    );
+    if (!missingCustomer || !isSandboxStripeCustomerRepairAllowed()) throw error;
+
+    const released = await prisma.eventPayment.updateMany({
+      where: {
+        id: payment.id,
+        status: { in: ACTIVE_CHECKOUT_STATUSES },
+        stripeCheckoutSessionId: null,
+        stripeCustomerId: payment.stripeCustomerId,
+      },
+      data: {
+        status: "FAILED",
+        failureReason: "The sandbox Stripe customer no longer exists.",
+      },
+    });
+    if (released.count === 1) {
+      return { payment: null, session: null, released: true };
+    }
+
+    throw paymentConcurrencyError(
+      "The event payment reservation changed during sandbox customer recovery.",
+    );
+  }
+
   if (stripeSession) {
     const linked = await prisma.eventPayment.updateMany({
       where: {

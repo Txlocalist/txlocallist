@@ -1,6 +1,38 @@
 {
-  "generated_at": "2026-08-28T17:26:10.679485+00:00",
+  "generated_at": "2026-09-01T17:49:33.324339+00:00",
   "nodes": {
+    "docs_event_posting_launch_one_time_event_posting_launch": {
+      "code_fingerprint": "e4934220b53e1cb58d33a5b084f6e869a2fa858f0969d9d733fc8fc76c66ead1",
+      "label": "One-Time Event Posting Launch",
+      "last": "2026-09-01T17:42:15.491612+00:00",
+      "provenance": [
+        {
+          "date": "2026-09-01T17:42:15.491612+00:00",
+          "outcome": "useful",
+          "q": "ok so how should we go about the next phase  to move into launch readiness?"
+        }
+      ],
+      "score": 0.999882923,
+      "source_file": "docs/event-posting-launch.md",
+      "status": "tentative",
+      "uses": 1
+    },
+    "scripts_verify_event_posting_readiness": {
+      "code_fingerprint": "43c2ab5f16cef990b587b8595e4ba5e898f73a9a3c731fdc49c2a6f7ac581767",
+      "label": "verify-event-posting-readiness.mjs",
+      "last": "2026-09-01T17:42:15.491612+00:00",
+      "provenance": [
+        {
+          "date": "2026-09-01T17:42:15.491612+00:00",
+          "outcome": "useful",
+          "q": "ok so how should we go about the next phase  to move into launch readiness?"
+        }
+      ],
+      "score": 0.999882923,
+      "source_file": "scripts/verify-event-posting-readiness.mjs",
+      "status": "tentative",
+      "uses": 1
+    },
     "src_app_about_page_aboutpage": {
       "code_fingerprint": "6902cb912695aa958703cb884dd3ad318dbaec01ca7b3de97a94ce65cf89f420",
       "label": "AboutPage()",
@@ -12,8 +44,77 @@
           "q": "Match the About page to the supplied visual reference"
         }
       ],
-      "score": 0.362452705,
+      "score": 0.330332354,
       "source_file": "src/app/about/page.js",
+      "status": "tentative",
+      "uses": 1
+    },
+    "src_app_actions_admin": {
+      "code_fingerprint": "a3334b48bbb8b1633d7b671105bc9eb526c94c7afaa4d5639b7e27295fa8af5f",
+      "label": "admin.js",
+      "last": "2026-09-01T17:42:15.491612+00:00",
+      "provenance": [
+        {
+          "date": "2026-09-01T17:42:15.491612+00:00",
+          "outcome": "useful",
+          "q": "ok so how should we go about the next phase  to move into launch readiness?"
+        },
+        {
+          "date": "2026-09-01T17:31:42.348127+00:00",
+          "outcome": "useful",
+          "q": "lets move on to the next safe phase in the sandbox moderation lifecycle"
+        }
+      ],
+      "score": 1.999596565,
+      "source_file": "src/app/actions/admin.js",
+      "status": "preferred",
+      "uses": 2
+    },
+    "src_app_admin_users_page_adminuserspage": {
+      "code_fingerprint": "d0a1b5269eae862ff56f88984a0b696a2cd84c45c888ba5ec3deb5a9d2d4a02d",
+      "label": "AdminUsersPage()",
+      "last": "2026-08-28T17:42:39.832968+00:00",
+      "provenance": [
+        {
+          "date": "2026-08-28T17:42:39.832968+00:00",
+          "outcome": "useful",
+          "q": "Inspect UserRoleControl.jsx and users.module.css for viewport centering and delete dialog accessibility."
+        }
+      ],
+      "score": 0.91162168,
+      "source_file": "src/app/admin/users/page.js",
+      "status": "tentative",
+      "uses": 1
+    },
+    "src_app_admin_users_userrolecontrol": {
+      "code_fingerprint": "171e8908c26001aa23debe1c2036be3fe0a67f08b136a30f0204323ac5c68758",
+      "label": "UserRoleControl.jsx",
+      "last": "2026-08-28T17:42:39.832968+00:00",
+      "provenance": [
+        {
+          "date": "2026-08-28T17:42:39.832968+00:00",
+          "outcome": "useful",
+          "q": "Inspect UserRoleControl.jsx and users.module.css for viewport centering and delete dialog accessibility."
+        }
+      ],
+      "score": 0.91162168,
+      "source_file": "src/app/admin/users/UserRoleControl.jsx",
+      "status": "tentative",
+      "uses": 1
+    },
+    "src_app_admin_users_userrolecontrol_userrolecontrol": {
+      "code_fingerprint": "171e8908c26001aa23debe1c2036be3fe0a67f08b136a30f0204323ac5c68758",
+      "label": "UserRoleControl()",
+      "last": "2026-08-28T17:42:39.832968+00:00",
+      "provenance": [
+        {
+          "date": "2026-08-28T17:42:39.832968+00:00",
+          "outcome": "useful",
+          "q": "Inspect UserRoleControl.jsx and users.module.css for viewport centering and delete dialog accessibility."
+        }
+      ],
+      "score": 0.91162168,
+      "source_file": "src/app/admin/users/UserRoleControl.jsx",
       "status": "tentative",
       "uses": 1
     },
@@ -28,7 +129,7 @@
           "q": "Trace the event detail page implementation, event image fields and fallback behavior, save/favorite counting system, and the equivalent real saved-count flow used on business landing pages."
         }
       ],
-      "score": 0.346670879,
+      "score": 0.315949104,
       "source_file": "src/app/dashboard/events/saved/page.js",
       "status": "tentative",
       "uses": 1
@@ -44,7 +145,7 @@
           "q": "How is the how-it-works page composed, which shared components and routes does it depend on, and what must be preserved during a visual redesign?"
         }
       ],
-      "score": 0.362789432,
+      "score": 0.33063924,
       "source_file": "src/app/how-it-works/page.js",
       "status": "tentative",
       "uses": 1
@@ -60,7 +161,7 @@
           "q": "Inspect graphify-out for context before redesigning the how it works page."
         }
       ],
-      "score": 0.362104127,
+      "score": 0.330014667,
       "source_file": "src/app/layout.js",
       "status": "tentative",
       "uses": 1
@@ -81,7 +182,7 @@
           "q": "Inspect graphify-out for context before redesigning the how it works page."
         }
       ],
-      "score": 0.724893559,
+      "score": 0.660653906,
       "source_file": "src/app/pricing/page.js",
       "status": "preferred",
       "uses": 2
@@ -97,7 +198,7 @@
           "q": "Add a beautiful skeleton loader for the results page that looks like the cards."
         }
       ],
-      "score": 0.675921425,
+      "score": 0.616021656,
       "source_file": "src/app/results/icons.js",
       "status": "tentative",
       "uses": 1
@@ -118,7 +219,7 @@
           "q": "Inspect graphify-out for context before redesigning the how it works page."
         }
       ],
-      "score": 0.724893559,
+      "score": 0.660653906,
       "source_file": "src/app/results/page.js",
       "status": "preferred",
       "uses": 2
@@ -139,7 +240,7 @@
           "q": "Remove the toggle from the search on the results search bar, and when loading /results without a filter or search load 15 recently added businesses."
         }
       ],
-      "score": 1.351486167,
+      "score": 1.231718237,
       "source_file": "src/app/results/ResultsExperience.jsx",
       "status": "preferred",
       "uses": 2
@@ -155,7 +256,7 @@
           "q": "Inspect graphify-out for context before redesigning the how it works page."
         }
       ],
-      "score": 0.362104127,
+      "score": 0.330014667,
       "source_file": "src/components/Footer/Footer.jsx",
       "status": "tentative",
       "uses": 1
@@ -171,7 +272,7 @@
           "q": "Inspect graphify-out for context before redesigning the how it works page."
         }
       ],
-      "score": 0.362104127,
+      "score": 0.330014667,
       "source_file": "src/components/Navbar/Navbar.jsx",
       "status": "tentative",
       "uses": 1
@@ -187,7 +288,7 @@
           "q": "Remove the toggle from the search on the results search bar, and when loading /results without a filter or search load 15 recently added businesses."
         }
       ],
-      "score": 0.675564742,
+      "score": 0.615696581,
       "source_file": "src/components/SearchBar/SearchBar.jsx",
       "status": "tentative",
       "uses": 1
@@ -203,13 +304,124 @@
           "q": "Inspect graphify-out for context before redesigning the how it works page."
         }
       ],
-      "score": 0.362104127,
+      "score": 0.330014667,
       "source_file": "src/components/StaticPageLayout/StaticPageLayout.jsx",
       "status": "tentative",
       "uses": 1
     },
+    "src_lib_auth_session": {
+      "code_fingerprint": "20c11ad60f6dadd1cf0b85490252bb87222b27fd4d33d4edb9ab40ecb23f250b",
+      "label": "session.js",
+      "last": "2026-08-28T17:47:20.410597+00:00",
+      "provenance": [
+        {
+          "date": "2026-08-28T17:47:20.410597+00:00",
+          "outcome": "useful",
+          "q": "Review Admin soft-delete design for User accounts and identify correctness gaps or needed deletedAt filters."
+        }
+      ],
+      "score": 0.911690083,
+      "source_file": "src/lib/auth/session.js",
+      "status": "tentative",
+      "uses": 1
+    },
+    "src_lib_event_dates": {
+      "code_fingerprint": "efc29fe279e306a0e8dbc9eee1d6b0af74da7a4f241e70d73172477910430c9b",
+      "label": "event-dates.js",
+      "last": "2026-09-01T17:31:42.348127+00:00",
+      "provenance": [
+        {
+          "date": "2026-09-01T17:31:42.348127+00:00",
+          "outcome": "useful",
+          "q": "lets move on to the next safe phase in the sandbox moderation lifecycle"
+        }
+      ],
+      "score": 0.999713643,
+      "source_file": "src/lib/event-dates.js",
+      "status": "tentative",
+      "uses": 1
+    },
+    "src_lib_event_disputes": {
+      "code_fingerprint": "dab925f3c89cc581687938e44c1bf98878b583c3be8de75d893ef7be134e4e65",
+      "label": "event-disputes.js",
+      "last": "2026-09-01T17:42:15.491612+00:00",
+      "provenance": [
+        {
+          "date": "2026-09-01T17:42:15.491612+00:00",
+          "outcome": "useful",
+          "q": "ok so how should we go about the next phase  to move into launch readiness?"
+        }
+      ],
+      "score": 0.999882923,
+      "source_file": "src/lib/event-disputes.js",
+      "status": "tentative",
+      "uses": 1
+    },
+    "src_lib_event_payments": {
+      "code_fingerprint": "dfbc1a93f6c5d4897891bd039fa87acbda0944e2311b0614c0780e9369d50e95",
+      "label": "event-payments.js",
+      "last": "2026-09-01T17:42:15.491612+00:00",
+      "provenance": [
+        {
+          "date": "2026-09-01T17:42:15.491612+00:00",
+          "outcome": "useful",
+          "q": "ok so how should we go about the next phase  to move into launch readiness?"
+        },
+        {
+          "date": "2026-09-01T17:31:42.348127+00:00",
+          "outcome": "useful",
+          "q": "lets move on to the next safe phase in the sandbox moderation lifecycle"
+        },
+        {
+          "date": "2026-08-31T21:58:30.009077+00:00",
+          "outcome": "useful",
+          "q": "lets move on to the next phase. i did add the new DB keys and sandbox stripe keys in the the local.env. the only thing i did not add is a webhook. i need to know how we should set that up"
+        },
+        {
+          "date": "2026-08-28T17:47:20.410597+00:00",
+          "outcome": "useful",
+          "q": "Review Admin soft-delete design for User accounts and identify correctness gaps or needed deletedAt filters."
+        }
+      ],
+      "score": 3.892357529,
+      "source_file": "src/lib/event-payments.js",
+      "status": "preferred",
+      "uses": 4
+    },
+    "src_lib_event_payments_handleeventcheckoutsessionprocessing": {
+      "code_fingerprint": "dfbc1a93f6c5d4897891bd039fa87acbda0944e2311b0614c0780e9369d50e95",
+      "label": "handleEventCheckoutSessionProcessing()",
+      "last": "2026-08-31T21:58:30.009077+00:00",
+      "provenance": [
+        {
+          "date": "2026-08-31T21:58:30.009077+00:00",
+          "outcome": "useful",
+          "q": "lets move on to the next phase. i did add the new DB keys and sandbox stripe keys in the the local.env. the only thing i did not add is a webhook. i need to know how we should set that up"
+        }
+      ],
+      "score": 0.98107088,
+      "source_file": "src/lib/event-payments.js",
+      "status": "tentative",
+      "uses": 1
+    },
+    "src_lib_event_payments_synceventpaymentfromcheckoutsession": {
+      "code_fingerprint": "dfbc1a93f6c5d4897891bd039fa87acbda0944e2311b0614c0780e9369d50e95",
+      "label": "syncEventPaymentFromCheckoutSession()",
+      "last": "2026-08-31T21:58:30.009077+00:00",
+      "provenance": [
+        {
+          "date": "2026-08-31T21:58:30.009077+00:00",
+          "outcome": "useful",
+          "q": "lets move on to the next phase. i did add the new DB keys and sandbox stripe keys in the the local.env. the only thing i did not add is a webhook. i need to know how we should set that up"
+        }
+      ],
+      "score": 0.98107088,
+      "source_file": "src/lib/event-payments.js",
+      "status": "tentative",
+      "uses": 1
+    },
     "src_lib_events_geteventbyid": {
-      "code_fingerprint": "5cb3d1a75e1f70eff9f313d667a8add00f5a9f37867f1e0eb8dd5791d0063b7d",
+      "code_fingerprint": "4c10d86c166d5954634f163f769c061e9ef6cff69cb7bd6ded603c1e7d05efd4",
       "label": "getEventById()",
       "last": "2026-07-13T21:00:57.816871+00:00",
       "provenance": [
@@ -219,13 +431,13 @@
           "q": "Trace the event detail page implementation, event image fields and fallback behavior, save/favorite counting system, and the equivalent real saved-count flow used on business landing pages."
         }
       ],
-      "score": 0.346670879,
+      "score": 0.315949104,
       "source_file": "src/lib/events.js",
       "status": "tentative",
       "uses": 1
     },
     "src_lib_events_getpublishedevents": {
-      "code_fingerprint": "5cb3d1a75e1f70eff9f313d667a8add00f5a9f37867f1e0eb8dd5791d0063b7d",
+      "code_fingerprint": "4c10d86c166d5954634f163f769c061e9ef6cff69cb7bd6ded603c1e7d05efd4",
       "label": "getPublishedEvents()",
       "last": "2026-07-13T21:00:57.816871+00:00",
       "provenance": [
@@ -235,7 +447,7 @@
           "q": "Trace the event detail page implementation, event image fields and fallback behavior, save/favorite counting system, and the equivalent real saved-count flow used on business landing pages."
         }
       ],
-      "score": 0.346670879,
+      "score": 0.315949104,
       "source_file": "src/lib/events.js",
       "status": "tentative",
       "uses": 1
@@ -251,8 +463,24 @@
           "q": "i cant sign in can you fix this prisma issue"
         }
       ],
-      "score": 0.999691477,
+      "score": 0.911099391,
       "source_file": "src/lib/prisma.js",
+      "status": "tentative",
+      "uses": 1
+    },
+    "src_lib_role_transitions": {
+      "code_fingerprint": "4f474f9def3c57a25ab5ed7395a30dca3ceb159b0ca7af3ab32b63bf249e1e1f",
+      "label": "role-transitions.js",
+      "last": "2026-08-28T17:47:20.410597+00:00",
+      "provenance": [
+        {
+          "date": "2026-08-28T17:47:20.410597+00:00",
+          "outcome": "useful",
+          "q": "Review Admin soft-delete design for User accounts and identify correctness gaps or needed deletedAt filters."
+        }
+      ],
+      "score": 0.911690083,
+      "source_file": "src/lib/role-transitions.js",
       "status": "tentative",
       "uses": 1
     }

@@ -3,7 +3,7 @@ export const ALLOWED_EVENT_TIME_ZONES = Object.freeze([
   "America/Chicago",
   "America/Denver",
 ]);
-export const MAX_EVENT_CALENDAR_DAYS = 31;
+export const MAX_EVENT_CALENDAR_DAYS = 30;
 
 const ALLOWED_TIME_ZONE_SET = new Set(ALLOWED_EVENT_TIME_ZONES);
 

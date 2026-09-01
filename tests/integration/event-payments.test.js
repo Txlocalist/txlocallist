@@ -445,6 +445,7 @@ const harness = vi.hoisted(() => {
 vi.mock("@/lib/prisma", () => ({ prisma: harness.prisma }));
 vi.mock("@/lib/billing", () => ({
   ensureStripeCustomerForUser: vi.fn(async (user) => user.stripeCustomerId ?? "cus_event_1"),
+  isSandboxStripeCustomerRepairAllowed: vi.fn(() => true),
 }));
 vi.mock("@/lib/pricing", () => ({
   BILLING_CURRENCY: "usd",
@@ -461,6 +462,8 @@ vi.mock("@/lib/stripe", () => ({
 }));
 
 import {
+  approveEventForPublication,
+  cancelEventPosting,
   createEventCheckoutSession,
   denyEventForRevision,
   expireOpenEventCheckoutSessions,
@@ -677,6 +680,40 @@ describe("event payment service integration", () => {
       });
       expect(harness.state.payments[1]).toMatchObject({
         status: "PROCESSING",
+        stripeCheckoutSessionId: session.id,
+      });
+      expect(harness.stripe.checkout.sessions.create).toHaveBeenCalledOnce();
+    });
+
+    it("replaces a session-less sandbox reservation whose Customer no longer exists", async () => {
+      harness.addUser({ stripeCustomerId: "cus_event_replacement" });
+      harness.addEvent();
+      harness.addPayment({
+        id: "payment_stale_sandbox_customer",
+        status: "CREATED",
+        stripeCustomerId: "cus_event_missing",
+        stripeCheckoutSessionId: null,
+        checkoutExpiresAt: new Date("2027-01-20T00:00:00.000Z"),
+      });
+      harness.stripe.checkout.sessions.list.mockRejectedValueOnce(Object.assign(
+        new Error("No such customer"),
+        { code: "resource_missing", param: "customer" },
+      ));
+
+      const session = await createEventCheckoutSession({
+        eventId: "event_1",
+        userId: "user_1",
+      });
+
+      expect(harness.state.payments).toHaveLength(2);
+      expect(harness.state.payments[0]).toMatchObject({
+        id: "payment_stale_sandbox_customer",
+        status: "FAILED",
+        failureReason: "The sandbox Stripe customer no longer exists.",
+      });
+      expect(harness.state.payments[1]).toMatchObject({
+        status: "PROCESSING",
+        stripeCustomerId: "cus_event_replacement",
         stripeCheckoutSessionId: session.id,
       });
       expect(harness.stripe.checkout.sessions.create).toHaveBeenCalledOnce();
@@ -1245,6 +1282,165 @@ describe("event payment service integration", () => {
         decision: "DENIED",
         comment: "Please clarify the venue address before resubmitting.",
       }));
+    });
+  });
+
+  describe("moderation approval policy", () => {
+    it("publishes a paid pending event and records the approval without refunding", async () => {
+      harness.addUser();
+      harness.addUser({ id: "manager_1", email: "manager@example.com", role: "MANAGER" });
+      harness.addEvent({ status: "PENDING" });
+      harness.addPayment({
+        id: "payment_approved",
+        status: "PAID",
+        stripePaymentIntentId: "pi_approved",
+        paidAt: new Date("2026-12-01T17:00:00.000Z"),
+      });
+
+      await approveEventForPublication({
+        eventId: "event_1",
+        reviewerId: "manager_1",
+      });
+
+      expect(harness.state.events[0]).toMatchObject({
+        status: "PUBLISHED",
+        publishedAt: expect.any(Date),
+        cancelledAt: null,
+        cancellationReason: null,
+      });
+      expect(harness.state.reviews).toContainEqual(expect.objectContaining({
+        eventId: "event_1",
+        reviewerId: "manager_1",
+        decision: "APPROVED",
+        comment: null,
+      }));
+      expect(harness.state.payments[0]).toMatchObject({
+        status: "PAID",
+        refundedAmountCents: 0,
+      });
+      expect(harness.stripe.refunds.create).not.toHaveBeenCalled();
+    });
+
+    it("refuses to publish an unpaid one-time event", async () => {
+      harness.addUser();
+      harness.addUser({ id: "manager_1", email: "manager@example.com", role: "MANAGER" });
+      harness.addEvent({ status: "PENDING" });
+
+      await expect(approveEventForPublication({
+        eventId: "event_1",
+        reviewerId: "manager_1",
+      })).rejects.toThrow(/payment has not been confirmed/i);
+
+      expect(harness.state.events[0].status).toBe("PENDING");
+      expect(harness.state.reviews).toHaveLength(0);
+      expect(harness.stripe.refunds.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("organizer cancellation coordination", () => {
+    it("expires an open Checkout Session before canceling the event", async () => {
+      harness.addUser();
+      harness.addEvent();
+      const session = harness.addCheckoutSession({
+        id: "cs_cancel_open",
+        metadata: {
+          scope: "event_post",
+          eventId: "event_1",
+          paymentId: "payment_cancel_open",
+          userId: "user_1",
+        },
+      });
+      harness.addPayment({
+        id: "payment_cancel_open",
+        status: "PROCESSING",
+        stripeCheckoutSessionId: session.id,
+      });
+
+      await cancelEventPosting("event_1", "ORGANIZER");
+
+      expect(harness.stripe.checkout.sessions.expire).toHaveBeenCalledWith(session.id);
+      expect(harness.state.checkoutSessions.get(session.id)).toMatchObject({
+        status: "expired",
+        url: null,
+      });
+      expect(harness.state.events[0]).toMatchObject({
+        status: "CANCELLED",
+        cancelledAt: expect.any(Date),
+        cancellationReason: "ORGANIZER",
+      });
+      expect(harness.state.payments[0]).toMatchObject({
+        status: "EXPIRED",
+        failureReason: "Event canceled before payment completed.",
+      });
+      expect(harness.stripe.refunds.create).not.toHaveBeenCalled();
+    });
+
+    it("records a payment that settles just before cancellation and does not auto-refund it", async () => {
+      harness.addUser();
+      harness.addEvent();
+      const session = harness.addCheckoutSession({
+        id: "cs_cancel_paid_race",
+        status: "complete",
+        payment_status: "paid",
+        payment_intent: "pi_cancel_paid_race",
+        url: null,
+        metadata: {
+          scope: "event_post",
+          eventId: "event_1",
+          paymentId: "payment_cancel_paid_race",
+          userId: "user_1",
+        },
+      });
+      harness.addPayment({
+        id: "payment_cancel_paid_race",
+        status: "PROCESSING",
+        stripeCheckoutSessionId: session.id,
+      });
+
+      await cancelEventPosting("event_1", "ORGANIZER");
+
+      expect(harness.state.events[0]).toMatchObject({
+        status: "CANCELLED",
+        cancellationReason: "ORGANIZER",
+      });
+      expect(harness.state.payments[0]).toMatchObject({
+        status: "PAID",
+        stripePaymentIntentId: "pi_cancel_paid_race",
+        paidAt: expect.any(Date),
+        refundedAmountCents: 0,
+      });
+      expect(harness.stripe.checkout.sessions.expire).not.toHaveBeenCalled();
+      expect(harness.stripe.refunds.create).not.toHaveBeenCalled();
+    });
+
+    it("blocks cancellation while a completed asynchronous payment is unresolved", async () => {
+      harness.addUser();
+      harness.addEvent();
+      const session = harness.addCheckoutSession({
+        id: "cs_cancel_async_pending",
+        status: "complete",
+        payment_status: "unpaid",
+        url: null,
+        metadata: {
+          scope: "event_post",
+          eventId: "event_1",
+          paymentId: "payment_cancel_async_pending",
+          userId: "user_1",
+        },
+      });
+      harness.addPayment({
+        id: "payment_cancel_async_pending",
+        status: "PROCESSING",
+        stripeCheckoutSessionId: session.id,
+      });
+
+      await expect(cancelEventPosting("event_1", "ORGANIZER"))
+        .rejects.toThrow(/still processing|wait for stripe/i);
+
+      expect(harness.state.events[0].status).toBe("DRAFT");
+      expect(harness.state.payments[0].status).toBe("PROCESSING");
+      expect(harness.stripe.checkout.sessions.expire).not.toHaveBeenCalled();
+      expect(harness.stripe.refunds.create).not.toHaveBeenCalled();
     });
   });
 

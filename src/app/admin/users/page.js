@@ -10,6 +10,7 @@ import {
   getAccessFilterWhere,
 } from "@/lib/account-access";
 import { prisma } from "@/lib/prisma";
+import { isComplimentaryRoleMutationsEnabled } from "@/lib/runtime-config.mjs";
 import dashboardStyles from "@/app/dashboard/dashboard.module.css";
 import styles from "./users.module.css";
 
@@ -53,6 +54,7 @@ function pageHref({ page, query, role, access }) {
 export default async function AdminUsersPage({ searchParams }) {
   const viewer = await requireStaff();
   const isAdmin = viewer.role === "ADMIN";
+  const complimentaryRoleMutationsEnabled = isComplimentaryRoleMutationsEnabled();
   const params = await searchParams;
   const query = params?.q?.toString().trim().slice(0, 100) ?? "";
   const requestedRole = params?.role?.toString().toUpperCase() ?? "";
@@ -217,7 +219,12 @@ export default async function AdminUsersPage({ searchParams }) {
                   {isAdmin ? <td className={styles.muted}>{formatDate(user.lastLoginAt)}</td> : null}
                   {isAdmin ? (
                     <td>
-                      <UserRoleControl userId={user.id} email={user.email} currentRole={user.role} />
+                      <UserRoleControl
+                        userId={user.id}
+                        email={user.email}
+                        currentRole={user.role}
+                        complimentaryRoleMutationsEnabled={complimentaryRoleMutationsEnabled}
+                      />
                       <UserDeleteControl
                         userId={user.id}
                         email={user.email}

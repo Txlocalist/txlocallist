@@ -1,0 +1,16 @@
+export const REQUIRED_STRIPE_WEBHOOK_EVENTS = Object.freeze([
+  "checkout.session.completed",
+  "checkout.session.async_payment_succeeded",
+  "checkout.session.async_payment_failed",
+  "checkout.session.expired",
+  "customer.subscription.created",
+  "customer.subscription.updated",
+  "customer.subscription.deleted",
+  "charge.refunded",
+  "charge.dispute.created",
+  "charge.dispute.updated",
+  "charge.dispute.closed",
+  "refund.created",
+  "refund.updated",
+  "refund.failed",
+]);

@@ -1,11 +1,32 @@
-import "dotenv/config";
+import "./load-next-environment.mjs";
 
 import Stripe from "stripe";
+
+import {
+  getRuntimeEnvironment,
+  validateRuntimeConfiguration,
+} from "../src/lib/runtime-config.mjs";
+import { MAX_EVENT_CALENDAR_DAYS } from "../src/lib/event-dates.js";
 
 const EVENT_CATALOG_KEY = "tx_localist_event_post";
 const MEMBERSHIP_CATALOG_KEY = "tx_localist_membership_monthly";
 const PRICE_CENTS = 1000;
 const EVENT_TAX_CODE = "txcd_10701000";
+const EVENT_PRODUCT_NAME = "TX Localist Event Calendar Post";
+const EVENT_PRODUCT_DESCRIPTION =
+  `One calendar post for one continuous event lasting up to ${MAX_EVENT_CALENDAR_DAYS} days.`;
+
+const environment = getRuntimeEnvironment(process.env);
+const runtimeConfiguration = validateRuntimeConfiguration(process.env, {
+  environment,
+});
+
+if (!runtimeConfiguration.ok) {
+  const details = runtimeConfiguration.issues
+    .map((issue) => `${issue.code}: ${issue.message}`)
+    .join("\n");
+  throw new Error(`Refusing to modify the Stripe catalog:\n${details}`);
+}
 
 const secretKey = process.env.STRIPE_SECRET_KEY?.trim();
 if (!secretKey) {
@@ -26,6 +47,13 @@ async function findPrice(productId, { recurring, catalogKey }) {
     price.unit_amount === PRICE_CENTS &&
     price.currency === "usd" &&
     Boolean(price.recurring) === recurring &&
+    (
+      !recurring ||
+      (
+        price.recurring?.interval === "month" &&
+        (price.recurring.interval_count ?? 1) === 1
+      )
+    ) &&
     (recurring || price.tax_behavior === "exclusive") &&
     price.metadata?.catalogKey === catalogKey
   );
@@ -40,8 +68,7 @@ async function getConfiguredMembershipPrice() {
   return stripe.prices.retrieve(configuredPriceId);
 }
 
-async function ensureMembershipPrice() {
-  const configuredPrice = await getConfiguredMembershipPrice();
+async function ensureMembershipPrice(configuredPrice) {
   const productId = typeof configuredPrice.product === "string"
     ? configuredPrice.product
     : configuredPrice.product.id;
@@ -87,15 +114,24 @@ async function ensureEventProduct() {
     (product) => product.metadata?.catalogKey === EVENT_CATALOG_KEY,
   );
   if (existing) {
-    if (existing.tax_code !== EVENT_TAX_CODE) {
-      return stripe.products.update(existing.id, { tax_code: EVENT_TAX_CODE });
+    if (
+      existing.name !== EVENT_PRODUCT_NAME ||
+      existing.description !== EVENT_PRODUCT_DESCRIPTION ||
+      existing.tax_code !== EVENT_TAX_CODE
+    ) {
+      return stripe.products.update(existing.id, {
+        name: EVENT_PRODUCT_NAME,
+        description: EVENT_PRODUCT_DESCRIPTION,
+        tax_code: EVENT_TAX_CODE,
+        metadata: { catalogKey: EVENT_CATALOG_KEY },
+      });
     }
     return existing;
   }
 
   return stripe.products.create({
-    name: "TX Localist Event Calendar Post",
-    description: "One calendar post for one continuous event lasting up to 31 days.",
+    name: EVENT_PRODUCT_NAME,
+    description: EVENT_PRODUCT_DESCRIPTION,
     tax_code: EVENT_TAX_CODE,
     metadata: { catalogKey: EVENT_CATALOG_KEY },
   });
@@ -118,10 +154,11 @@ async function ensureEventPrice() {
   });
 }
 
-const [membershipPrice, eventPrice] = await Promise.all([
-  ensureMembershipPrice(),
-  ensureEventPrice(),
-]);
+// Resolve every required input before the first catalog write. In particular,
+// a missing membership Price must not race with creation of the event Product.
+const configuredMembershipPrice = await getConfiguredMembershipPrice();
+const membershipPrice = await ensureMembershipPrice(configuredMembershipPrice);
+const eventPrice = await ensureEventPrice();
 
 console.log(`STRIPE_PRICE_STARTER=${membershipPrice.id}`);
 console.log(`STRIPE_PRICE_EVENT_POST=${eventPrice.id}`);

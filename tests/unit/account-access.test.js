@@ -9,7 +9,10 @@ import {
   resolveAccountAccess,
   syncEffectiveAccessPlans,
 } from "@/lib/account-access";
-import { roleTransitionRequiresCancellation } from "@/lib/role-transitions";
+import {
+  roleTransitionMayHaveStripeSideEffects,
+  roleTransitionRequiresCancellation,
+} from "@/lib/role-transitions";
 
 const freePlan = {
   id: "plan_free",
@@ -204,6 +207,51 @@ describe("role invariants", () => {
     expect(roleTransitionRequiresCancellation("USER")).toBe(false);
     expect(roleTransitionRequiresCancellation("MANAGER")).toBe(false);
     expect(roleTransitionRequiresCancellation("ADMIN")).toBe(false);
+  });
+
+  test("keeps potentially mutated Complimentary operations recoverable", () => {
+    expect(
+      roleTransitionMayHaveStripeSideEffects({
+        status: "PREVIEWED",
+        subscriptions: [{ result: "PENDING" }],
+      }),
+    ).toBe(false);
+    expect(
+      roleTransitionMayHaveStripeSideEffects({
+        status: "PROCESSING",
+        subscriptions: [{ result: "PENDING" }],
+      }),
+    ).toBe(true);
+    expect(
+      roleTransitionMayHaveStripeSideEffects({
+        status: "PARTIAL",
+        subscriptions: [{ result: "FAILED" }],
+      }),
+    ).toBe(true);
+    expect(
+      roleTransitionMayHaveStripeSideEffects({
+        status: "STRIPE_VERIFIED",
+        subscriptions: [],
+      }),
+    ).toBe(true);
+    expect(
+      roleTransitionMayHaveStripeSideEffects({
+        status: "NEEDS_ATTENTION",
+        subscriptions: [{ result: "PENDING" }],
+      }),
+    ).toBe(false);
+    expect(
+      roleTransitionMayHaveStripeSideEffects({
+        status: "NEEDS_ATTENTION",
+        subscriptions: [{ result: "SCHEDULED", attemptCount: 0 }],
+      }),
+    ).toBe(true);
+    expect(
+      roleTransitionMayHaveStripeSideEffects({
+        status: "NEEDS_ATTENTION",
+        subscriptions: [{ result: "FAILED", attemptCount: 1 }],
+      }),
+    ).toBe(true);
   });
 
   test("only Manager and Admin are staff roles", () => {

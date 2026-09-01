@@ -5,7 +5,7 @@
  * Run: node scripts/seed-italian-test.mjs
  */
 
-import "dotenv/config";
+import "./load-next-environment.mjs";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "@prisma/client";
 

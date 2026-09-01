@@ -39,13 +39,32 @@ describe("validateStripePriceObject", () => {
 
   test("accepts a matching recurring live price", () => {
     vi.stubEnv("STRIPE_SECRET_KEY", "sk_live_example");
-    const price = makePrice({ recurring: { interval: "month" }, livemode: true });
+    const price = makePrice({
+      recurring: { interval: "month", interval_count: 1 },
+      livemode: true,
+    });
 
     expect(validateStripePriceObject(price, {
       amountCents: 1000,
       currency: "usd",
       recurring: true,
     })).toBe(price);
+  });
+
+  test.each([
+    ["weekly", { interval: "week", interval_count: 1 }],
+    ["annual", { interval: "year", interval_count: 1 }],
+    ["every two months", { interval: "month", interval_count: 2 }],
+  ])("rejects a %s recurring membership Price", (_label, recurring) => {
+    vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_example");
+
+    expect(() => validateStripePriceObject(makePrice({ recurring }), {
+      amountCents: 1000,
+      currency: "usd",
+      recurring: true,
+      recurringInterval: "month",
+      recurringIntervalCount: 1,
+    })).toThrow("wrong recurring interval");
   });
 
   test.each([
@@ -67,15 +86,26 @@ describe("validateStripePriceObject", () => {
 });
 
 describe("isEventPostingEnabled", () => {
-  test("requires an explicit true value", () => {
+  function configureSafeEventEnvironment() {
+    vi.stubEnv("TX_LOCALIST_ENV", "test");
+    vi.stubEnv("TX_LOCALIST_DATABASE_ENV", "test");
+    vi.stubEnv("EVENT_POSTING_ENABLED", "true");
+    vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_example");
+    vi.stubEnv("NEXT_PUBLIC_STRIPE_PK", "pk_test_example");
+    vi.stubEnv("STRIPE_WEBHOOK_SECRET", "whsec_example");
+    vi.stubEnv("STRIPE_PRICE_EVENT_POST", "price_event");
+  }
+
+  test("requires an explicit true value and isolated services", () => {
     vi.stubEnv("EVENT_POSTING_ENABLED", "false");
     expect(isEventPostingEnabled()).toBe(false);
 
-    vi.stubEnv("EVENT_POSTING_ENABLED", "true");
+    configureSafeEventEnvironment();
     expect(isEventPostingEnabled()).toBe(true);
   });
 
   test("is case-insensitive and trims whitespace", () => {
+    configureSafeEventEnvironment();
     vi.stubEnv("EVENT_POSTING_ENABLED", "  TRUE  ");
     expect(isEventPostingEnabled()).toBe(true);
   });
@@ -104,6 +134,34 @@ describe("isEventPostingEnabled", () => {
         productTaxCode: "txcd_10701000",
       },
     )).toThrow("wrong tax behavior");
+  });
+
+  test("validates Price and Product catalog metadata", () => {
+    vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_example");
+    const price = makePrice({
+      metadata: { catalogKey: "tx_localist_event_post" },
+      product: {
+        active: true,
+        metadata: { catalogKey: "tx_localist_event_post" },
+      },
+    });
+
+    expect(validateStripePriceObject(price, {
+      amountCents: 1000,
+      currency: "usd",
+      recurring: false,
+      priceCatalogKey: "tx_localist_event_post",
+      productCatalogKey: "tx_localist_event_post",
+    })).toBe(price);
+    expect(() => validateStripePriceObject(
+      { ...price, metadata: { catalogKey: "wrong" } },
+      {
+        amountCents: 1000,
+        currency: "usd",
+        recurring: false,
+        priceCatalogKey: "tx_localist_event_post",
+      },
+    )).toThrow("wrong catalog metadata");
   });
 });
 

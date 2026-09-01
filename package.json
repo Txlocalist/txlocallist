@@ -2,6 +2,9 @@
   "name": "tx-localist",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22 <23"
+  },
   "scripts": {
     "dev": "next dev --webpack",
     "dev:turbo": "next dev --turbopack",
@@ -11,9 +14,12 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "env:verify": "node scripts/verify-runtime-config.mjs",
+    "env:verify:production": "node scripts/verify-runtime-config.mjs --environment=production",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
-    "db:migrate": "prisma migrate deploy",
+    "db:migrate": "npm run env:verify && prisma migrate deploy",
+    "db:status": "npm run env:verify && prisma migrate status",
     "db:seed-cities": "node scripts/seed-cities.mjs",
     "db:seed-categories": "node scripts/seed-categories.mjs",
     "db:seed-plans": "node scripts/seed-plans.mjs",
@@ -24,12 +30,17 @@
     "db:seed-italian": "node scripts/seed-italian-test.mjs",
     "db:seed-local-businesses": "node scripts/seed-local-businesses.mjs",
     "db:seed-all": "npm run db:seed-cities && npm run db:seed-categories && npm run db:seed-plans && npm run db:seed-events && npm run db:seed-local-businesses",
-    "stripe:setup-catalog": "node scripts/setup-stripe-catalog.mjs",
+    "stripe:setup-catalog": "npm run env:verify && node scripts/setup-stripe-catalog.mjs",
+    "stripe:webhook:listen": "node scripts/listen-stripe-webhook.mjs",
+    "stripe:webhook:check": "node scripts/verify-stripe-webhook-config.mjs",
+    "stripe:webhook:replay-sandbox": "node scripts/replay-sandbox-stripe-webhook.mjs",
     "event-posting:verify-readiness": "node scripts/verify-event-posting-readiness.mjs",
+    "event-posting:verify-sandbox-payment": "node scripts/verify-sandbox-event-payment.mjs",
     "postinstall": "prisma generate"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
+    "@next/env": "16.2.2",
     "@prisma/adapter-neon": "^7.7.0",
     "@prisma/client": "^7.7.0",
     "@vercel/blob": "^2.3.3",
