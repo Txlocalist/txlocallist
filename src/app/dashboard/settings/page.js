@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { DashboardLayout } from "../DashboardShell";
 import styles from "../dashboard.module.css";
 import { getCurrentSession } from "@/lib/auth/session";
+import { ProfileForm } from "./ProfileForm";
 
 /**
  * Account settings page.
@@ -32,7 +33,7 @@ export default async function SettingsPage() {
         <div className={styles.settingItem}>
           <div>
             <p className={styles.settingLabel}>Name</p>
-            <p className={styles.settingValue}>{user.email}</p>
+            <p className={styles.settingValue}>{user.name || "Not set"}</p>
           </div>
         </div>
         <div className={styles.settingItem}>
@@ -47,7 +48,7 @@ export default async function SettingsPage() {
             <p className={styles.settingValue}>{user.role}</p>
           </div>
         </div>
-        <button className={styles.settingButton}>Edit Profile</button>
+        <ProfileForm user={{ name: user.name, email: user.email }} />
       </div>
 
       {/* Security Section */}

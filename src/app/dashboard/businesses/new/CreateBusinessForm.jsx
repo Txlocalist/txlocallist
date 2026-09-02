@@ -26,9 +26,11 @@ export function CreateBusinessForm({ cities, tags }) {
     phone: "",
     email: "",
     website: "",
+    socialLinks: { facebook: "", instagram: "", linkedin: "", tiktok: "", youtube: "", x: "" },
     
     // Step 2: Location
     cityId: "",
+    cityName: "",
     address: "",
     latitude: "",
     longitude: "",
@@ -36,6 +38,7 @@ export function CreateBusinessForm({ cities, tags }) {
     
     // Step 3: Tags
     tagIds: [],
+    newTags: "",
     isHiring: false,
     hiringRoles: [""],
     
@@ -63,9 +66,11 @@ export function CreateBusinessForm({ cities, tags }) {
       ...prev,
       tagIds: prev.tagIds.includes(tagId)
         ? prev.tagIds.filter((id) => id !== tagId)
-        : [...prev.tagIds, tagId],
+        : prev.tagIds.length < 5 ? [...prev.tagIds, tagId] : prev.tagIds,
     }));
   };
+
+  const handleSocialChange = (platform, value) => setFormData((prev) => ({ ...prev, socialLinks: { ...prev.socialLinks, [platform]: value } }));
 
   const handleHiringRoleChange = (index, value) => {
     setFormData((prev) => ({
@@ -104,12 +109,8 @@ export function CreateBusinessForm({ cities, tags }) {
       }
     }
     if (step === 2) {
-      if (!formData.cityId) {
+      if (!formData.cityId && !formData.cityName.trim()) {
         setError("City is required");
-        return false;
-      }
-      if (!formData.address.trim()) {
-        setError("Address is required");
         return false;
       }
     }
@@ -151,12 +152,15 @@ export function CreateBusinessForm({ cities, tags }) {
         phone: formData.phone || null,
         email: formData.email || null,
         website: formData.website || null,
-        cityId: formData.cityId,
+        socialLinks: formData.socialLinks,
+        cityId: formData.cityId === "other" ? "" : formData.cityId,
+        cityName: formData.cityName,
         address: formData.address,
         latitude: formData.latitude ? parseFloat(formData.latitude) : null,
         longitude: formData.longitude ? parseFloat(formData.longitude) : null,
         hours: formData.hours,
         tagIds: formData.tagIds,
+        newTags: formData.newTags,
         isHiring: formData.isHiring,
         hiringRoles: formData.hiringRoles,
         photos: formData.photos,
@@ -231,6 +235,9 @@ export function CreateBusinessForm({ cities, tags }) {
               className={formStyles.input}
               required
             />
+          </div>
+          <div className={formStyles.formRow}>
+            {Object.keys(formData.socialLinks).map((platform) => <div className={formStyles.formGroup} key={platform}><label htmlFor={`social-${platform}`} className={formStyles.label}>{platform === "x" ? "X / Twitter" : platform}</label><input id={`social-${platform}`} type="url" value={formData.socialLinks[platform]} onChange={(event) => handleSocialChange(platform, event.target.value)} placeholder={`https://${platform}.com/...`} className={formStyles.input} /></div>)}
           </div>
 
           <div className={formStyles.formGroup}>
@@ -319,6 +326,7 @@ export function CreateBusinessForm({ cities, tags }) {
               required
             >
               <option value="">Select a city...</option>
+              <option value="other">My city is not listed</option>
               {cities.map((city) => (
                 <option key={city.id} value={city.id}>
                   {city.name}
@@ -326,10 +334,11 @@ export function CreateBusinessForm({ cities, tags }) {
               ))}
             </select>
           </div>
+          {formData.cityId === "other" ? <div className={formStyles.formGroup}><label htmlFor="cityName" className={formStyles.label}>Texas City *</label><input id="cityName" name="cityName" value={formData.cityName} onChange={handleChange} className={formStyles.input} required /></div> : null}
 
           <div className={formStyles.formGroup}>
             <label htmlFor="address" className={formStyles.label}>
-              Street Address *
+              Street Address (optional)
             </label>
             <input
               type="text"
@@ -339,7 +348,6 @@ export function CreateBusinessForm({ cities, tags }) {
               onChange={handleChange}
               placeholder="123 Main Street"
               className={formStyles.input}
-              required
             />
           </div>
 
@@ -394,7 +402,7 @@ export function CreateBusinessForm({ cities, tags }) {
         <div className={formStyles.step}>
           <h2 className={formStyles.stepTitle}>Tags</h2>
           <p className={formStyles.stepDescription}>
-            Choose any admin-managed tags that fit your business
+            Choose up to five admin-approved tags that fit your business
           </p>
 
           <div className={formStyles.formGroup}>
@@ -407,6 +415,7 @@ export function CreateBusinessForm({ cities, tags }) {
                       type="checkbox"
                       checked={formData.tagIds.includes(tag.id)}
                       onChange={() => handleTagToggle(tag.id)}
+                      disabled={!formData.tagIds.includes(tag.id) && formData.tagIds.length >= 5}
                     />
                     <span className={formStyles.categoryLabel}>{tag.name}</span>
                   </label>
@@ -418,6 +427,8 @@ export function CreateBusinessForm({ cities, tags }) {
               </p>
             )}
           </div>
+
+          <div className={formStyles.formGroup}><label htmlFor="newTags" className={formStyles.label}>Suggest new tags (optional)</label><input id="newTags" name="newTags" value={formData.newTags} onChange={handleChange} className={formStyles.input} placeholder="family-owned, dog-friendly" /><p className={formStyles.checkboxHint}>Separate tags with commas. Selected and suggested tags may total five; suggestions are reviewed with the listing.</p></div>
 
           <div className={formStyles.formGroup}>
             <label className={formStyles.checkboxLabel}>
@@ -474,14 +485,14 @@ export function CreateBusinessForm({ cities, tags }) {
           <h2 className={formStyles.stepTitle}>Photos</h2>
           <p className={formStyles.stepDescription}>
             Add photos to make your listing stand out. Your first photo becomes the cover image.
-            Paid accounts can upload up to 20 photos per listing.
+            One listing photo is allowed.
           </p>
           <PhotoUploader
             photos={formData.photos}
             onChange={(photos) =>
               setFormData((prev) => ({ ...prev, photos }))
             }
-            maxPhotos={20}
+            maxPhotos={1}
           />
         </div>
       )}

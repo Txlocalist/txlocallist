@@ -40,6 +40,7 @@ export default async function EditBusinessPage({ params }) {
         city: true,
         categories: { include: { category: true } },
         tags: { include: { tag: true } },
+        socialLinks: { orderBy: { order: "asc" } },
       },
     });
 

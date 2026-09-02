@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
+import Link from "next/link";
 
 import { loginAction } from "@/app/actions/auth";
 
@@ -60,7 +61,7 @@ export function LoginForm({ nextPath = "" }) {
           <label htmlFor="password" className={styles.label}>
             Password
           </label>
-          <span className={styles.assistText}>Forgot?</span>
+          <Link className={styles.assistText} href="/forgot-password">Forgot password?</Link>
         </div>
         <input
           id="password"

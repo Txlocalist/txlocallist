@@ -218,6 +218,10 @@
   color: var(--muted);
 }
 
+.settingsForm { display: grid; gap: 0.75rem; max-width: 32rem; margin-top: 1rem; }
+.settingsInput { min-height: 2.75rem; border: var(--stroke-thin); border-radius: var(--radius-md); padding: 0.65rem 0.85rem; font: inherit; background: white; }
+.settingsInput:focus-visible { outline: 2px solid var(--retro-teal); outline-offset: 2px; }
+
 /* --- Lists --- */
 .listItem {
   padding: 1rem;

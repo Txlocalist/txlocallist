@@ -9,6 +9,7 @@
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { isMissingPrismaTableError } from "@/lib/prisma-errors";
+import { sendNewLikeEmail } from "@/lib/email";
 
 export async function PUT(request) {
   const user = await getCurrentUser().catch(() => null);
@@ -39,7 +40,7 @@ export async function PUT(request) {
       status: "ACTIVE",
       publishedAt: { not: null },
     },
-    select: { id: true },
+    select: { id: true, name: true, slug: true, ownerId: true, owner: { select: { email: true, name: true } } },
   });
 
   if (!business) {
@@ -47,7 +48,7 @@ export async function PUT(request) {
   }
 
   try {
-    const count = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const key = {
         userId_businessId: {
           userId: user.id,
@@ -56,21 +57,28 @@ export async function PUT(request) {
       };
 
       if (liked) {
+        const existing = await tx.like.findUnique({ where: key, select: { userId: true } });
         await tx.like.upsert({
           where: key,
           create: { userId: user.id, businessId: business.id },
           update: {},
         });
+        const count = await tx.like.count({ where: { businessId: business.id } });
+        return { count, created: !existing };
       } else {
         await tx.like.deleteMany({
           where: { userId: user.id, businessId: business.id },
         });
       }
-
-      return tx.like.count({ where: { businessId: business.id } });
+      return { count: await tx.like.count({ where: { businessId: business.id } }), created: false };
     });
 
-    return Response.json({ liked, count });
+    if (liked && result.created && business.ownerId !== user.id && business.owner.email) {
+      const site = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+      await sendNewLikeEmail({ to: business.owner.email, recipientName: business.owner.name, postTitle: business.name, postType: "business", postUrl: `${site}/business/${business.slug}` });
+    }
+
+    return Response.json({ liked, count: result.count });
   } catch (error) {
     if (isMissingPrismaTableError(error)) {
       return Response.json(

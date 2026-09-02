@@ -69,6 +69,33 @@ export async function sendWelcomeEmail({ to, isOwner = false }) {
   return sendEmail({ to, subject, html });
 }
 
+export async function sendPasswordResetEmail({ to, resetUrl }) {
+  const html = emailShell({
+    title: "Reset your TX Localist password",
+    siteUrl: SITE,
+    body: `
+      <h1 style="margin:0 0 12px;font-size:24px;font-weight:800;color:#2D241E;">Reset your password</h1>
+      <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#4a3a30;">Use the button below within one hour to choose a new password. If you did not request this, you can ignore this email.</p>
+      <p style="margin:0 0 20px;text-align:center;">${btn(resetUrl, "Reset Password")}</p>`,
+  });
+  return sendEmail({ to, subject: "Reset your TX Localist password", html });
+}
+
+export async function sendNewLikeEmail({ to, recipientName, postTitle, postType, postUrl }) {
+  const safeTitle = escapeHtml(postTitle);
+  const safeName = escapeHtml(recipientName || "there");
+  const safeType = postType === "event" ? "event" : "business listing";
+  const html = emailShell({
+    title: `Someone liked your ${safeType}`,
+    siteUrl: SITE,
+    body: `
+      <h1 style="margin:0 0 12px;font-size:24px;font-weight:800;color:#2D241E;">Your post got some love</h1>
+      <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#4a3a30;">Hi ${safeName}, someone liked your ${safeType}, <strong>${safeTitle}</strong>.</p>
+      <p style="margin:0;text-align:center;">${btn(postUrl, "View Your Post")}</p>`,
+  });
+  return sendEmail({ to, subject: `Someone liked ${postTitle}`, html });
+}
+
 /**
  * Listing published — sent when a business goes ACTIVE.
  */
@@ -221,4 +248,13 @@ function stripHtml(html) {
     .replace(/<[^>]+>/g, " ")
     .replace(/\s{2,}/g, " ")
     .trim();
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
