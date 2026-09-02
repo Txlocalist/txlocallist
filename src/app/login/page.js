@@ -47,12 +47,15 @@ export default async function LoginPage({ searchParams }) {
 
             <div className={styles.authDivider} />
 
-            <p className={styles.authFooter}>Want to create a business listing later?</p>
+            <p className={styles.authFooter}>
+              Want to save your favorites for quick reference? Show some Texas Love to a local
+              favorite? Add an event to the local calendar? Or add your business to the directory?
+            </p>
             <Link
-              href={nextPath ? `/signup?next=${encodeURIComponent(nextPath)}` : "/signup?intent=owner"}
+              href={nextPath ? `/signup?next=${encodeURIComponent(nextPath)}` : "/signup"}
               className={styles.authFooterLink}
             >
-              Create a user account
+              Create a User Account
             </Link>
           </div>
         </aside>
