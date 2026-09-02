@@ -98,11 +98,15 @@ function BusinessCard({ biz, saved, count, saving, onSave, isLoggedIn }) {
 
   return (
     <article className="gem-card card-stack-effect">
-      {biz.image?.url && biz.image.url !== "/placeholder.jpg" && (
+      {biz.image?.url && biz.image.url !== "/placeholder.jpg" ? (
         <Link href={businessHref} className="gem-image-wrapper gem-image-link" aria-label={`View ${biz.name}`}>
           <img src={getBlobImageUrl(biz.image.url)} alt={biz.name}
             style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         </Link>
+      ) : (
+        <div className="gem-image-wrapper gem-image-placeholder" aria-hidden="true">
+          <span className="material-icons">storefront</span>
+        </div>
       )}
       <div className="category-tag">{biz.city?.name ?? biz.city}</div>
       {biz.activeJobCount > 0 && (
@@ -112,9 +116,7 @@ function BusinessCard({ biz, saved, count, saving, onSave, isLoggedIn }) {
         </div>
       )}
       <h4 className="gem-name">{biz.name}</h4>
-      <p className="gem-desc">
-        {biz.description?.slice(0, 120)}{biz.description?.length > 120 ? "..." : ""}
-      </p>
+      <p className="gem-desc">{biz.description || ""}</p>
       <div className="gem-footer">
         <BusinessEngagement
           biz={biz}
