@@ -1,5 +1,14 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import {
+  FaFacebookF,
+  FaInstagram,
+  FaLinkedinIn,
+  FaTiktok,
+  FaXTwitter,
+  FaYoutube,
+} from "react-icons/fa6";
+import { FaLink } from "react-icons/fa";
 
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -54,13 +63,20 @@ export const revalidate = 3600;
 export const dynamicParams = true; // render unknown slugs on-demand, never 404 them early
 
 const SOCIAL_ICONS = {
-  instagram: "photo_camera",
-  facebook:  "thumb_up",
-  twitter:   "tag",
-  tiktok:    "music_note",
-  youtube:   "play_circle",
-  linkedin:  "work",
+  instagram: FaInstagram,
+  facebook: FaFacebookF,
+  twitter: FaXTwitter,
+  x: FaXTwitter,
+  tiktok: FaTiktok,
+  youtube: FaYoutube,
+  linkedin: FaLinkedinIn,
 };
+
+function getSocialLabel(platform) {
+  if (platform?.toLowerCase() === "x") return "X (formerly Twitter)";
+  const value = platform?.trim() || "social profile";
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
 
 function getDomain(url) {
   try { return new URL(url).hostname.replace(/^www\./, ""); }
@@ -356,18 +372,23 @@ export default async function BusinessDetailPage({ params }) {
               {showSocials && business.socialLinks.length > 0 && (
                 <div className={styles.socialRow}>
                   {business.socialLinks.map((link) => (
-                    <a
-                      key={link.id}
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={styles.socialIcon}
-                      title={link.platform}
-                    >
-                      <span className="material-icons" style={{ fontSize: "1.1rem" }}>
-                        {SOCIAL_ICONS[link.platform?.toLowerCase()] ?? "link"}
-                      </span>
-                    </a>
+                    (() => {
+                      const Icon = SOCIAL_ICONS[link.platform?.toLowerCase()] ?? FaLink;
+                      const label = getSocialLabel(link.platform);
+                      return (
+                        <a
+                          key={link.id}
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={styles.socialIcon}
+                          aria-label={`Visit ${business.name} on ${label}`}
+                          title={label}
+                        >
+                          <Icon aria-hidden="true" focusable="false" />
+                        </a>
+                      );
+                    })()
                   ))}
                 </div>
               )}
