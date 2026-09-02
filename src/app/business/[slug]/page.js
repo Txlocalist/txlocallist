@@ -83,7 +83,7 @@ export default async function BusinessDetailPage({ params }) {
 
   const user = await getCurrentUser().catch(() => null);
 
-  const business = await prisma.business.findFirst({
+  const coreBusiness = await prisma.business.findFirst({
     where: {
       slug,
       status: "ACTIVE",
@@ -96,12 +96,31 @@ export default async function BusinessDetailPage({ params }) {
       photos:      { orderBy: { order: "asc" } },
       categories:  { select: { category: { select: { id: true, name: true, slug: true } } } },
       tags:        { select: { tag: { select: { id: true, name: true, slug: true } } } },
-      socialLinks: { orderBy: { order: "asc" } },
-      jobs:        { where: { status: "ACTIVE" }, orderBy: { createdAt: "desc" }, take: 5 },
     },
   });
 
-  if (!business || business.status !== "ACTIVE") notFound();
+  if (!coreBusiness || coreBusiness.status !== "ACTIVE") notFound();
+
+  const [socialLinks, jobs] = await Promise.all([
+    prisma.socialLink.findMany({
+      where: { businessId: coreBusiness.id },
+      orderBy: { order: "asc" },
+    }).catch((error) => {
+      if (!isMissingPrismaTableError(error)) throw error;
+      console.error("[business-detail] SocialLink table is unavailable; hiding social links.");
+      return [];
+    }),
+    prisma.job.findMany({
+      where: { businessId: coreBusiness.id, status: "ACTIVE" },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+    }).catch((error) => {
+      if (!isMissingPrismaTableError(error)) throw error;
+      console.error("[business-detail] Job table is unavailable; hiding jobs.");
+      return [];
+    }),
+  ]);
+  const business = { ...coreBusiness, socialLinks, jobs };
 
   let businessHours = [];
   try {
