@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -35,6 +35,7 @@ export function UserRoleControl({
   email,
   currentRole,
   complimentaryRoleMutationsEnabled = false,
+  activeTransition = null,
 }) {
   const router = useRouter();
   const dialogRef = useRef(null);
@@ -43,7 +44,12 @@ export function UserRoleControl({
   const [preview, setPreview] = useState(null);
   const [acknowledged, setAcknowledged] = useState(false);
   const [message, setMessage] = useState("");
+  const [recoverableTransition, setRecoverableTransition] = useState(activeTransition);
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    setRecoverableTransition(activeTransition);
+  }, [activeTransition]);
 
   function prepareChange() {
     setMessage("");
@@ -84,14 +90,25 @@ export function UserRoleControl({
       });
       if (!result.ok) {
         setMessage(result.error);
+        router.refresh();
         return;
       }
       setSavedRole(preview.toRole);
       setSelectedRole(preview.toRole);
       setMessage(`Role changed to ${ROLE_LABELS[preview.toRole]}.`);
+      setRecoverableTransition(null);
       closeDialog(true);
       router.refresh();
     });
+  }
+
+  function resumeChange() {
+    if (!recoverableTransition) return;
+    setMessage("");
+    setSelectedRole(recoverableTransition.toRole);
+    setPreview(recoverableTransition);
+    setAcknowledged(false);
+    dialogRef.current?.showModal();
   }
 
   const needsBillingAcknowledgement = preview?.toRole === "COMPLIMENTARY";
@@ -123,6 +140,25 @@ export function UserRoleControl({
       >
         {isPending ? "Working..." : "Review"}
       </button>
+      {recoverableTransition ? (
+        <div className={styles.recoveryPanel} role="status">
+          <strong>
+            Role change {recoverableTransition.status.toLowerCase().replaceAll("_", " ")}
+          </strong>
+          <span>
+            {recoverableTransition.errorMessage ||
+              "This saved operation must be completed before billing can change again."}
+          </span>
+          <button
+            type="button"
+            className={styles.recoveryButton}
+            disabled={isPending}
+            onClick={resumeChange}
+          >
+            Resume safely
+          </button>
+        </div>
+      ) : null}
       {message ? (
         <p className={styles.inlineMessage} aria-live="polite">
           {message}
@@ -139,7 +175,11 @@ export function UserRoleControl({
         {preview ? (
           <div className={styles.dialogContent}>
             <div>
-              <p className={styles.dialogEyebrow}>Confirm role change</p>
+              <p className={styles.dialogEyebrow}>
+                {recoverableTransition?.id === preview.id
+                  ? "Resume saved role change"
+                  : "Confirm role change"}
+              </p>
               <h2 id={`role-dialog-title-${userId}`} className={styles.dialogTitle}>
                 {ROLE_LABELS[preview.target.role]} to {ROLE_LABELS[preview.toRole]}
               </h2>
@@ -212,7 +252,11 @@ export function UserRoleControl({
                 disabled={isPending || (needsBillingAcknowledgement && !acknowledged)}
                 onClick={confirmChange}
               >
-                {isPending ? "Applying..." : `Change to ${ROLE_LABELS[preview.toRole]}`}
+                {isPending
+                  ? "Applying..."
+                  : recoverableTransition?.id === preview.id
+                    ? "Resume safely"
+                    : `Change to ${ROLE_LABELS[preview.toRole]}`}
               </button>
             </div>
           </div>

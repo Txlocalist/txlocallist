@@ -110,6 +110,44 @@ export default async function AdminUsersPage({ searchParams }) {
         },
       },
     },
+    ...(isAdmin
+      ? {
+          roleTransitionsAsTarget: {
+            where: {
+              activeTargetKey: { not: null },
+              status: {
+                in: [
+                  "PREVIEWED",
+                  "PROCESSING",
+                  "PARTIAL",
+                  "STRIPE_VERIFIED",
+                  "NEEDS_ATTENTION",
+                ],
+              },
+            },
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: {
+              id: true,
+              fromRole: true,
+              toRole: true,
+              status: true,
+              expiresAt: true,
+              errorMessage: true,
+              subscriptions: {
+                select: {
+                  stripeSubscriptionId: true,
+                  stripeStatus: true,
+                  amountCents: true,
+                  currency: true,
+                  priorCancelAtPeriodEnd: true,
+                  currentPeriodEnd: true,
+                },
+              },
+            },
+          },
+        }
+      : {}),
   };
 
   const [total, users] = await prisma.$transaction([
@@ -195,6 +233,35 @@ export default async function AdminUsersPage({ searchParams }) {
                 hasPaidEventPayment: user.eventPayments.length > 0,
                 includeBillingHealth: isAdmin,
               });
+              const storedTransition = isAdmin
+                ? user.roleTransitionsAsTarget?.[0] ?? null
+                : null;
+              const activeTransition = storedTransition && !(
+                storedTransition.status === "PREVIEWED" &&
+                storedTransition.expiresAt <= new Date()
+              )
+                ? {
+                    id: storedTransition.id,
+                    status: storedTransition.status,
+                    errorMessage: storedTransition.errorMessage,
+                    target: {
+                      id: user.id,
+                      email: user.email,
+                      name: user.name,
+                      role: storedTransition.fromRole,
+                    },
+                    toRole: storedTransition.toRole,
+                    expiresAt: storedTransition.expiresAt.toISOString(),
+                    subscriptions: storedTransition.subscriptions.map((subscription) => ({
+                      id: subscription.stripeSubscriptionId,
+                      status: subscription.stripeStatus,
+                      amountCents: subscription.amountCents,
+                      currency: subscription.currency,
+                      cancelAtPeriodEnd: subscription.priorCancelAtPeriodEnd,
+                      currentPeriodEnd: subscription.currentPeriodEnd?.toISOString() ?? null,
+                    })),
+                  }
+                : null;
 
               return (
                 <tr key={user.id}>
@@ -224,6 +291,7 @@ export default async function AdminUsersPage({ searchParams }) {
                         email={user.email}
                         currentRole={user.role}
                         complimentaryRoleMutationsEnabled={complimentaryRoleMutationsEnabled}
+                        activeTransition={activeTransition}
                       />
                       <UserDeleteControl
                         userId={user.id}

@@ -52,6 +52,8 @@ function getNotice(params) {
       "The Stripe customer portal is unavailable for this account right now. Complete a paid checkout first, then try again.",
     manage_existing_subscription:
       "This account already has a Stripe subscription. Use the manage button instead of starting a second checkout.",
+    billing_change_in_progress:
+      "Billing is temporarily locked while an administrator completes an account access change. No new charge was started; try again after the change finishes.",
     schema_update_required:
       "The latest billing schema has not been applied to the database yet. Run the Prisma schema update, then try again.",
     missing_selection: "Choose a plan before starting checkout.",

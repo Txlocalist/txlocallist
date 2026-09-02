@@ -16,6 +16,11 @@ const mocks = vi.hoisted(() => {
     roleTransitionSubscription: {
       update: vi.fn(),
     },
+    billingMutationFence: {
+      create: vi.fn(),
+      deleteMany: vi.fn(),
+      updateMany: vi.fn(),
+    },
     plan: {
       findMany: vi.fn(),
     },
@@ -28,8 +33,17 @@ const mocks = vi.hoisted(() => {
   return {
     prisma,
     syncEffectiveAccessPlans: vi.fn(),
+    syncSubscriptionFromCheckoutSessionId: vi.fn(),
     stripe: {
+      checkout: {
+        sessions: {
+          list: vi.fn(),
+          expire: vi.fn(),
+          retrieve: vi.fn(),
+        },
+      },
       subscriptions: {
+        list: vi.fn(),
         retrieve: vi.fn(),
         update: vi.fn(),
       },
@@ -45,6 +59,7 @@ vi.mock("@/lib/account-access", () => ({
 }));
 vi.mock("@/lib/billing", () => ({
   syncStripeSubscriptionObject: vi.fn(),
+  syncSubscriptionFromCheckoutSessionId: mocks.syncSubscriptionFromCheckoutSessionId,
 }));
 vi.mock("@/lib/stripe", () => ({
   getStripe: vi.fn(() => mocks.stripe),
@@ -102,16 +117,28 @@ beforeEach(() => {
       subscriptions: [],
     }),
   );
-  mocks.prisma.roleTransitionOperation.update.mockImplementation(({ data }) =>
-    Promise.resolve({ ...operation(), ...data }),
-  );
+  mocks.prisma.roleTransitionOperation.update.mockImplementation(({ where, data }) => {
+    const current = operation({ id: where.id });
+    return Promise.resolve({
+      ...current,
+      ...data,
+      subscriptions: data.subscriptions?.create ?? current.subscriptions,
+    });
+  });
   mocks.prisma.roleTransitionOperation.updateMany.mockResolvedValue({ count: 1 });
   mocks.prisma.roleTransitionSubscription.update.mockResolvedValue({});
+  mocks.prisma.billingMutationFence.create.mockResolvedValue({});
+  mocks.prisma.billingMutationFence.deleteMany.mockResolvedValue({ count: 1 });
+  mocks.prisma.billingMutationFence.updateMany.mockResolvedValue({ count: 1 });
   mocks.prisma.plan.findMany.mockResolvedValue([]);
   mocks.prisma.auditLog.create.mockResolvedValue({});
   mocks.prisma.$transaction.mockImplementation((callback) => callback(mocks.prisma));
   mocks.syncEffectiveAccessPlans.mockResolvedValue(null);
+  mocks.syncSubscriptionFromCheckoutSessionId.mockResolvedValue(true);
   mocks.isStripeConfigured.mockReturnValue(false);
+  mocks.stripe.checkout.sessions.list.mockResolvedValue({ data: [], has_more: false });
+  mocks.stripe.checkout.sessions.expire.mockResolvedValue({ status: "expired" });
+  mocks.stripe.subscriptions.list.mockResolvedValue({ data: [], has_more: false });
 });
 
 afterEach(() => {
@@ -129,6 +156,59 @@ describe("Complimentary role rollout guard", () => {
     ).rejects.toMatchObject({ code: "COMPLIMENTARY_ROLE_MUTATIONS_DISABLED" });
 
     expect(mocks.prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("acquires the durable fence when both rollout switches are enabled", async () => {
+    vi.stubEnv("BILLING_MUTATION_FENCE_ENABLED", "true");
+    vi.stubEnv("COMPLIMENTARY_ROLE_MUTATIONS_ENABLED", "true");
+
+    const preview = await previewRoleTransition({
+      actorId: "admin_1",
+      targetUserId: "user_target",
+      toRole: "COMPLIMENTARY",
+    });
+
+    expect(preview.toRole).toBe("COMPLIMENTARY");
+    expect(mocks.prisma.billingMutationFence.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: "user_target",
+        kind: "COMPLIMENTARY_ROLE",
+      }),
+    });
+    expect(mocks.prisma.billingMutationFence.updateMany).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        userId: "user_target",
+        operationKey: expect.stringMatching(/^complimentary-preview:/),
+      }),
+      data: expect.objectContaining({ operationKey: "complimentary-role:operation_new" }),
+    });
+  });
+
+  it("expires open account Checkout sessions before saving the preview", async () => {
+    vi.stubEnv("BILLING_MUTATION_FENCE_ENABLED", "true");
+    vi.stubEnv("COMPLIMENTARY_ROLE_MUTATIONS_ENABLED", "true");
+    mocks.prisma.user.findUnique.mockResolvedValue(target({ stripeCustomerId: "cus_target" }));
+    mocks.isStripeConfigured.mockReturnValue(true);
+    mocks.stripe.checkout.sessions.list.mockResolvedValue({
+      data: [
+        {
+          id: "cs_open",
+          status: "open",
+          client_reference_id: "user_target",
+          metadata: { scope: "account", ownerId: "user_target" },
+        },
+      ],
+      has_more: false,
+    });
+
+    await previewRoleTransition({
+      actorId: "admin_1",
+      targetUserId: "user_target",
+      toRole: "COMPLIMENTARY",
+    });
+
+    expect(mocks.stripe.checkout.sessions.expire).toHaveBeenCalledWith("cs_open");
+    expect(mocks.prisma.roleTransitionOperation.create).toHaveBeenCalled();
   });
 
   it("allows an Admin to revoke existing Complimentary access", async () => {
@@ -253,5 +333,60 @@ describe("Complimentary role rollout guard", () => {
 
     expect(completed.status).toBe("COMPLETED");
     expect(mocks.stripe.subscriptions.retrieve).toHaveBeenCalled();
+  });
+
+  it("allows a different Admin to resume an operation with Stripe side effects", async () => {
+    mocks.prisma.roleTransitionOperation.findUnique.mockResolvedValue(
+      operation({ actorId: "admin_original", status: "STRIPE_VERIFIED" }),
+    );
+
+    const completed = await confirmRoleTransition({
+      actorId: "admin_recovery",
+      operationId: "operation_1",
+      confirmed: true,
+    });
+
+    expect(completed.status).toBe("COMPLETED");
+    expect(mocks.prisma.user.update).toHaveBeenCalled();
+  });
+
+  it("keeps a side-effecting operation recoverable when subscriptions change", async () => {
+    const linkedTarget = target({ stripeSubscriptionId: "sub_new" });
+    const stripeSubscription = {
+      id: "sub_new",
+      status: "active",
+      cancel_at_period_end: false,
+      current_period_end: 1_800_000_000,
+      metadata: { ownerId: "user_target" },
+      schedule: null,
+      items: { data: [{ price: { id: "price_starter", unit_amount: 1000, currency: "usd" } }] },
+    };
+    mocks.prisma.user.findUnique.mockResolvedValue(linkedTarget);
+    mocks.prisma.plan.findMany.mockResolvedValue([{ stripePriceId: "price_starter" }]);
+    mocks.isStripeConfigured.mockReturnValue(true);
+    mocks.stripe.subscriptions.retrieve.mockResolvedValue(stripeSubscription);
+    mocks.prisma.roleTransitionOperation.findUnique.mockResolvedValue(
+      operation({ status: "PARTIAL", subscriptions: [] }),
+    );
+
+    await expect(
+      confirmRoleTransition({
+        actorId: "admin_recovery",
+        operationId: "operation_1",
+        confirmed: true,
+      }),
+    ).rejects.toMatchObject({ code: "SUBSCRIPTIONS_CHANGED" });
+
+    expect(mocks.prisma.roleTransitionOperation.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: "NEEDS_ATTENTION" }),
+      }),
+    );
+    expect(mocks.prisma.billingMutationFence.deleteMany).not.toHaveBeenCalledWith({
+      where: {
+        userId: "user_target",
+        operationKey: "complimentary-role:operation_1",
+      },
+    });
   });
 });

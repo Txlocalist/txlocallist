@@ -3,6 +3,17 @@ import {
   syncEffectiveAccessPlans,
 } from "@/lib/account-access";
 import {
+  acquireBillingMutationFence,
+  attachStripeSessionToFence,
+  BILLING_MUTATION_KIND,
+  checkoutFenceExpiresAt,
+  MEMBERSHIP_CHECKOUT_SECONDS,
+  newBillingMutationKey,
+  portalFenceExpiresAt,
+  releaseBillingMutationFence,
+  releaseFenceFromStripeSession,
+} from "@/lib/billing-mutation-fence";
+import {
   MEMBERSHIP_PRICE_CATALOG_KEY,
   MEMBERSHIP_PRODUCT_CATALOG_KEY,
   retrieveAndValidateStripePrice,
@@ -192,42 +203,79 @@ export async function createStripeCheckoutSession({ user, plan }) {
     productCatalogKey: MEMBERSHIP_PRODUCT_CATALOG_KEY,
   });
 
-  const customerId = await ensureStripeCustomerForUser(user);
   const stripe = getStripe();
   const siteUrl = getSiteUrl();
+  const operationKey = newBillingMutationKey("subscription-checkout");
+  const checkoutExpiresAt = Math.floor(Date.now() / 1000) + MEMBERSHIP_CHECKOUT_SECONDS;
+  const fenceExpiresAt = checkoutFenceExpiresAt(checkoutExpiresAt);
 
-  const idempotencyWindow = Math.floor(Date.now() / (10 * 60 * 1000));
-
-  return stripe.checkout.sessions.create(
+  await prisma.$transaction((tx) => acquireBillingMutationFence(
     {
-      mode: "subscription",
-      customer: customerId,
-      client_reference_id: user.id,
-      success_url: `${siteUrl}/dashboard/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${siteUrl}/dashboard/billing?checkout=canceled`,
-      line_items: [
-        {
-          price: plan.stripePriceId,
-          quantity: 1,
-        },
-      ],
-      metadata: {
-        ownerId: user.id,
-        planId: plan.id,
-        scope: "account",
-      },
-      subscription_data: {
+      userId: user.id,
+      kind: BILLING_MUTATION_KIND.CHECKOUT,
+      operationKey,
+      expiresAt: fenceExpiresAt,
+    },
+    tx,
+  ));
+
+  let session = null;
+  try {
+    const customerId = await ensureStripeCustomerForUser(user);
+    session = await stripe.checkout.sessions.create(
+      {
+        mode: "subscription",
+        customer: customerId,
+        client_reference_id: user.id,
+        success_url: `${siteUrl}/dashboard/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${siteUrl}/dashboard/billing?checkout=canceled`,
+        expires_at: checkoutExpiresAt,
+        line_items: [
+          {
+            price: plan.stripePriceId,
+            quantity: 1,
+          },
+        ],
         metadata: {
           ownerId: user.id,
           planId: plan.id,
           scope: "account",
+          billingMutationKey: operationKey,
+        },
+        subscription_data: {
+          metadata: {
+            ownerId: user.id,
+            planId: plan.id,
+            scope: "account",
+            billingMutationKey: operationKey,
+          },
         },
       },
-    },
-    {
-      idempotencyKey: `subscription-checkout:${user.id}:${plan.id}:${idempotencyWindow}`,
-    },
-  );
+      { idempotencyKey: operationKey },
+    );
+
+    await attachStripeSessionToFence({
+      userId: user.id,
+      operationKey,
+      stripeSessionId: session.id,
+      expiresAt: checkoutFenceExpiresAt(session.expires_at ?? checkoutExpiresAt),
+    });
+    return session;
+  } catch (error) {
+    if (!session) {
+      await releaseBillingMutationFence({ userId: user.id, operationKey })
+        .catch(() => null);
+    } else {
+      const expired = await stripe.checkout.sessions.expire(session.id)
+        .then(() => true)
+        .catch(() => false);
+      if (expired) {
+        await releaseBillingMutationFence({ userId: user.id, operationKey })
+          .catch(() => null);
+      }
+    }
+    throw error;
+  }
 }
 
 export async function createStripePortalSession({ user }) {
@@ -264,13 +312,31 @@ export async function createStripePortalSession({ user }) {
     throw new Error("No Stripe customer exists for this account yet.");
   }
 
-  await syncUserStripeCustomer(customerId, user.id);
+  const operationKey = newBillingMutationKey("billing-portal");
+  await prisma.$transaction((tx) => acquireBillingMutationFence(
+    {
+      userId: user.id,
+      kind: BILLING_MUTATION_KIND.PORTAL,
+      operationKey,
+      expiresAt: portalFenceExpiresAt(),
+    },
+    tx,
+  ));
 
-  const stripe = getStripe();
-  return stripe.billingPortal.sessions.create({
-    customer: customerId,
-    return_url: `${getSiteUrl()}${getBillingPath({ portal: "returned" })}`,
-  });
+  try {
+    await syncUserStripeCustomer(customerId, user.id);
+    return await getStripe().billingPortal.sessions.create({
+      customer: customerId,
+      return_url: `${getSiteUrl()}${getBillingPath({ portal: "returned" })}`,
+    });
+  } finally {
+    // Portal sessions can only mutate existing subscriptions. Holding the fence
+    // through session creation prevents a new portal from opening during a role
+    // transition; subscription webhooks enforce cancellation for any later
+    // portal change after Complimentary access becomes active.
+    await releaseBillingMutationFence({ userId: user.id, operationKey })
+      .catch(() => null);
+  }
 }
 
 export async function findPlanForStripeSubscription(stripeSubscription, stripePriceId) {
@@ -544,17 +610,30 @@ export async function syncSubscriptionFromCheckoutSessionId(sessionId, expectedO
     return false;
   }
 
-  if (typeof session.subscription === "string") {
-    return syncSubscriptionFromStripeSubscriptionId(session.subscription);
-  }
+  const synced = typeof session.subscription === "string"
+    ? await syncSubscriptionFromStripeSubscriptionId(session.subscription)
+    : await upsertSubscriptionFromStripeSubscription(session.subscription);
 
-  return upsertSubscriptionFromStripeSubscription(session.subscription);
+  if (synced) await releaseFenceFromStripeSession(session);
+  return synced;
 }
 
 export async function handleStripeSubscriptionWebhook(stripeSubscription, eventId = "webhook") {
-  return syncSubscriptionFromStripeSubscriptionId(stripeSubscription.id, {
+  const synced = await syncSubscriptionFromStripeSubscriptionId(stripeSubscription.id, {
     enforcementKey: eventId,
   });
+  if (synced && stripeSubscription.metadata?.ownerId && stripeSubscription.metadata?.billingMutationKey) {
+    await releaseBillingMutationFence({
+      userId: stripeSubscription.metadata.ownerId,
+      operationKey: stripeSubscription.metadata.billingMutationKey,
+    });
+  }
+  return synced;
+}
+
+export async function releaseAccountCheckoutFence(session) {
+  if (session?.metadata?.scope !== "account") return false;
+  return releaseFenceFromStripeSession(session);
 }
 
 export async function reconcileStripeSubscriptions({ limit = 100 } = {}) {

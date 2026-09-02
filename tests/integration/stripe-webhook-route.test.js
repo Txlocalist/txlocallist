@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 const handlers = vi.hoisted(() => ({
   handleStripeSubscriptionWebhook: vi.fn(),
+  releaseAccountCheckoutFence: vi.fn(),
   syncSubscriptionFromCheckoutSessionId: vi.fn(),
   handleEventChargeDispute: vi.fn(),
   handleEventChargeDisputeClosed: vi.fn(),
@@ -16,6 +17,7 @@ const handlers = vi.hoisted(() => ({
 
 vi.mock("@/lib/billing", () => ({
   handleStripeSubscriptionWebhook: handlers.handleStripeSubscriptionWebhook,
+  releaseAccountCheckoutFence: handlers.releaseAccountCheckoutFence,
   syncSubscriptionFromCheckoutSessionId:
     handlers.syncSubscriptionFromCheckoutSessionId,
 }));
@@ -149,6 +151,20 @@ describe("POST /api/stripe/webhook", () => {
       .toHaveBeenCalledWith("cs_test_account");
     expect(handlers.handleStripeSubscriptionWebhook)
       .toHaveBeenCalledWith(subscriptionEvent.data.object, subscriptionEvent.id);
+  });
+
+  test.each([
+    "checkout.session.async_payment_failed",
+    "checkout.session.expired",
+  ])("releases an account billing fence for %s", async (type) => {
+    const session = {
+      id: `cs_${type.replaceAll(".", "_")}`,
+      metadata: { scope: "account" },
+    };
+
+    await POST(requestFor(stripeEvent(type, session)));
+
+    expect(handlers.releaseAccountCheckoutFence).toHaveBeenCalledWith(session);
   });
 
   test("returns a retryable conflict while another delivery owns the lease", async () => {

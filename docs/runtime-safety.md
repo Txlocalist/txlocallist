@@ -19,20 +19,19 @@ The public `/api/health` endpoint is liveness-only. It returns a status and rele
 Two controls are enforced at their action points:
 
 - Event posting remains off in production. In a non-production environment it also requires matching database classification, Stripe test keys, a signed-webhook secret, and an event Price ID.
-- New Complimentary grants remain unavailable until the billing mutation fence is implemented in code. Revocation and recovery of possibly side-effecting operations remain available.
+- New Complimentary grants require both the durable billing mutation fence and the Complimentary rollout switch. Revocation and recovery of possibly side-effecting operations remain available when new grants are paused.
 
 The remaining names are reserved for later phases and currently have no runtime consumer. Configuration validation requires them to remain at their safe defaults; they must not be treated as implemented controls:
 
 - `SUBSCRIPTION_INVOICE_EVENTS_ENABLED=false`
 - `PAST_DUE_ACCESS_ENABLED=false`
 - `EVENT_PAYMENT_RECONCILIATION_MODE=off`
-- `BILLING_MUTATION_FENCE_ENABLED=false`
 - All v2 upload/read switches remain `false`.
 - `RESUME_RETENTION_DELETE_ENABLED=false`
 
 `RATE_LIMIT_MODE` and `CSP_MODE` are also reserved; enforcement is rejected until those implementations land. `LEGACY_BLOB_PROXY_ENABLED` must remain `true` because the legacy path is still active.
 
-`COMPLIMENTARY_ROLE_MUTATIONS_ENABLED` must remain `false` in this release. The code-level readiness lock still blocks new grants if it is mistakenly set to `true`. Administrators can revoke existing Complimentary access, and any confirmed operation that could have reached Stripe remains retryable by its initiating Admin even after its preview deadline. Enable new grants only after the billing-concurrency phases and sandbox recovery tests are complete.
+`BILLING_MUTATION_FENCE_ENABLED` may be enabled independently to activate account-level serialization without allowing new Complimentary grants. `COMPLIMENTARY_ROLE_MUTATIONS_ENABLED=true` is accepted only when that fence is also enabled. Administrators can revoke existing Complimentary access regardless of the grant switch, and any operation that could have reached Stripe remains visible and retryable by an Admin after a reload.
 
 ## Release discipline
 
@@ -41,6 +40,15 @@ The remaining names are reserved for later phases and currently have no runtime 
 3. Enable one behavior for named internal accounts where supported.
 4. Observe its phase-specific acceptance window.
 5. Roll back behavior by disabling its enforced control and shipping a forward fix. This guardrail release is the rollback floor: reverting below it would remove enforcement and can re-enable an unsafe legacy path.
+
+For the first Complimentary-role production release, ordering is mandatory:
+
+1. Deploy the code with both `BILLING_MUTATION_FENCE_ENABLED=false` and `COMPLIMENTARY_ROLE_MUTATIONS_ENABLED=false`.
+2. Apply the `20260901000000_billing_mutation_fence` migration to the production database with the direct/unpooled connection.
+3. Set only `BILLING_MUTATION_FENCE_ENABLED=true`, redeploy, and verify account Checkout, billing-portal creation, the Stripe webhook, and Admin User Management load successfully.
+4. Set `COMPLIMENTARY_ROLE_MUTATIONS_ENABLED=true` and redeploy. Disable only this switch to pause new grants without disabling recovery.
+
+Do not enable the fence before its table exists. Vercel's current build runs `prisma generate` but does not run `prisma migrate deploy` automatically.
 
 The initial CI dependency audit is informational because the repository already contains known findings. Dependency upgrades and a zero-high-vulnerability gate belong to their own reviewed release.
 

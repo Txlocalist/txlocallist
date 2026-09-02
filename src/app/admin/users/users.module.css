@@ -158,6 +158,42 @@
   margin: 0;
 }
 
+.recoveryPanel {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0.35rem;
+  border: 1px solid rgba(190, 124, 11, 0.3);
+  border-left: 4px solid #a86b00;
+  border-radius: var(--radius-md);
+  background: rgba(190, 124, 11, 0.08);
+  color: var(--retro-brown);
+  padding: 0.7rem;
+}
+
+.recoveryPanel span {
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.recoveryButton {
+  justify-self: start;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: #8a5900;
+  color: white;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.5rem 0.7rem;
+}
+
+.recoveryButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .roleDialog {
   position: fixed;
   inset: 0;

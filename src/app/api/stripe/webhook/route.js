@@ -1,5 +1,6 @@
 import {
   handleStripeSubscriptionWebhook,
+  releaseAccountCheckoutFence,
   syncSubscriptionFromCheckoutSessionId,
 } from "@/lib/billing";
 import {
@@ -110,12 +111,16 @@ export async function POST(request) {
         case "checkout.session.async_payment_failed":
           if (object.metadata?.scope === "event_post") {
             await handleEventCheckoutSessionFailure(object, "failed");
+          } else if (object.metadata?.scope === "account") {
+            await releaseAccountCheckoutFence(object);
           }
           break;
 
         case "checkout.session.expired":
           if (object.metadata?.scope === "event_post") {
             await handleEventCheckoutSessionFailure(object, "expired");
+          } else if (object.metadata?.scope === "account") {
+            await releaseAccountCheckoutFence(object);
           }
           break;
 

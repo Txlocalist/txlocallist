@@ -15,7 +15,6 @@ const BOOLEAN_FLAGS = Object.freeze({
 const RESERVED_BOOLEAN_DEFAULTS = Object.freeze({
   SUBSCRIPTION_INVOICE_EVENTS_ENABLED: false,
   PAST_DUE_ACCESS_ENABLED: false,
-  BILLING_MUTATION_FENCE_ENABLED: false,
   BUSINESS_PHOTO_UPLOAD_V2_ENABLED: false,
   EVENT_IMAGE_UPLOAD_V2_ENABLED: false,
   RESUME_UPLOAD_V2_ENABLED: false,
@@ -25,7 +24,7 @@ const RESERVED_BOOLEAN_DEFAULTS = Object.freeze({
 });
 
 const IMPLEMENTED_CAPABILITIES = Object.freeze({
-  billingMutationFence: false,
+  billingMutationFence: true,
   productionEventPosting: false,
 });
 
@@ -189,6 +188,13 @@ export function isComplimentaryRoleMutationsEnabled(env = process.env) {
     IMPLEMENTED_CAPABILITIES.billingMutationFence &&
     flags.billingMutationFenceEnabled &&
     flags.complimentaryRoleMutationsEnabled
+  );
+}
+
+export function isBillingMutationFenceEnabled(env = process.env) {
+  return (
+    IMPLEMENTED_CAPABILITIES.billingMutationFence &&
+    getRuntimeFeatureFlags(env).billingMutationFenceEnabled
   );
 }
 
@@ -418,10 +424,13 @@ export function validateRuntimeConfiguration(
       "Rate limiting and CSP cannot be enforced until their runtime implementations land.",
     );
   }
-  if (flags.complimentaryRoleMutationsEnabled) {
+  if (
+    flags.complimentaryRoleMutationsEnabled &&
+    !isBillingMutationFenceEnabled(env)
+  ) {
     addIssue(
-      "COMPLIMENTARY_ROLE_NOT_READY",
-      "COMPLIMENTARY_ROLE_MUTATIONS_ENABLED must remain false until the billing mutation fence is implemented.",
+      "COMPLIMENTARY_ROLE_REQUIRES_BILLING_FENCE",
+      "COMPLIMENTARY_ROLE_MUTATIONS_ENABLED requires BILLING_MUTATION_FENCE_ENABLED=true.",
     );
   }
   if (flags.eventPostingEnabled) {

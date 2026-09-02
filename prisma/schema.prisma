@@ -37,6 +37,12 @@ enum RoleTransitionSubscriptionResult {
   AMBIGUOUS
 }
 
+enum BillingMutationKind {
+  SUBSCRIPTION_CHECKOUT
+  BILLING_PORTAL
+  COMPLIMENTARY_ROLE
+}
+
 enum BusinessStatus {
   DRAFT // Not yet published
   PENDING // Submitted and waiting for admin approval
@@ -130,6 +136,7 @@ model User {
 
   roleTransitionsAsActor  RoleTransitionOperation[] @relation("RoleTransitionActor")
   roleTransitionsAsTarget RoleTransitionOperation[] @relation("RoleTransitionTarget")
+  billingMutationFence    BillingMutationFence?
 
   // Events created by this user
   events                    Event[]
@@ -573,6 +580,19 @@ model RoleTransitionSubscription {
   @@unique([operationId, stripeSubscriptionId])
   @@index([stripeSubscriptionId])
   @@index([result])
+}
+
+model BillingMutationFence {
+  userId          String              @id
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind            BillingMutationKind
+  operationKey    String              @unique
+  stripeSessionId String?             @unique
+  expiresAt       DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([expiresAt])
 }
 
 // =============================================================================

@@ -1,5 +1,17 @@
 import { ACCOUNT_ROLES, syncEffectiveAccessPlans } from "@/lib/account-access";
-import { syncStripeSubscriptionObject } from "@/lib/billing";
+import {
+  syncStripeSubscriptionObject,
+  syncSubscriptionFromCheckoutSessionId,
+} from "@/lib/billing";
+import {
+  acquireBillingMutationFence,
+  BILLING_MUTATION_KIND,
+  claimRoleTransitionFence,
+  newBillingMutationKey,
+  releaseBillingMutationFence,
+  roleTransitionFenceKey,
+  transferBillingMutationFence,
+} from "@/lib/billing-mutation-fence";
 import { prisma } from "@/lib/prisma";
 import { assertComplimentaryRoleMutationEnabled } from "@/lib/runtime-config.mjs";
 import { getStripe, isStripeConfigured } from "@/lib/stripe";
@@ -132,16 +144,86 @@ async function loadTransitionTarget(targetUserId) {
   });
 }
 
+function stripeCustomerIdsForTarget(target) {
+  const customerIds = new Set();
+  if (target.stripeCustomerId) customerIds.add(target.stripeCustomerId);
+  for (const business of target.ownedBusinesses) {
+    if (business.subscription?.stripeCustomerId) {
+      customerIds.add(business.subscription.stripeCustomerId);
+    }
+  }
+  return customerIds;
+}
+
+async function expireOpenAccountCheckoutSessions(target) {
+  const customerIds = stripeCustomerIdsForTarget(target);
+  if (customerIds.size === 0) return [];
+  if (!isStripeConfigured()) {
+    throw Object.assign(
+      new Error("Stripe must be available before Complimentary access can replace billing."),
+      { code: "STRIPE_UNAVAILABLE" },
+    );
+  }
+
+  const stripe = getStripe();
+  const expiredSessionIds = [];
+  for (const customerId of customerIds) {
+    const sessions = await stripe.checkout.sessions.list({
+      customer: customerId,
+      status: "open",
+      limit: 100,
+    });
+    if (sessions.has_more) {
+      throw Object.assign(
+        new Error("Stripe returned too many open Checkout sessions for automatic review."),
+        { code: "CHECKOUT_REVIEW_REQUIRED" },
+      );
+    }
+
+    for (const session of sessions.data) {
+      if (session.metadata?.scope !== "account") continue;
+      const ownerId = session.metadata?.ownerId || session.client_reference_id;
+      if (ownerId && ownerId !== target.id) {
+        throw Object.assign(
+          new Error("A Stripe Checkout session belongs to another account."),
+          { code: "STRIPE_OWNERSHIP_MISMATCH" },
+        );
+      }
+      if (!ownerId) continue;
+
+      try {
+        await stripe.checkout.sessions.expire(session.id);
+        expiredSessionIds.push(session.id);
+      } catch (error) {
+        const current = await stripe.checkout.sessions.retrieve(session.id, {
+          expand: ["subscription"],
+        });
+        if (current.status === "expired") {
+          expiredSessionIds.push(session.id);
+          continue;
+        }
+        if (current.status === "complete" || current.payment_status === "paid") {
+          await syncSubscriptionFromCheckoutSessionId(current.id, target.id);
+          continue;
+        }
+        throw Object.assign(
+          new Error("An account Checkout is still processing. Wait for Stripe to finish, then review the role change again."),
+          { code: "CHECKOUT_IN_PROGRESS", cause: error },
+        );
+      }
+    }
+  }
+  return expiredSessionIds;
+}
+
 async function discoverStripeSubscriptions(target) {
   const localSources = new Map();
-  const customerIds = new Set();
+  const customerIds = stripeCustomerIdsForTarget(target);
   const ownedBusinessIds = new Set(target.ownedBusinesses.map((business) => business.id));
 
   if (target.stripeSubscriptionId) {
     localSources.set(target.stripeSubscriptionId, new Set(["ACCOUNT"]));
   }
-  if (target.stripeCustomerId) customerIds.add(target.stripeCustomerId);
-
   for (const business of target.ownedBusinesses) {
     const subscription = business.subscription;
     if (subscription?.stripeSubscriptionId) {
@@ -149,7 +231,6 @@ async function discoverStripeSubscriptions(target) {
       sources.add("LEGACY");
       localSources.set(subscription.stripeSubscriptionId, sources);
     }
-    if (subscription?.stripeCustomerId) customerIds.add(subscription.stripeCustomerId);
   }
 
   if (localSources.size === 0 && customerIds.size === 0) return [];
@@ -257,95 +338,144 @@ export async function previewRoleTransition({ actorId, targetUserId, toRole }) {
     fromRole: target.role,
     toRole,
   });
-  const subscriptions = roleTransitionRequiresCancellation(toRole)
-    ? await discoverStripeSubscriptions(target)
-    : [];
+  const requiresCancellation = roleTransitionRequiresCancellation(toRole);
   const expiresAt = new Date(Date.now() + PREVIEW_TTL_MS);
+  const preparationKey = requiresCancellation
+    ? newBillingMutationKey("complimentary-preview")
+    : null;
+  let subscriptions = [];
+  let expiredCheckoutSessionIds = [];
 
-  const operation = await prisma.$transaction(async (tx) => {
-    const activeOperation = await tx.roleTransitionOperation.findUnique({
-      where: { activeTargetKey: target.id },
-      select: { id: true, status: true },
-    });
-    if (
-      activeOperation &&
-      ["PROCESSING", "PARTIAL", "STRIPE_VERIFIED", "NEEDS_ATTENTION"].includes(
-        activeOperation.status,
-      )
-    ) {
-      throw Object.assign(
-        new Error("This account already has a role change that must be finished or reviewed."),
-        { code: "ROLE_TRANSITION_IN_PROGRESS" },
-      );
-    }
-    if (activeOperation) {
-      await tx.roleTransitionOperation.update({
-        where: { id: activeOperation.id },
-        data: { status: "EXPIRED", activeTargetKey: null },
-      });
-    }
-
-    const created = await tx.roleTransitionOperation.create({
-      data: {
-        actorId,
-        targetUserId: target.id,
-        fromRole: target.role,
-        toRole,
-        targetRoleVersion: target.roleVersion,
-        activeTargetKey: target.id,
-        expiresAt,
-        subscriptions: {
-          create: subscriptions.map((subscription) => ({
-            stripeSubscriptionId: subscription.stripeSubscriptionId,
-            sources: JSON.stringify(subscription.sources),
-            stripeStatus: subscription.stripeStatus,
-            amountCents: subscription.amountCents,
-            currency: subscription.currency,
-            priorCancelAtPeriodEnd: subscription.priorCancelAtPeriodEnd,
-            currentPeriodEnd: subscription.currentPeriodEnd,
-            result: subscription.result,
-          })),
+  try {
+    if (requiresCancellation) {
+      await prisma.$transaction((tx) => acquireBillingMutationFence(
+        {
+          userId: target.id,
+          kind: BILLING_MUTATION_KIND.COMPLIMENTARY_ROLE,
+          operationKey: preparationKey,
+          expiresAt,
         },
-      },
-      include: { subscriptions: true },
-    });
+        tx,
+      ));
+      expiredCheckoutSessionIds = await expireOpenAccountCheckoutSessions(target);
+      subscriptions = await discoverStripeSubscriptions(target);
+    }
 
-    await writeAudit(
-      {
-        actorId,
-        action: "ROLE_TRANSITION_PREVIEWED",
-        targetUserId: target.id,
-        meta: {
-          operationId: created.id,
+    const operation = await prisma.$transaction(async (tx) => {
+      const activeOperation = await tx.roleTransitionOperation.findUnique({
+        where: { activeTargetKey: target.id },
+        select: { id: true, status: true, toRole: true },
+      });
+      if (
+        activeOperation &&
+        ["PROCESSING", "PARTIAL", "STRIPE_VERIFIED", "NEEDS_ATTENTION"].includes(
+          activeOperation.status,
+        )
+      ) {
+        throw Object.assign(
+          new Error("This account already has a role change that must be finished or reviewed."),
+          { code: "ROLE_TRANSITION_IN_PROGRESS" },
+        );
+      }
+      if (activeOperation) {
+        await tx.roleTransitionOperation.update({
+          where: { id: activeOperation.id },
+          data: { status: "EXPIRED", activeTargetKey: null },
+        });
+        if (roleTransitionRequiresCancellation(activeOperation.toRole)) {
+          await releaseBillingMutationFence(
+            {
+              userId: target.id,
+              operationKey: roleTransitionFenceKey(activeOperation.id),
+            },
+            tx,
+          );
+        }
+      }
+
+      const created = await tx.roleTransitionOperation.create({
+        data: {
+          actorId,
+          targetUserId: target.id,
           fromRole: target.role,
           toRole,
-          stripeSubscriptionIds: subscriptions.map((item) => item.stripeSubscriptionId),
+          targetRoleVersion: target.roleVersion,
+          activeTargetKey: target.id,
+          expiresAt,
+          subscriptions: {
+            create: subscriptions.map((subscription) => ({
+              stripeSubscriptionId: subscription.stripeSubscriptionId,
+              sources: JSON.stringify(subscription.sources),
+              stripeStatus: subscription.stripeStatus,
+              amountCents: subscription.amountCents,
+              currency: subscription.currency,
+              priorCancelAtPeriodEnd: subscription.priorCancelAtPeriodEnd,
+              currentPeriodEnd: subscription.currentPeriodEnd,
+              result: subscription.result,
+            })),
+          },
         },
-      },
-      tx,
-    );
-    return created;
-  });
+        include: { subscriptions: true },
+      });
 
-  return {
-    id: operation.id,
-    target: {
-      id: target.id,
-      email: target.email,
-      name: target.name,
-      role: target.role,
-    },
-    toRole,
-    expiresAt: expiresAt.toISOString(),
-    subscriptions: operation.subscriptions.map((subscription) => ({
-      id: subscription.stripeSubscriptionId,
-      status: subscription.stripeStatus,
-      amountCents: subscription.amountCents,
-      currency: subscription.currency,
-      cancelAtPeriodEnd: subscription.priorCancelAtPeriodEnd,
-      currentPeriodEnd: subscription.currentPeriodEnd?.toISOString() ?? null,
-    })),
-  };
+      if (requiresCancellation) {
+        await transferBillingMutationFence(
+          {
+            userId: target.id,
+            fromOperationKey: preparationKey,
+            toOperationKey: roleTransitionFenceKey(created.id),
+            expiresAt,
+          },
+          tx,
+        );
+      }
+
+      await writeAudit(
+        {
+          actorId,
+          action: "ROLE_TRANSITION_PREVIEWED",
+          targetUserId: target.id,
+          meta: {
+            operationId: created.id,
+            fromRole: target.role,
+            toRole,
+            stripeSubscriptionIds: subscriptions.map((item) => item.stripeSubscriptionId),
+            expiredCheckoutSessionIds,
+          },
+        },
+        tx,
+      );
+      return created;
+    });
+
+    return {
+      id: operation.id,
+      target: {
+        id: target.id,
+        email: target.email,
+        name: target.name,
+        role: target.role,
+      },
+      toRole,
+      expiresAt: expiresAt.toISOString(),
+      subscriptions: operation.subscriptions.map((subscription) => ({
+        id: subscription.stripeSubscriptionId,
+        status: subscription.stripeStatus,
+        amountCents: subscription.amountCents,
+        currency: subscription.currency,
+        cancelAtPeriodEnd: subscription.priorCancelAtPeriodEnd,
+        currentPeriodEnd: subscription.currentPeriodEnd?.toISOString() ?? null,
+      })),
+    };
+  } catch (error) {
+    if (preparationKey) {
+      await releaseBillingMutationFence({
+        userId: target.id,
+        operationKey: preparationKey,
+      }).catch(() => null);
+    }
+    throw error;
+  }
 }
 
 async function failOperation(operation, status, error) {
@@ -367,6 +497,12 @@ async function failOperation(operation, status, error) {
       meta: { operationId: operation.id, status, ...clean },
     }).catch(() => null);
   }
+  if (status === "EXPIRED" && roleTransitionRequiresCancellation(operation.toRole)) {
+    await releaseBillingMutationFence({
+      userId: operation.targetUserId,
+      operationKey: roleTransitionFenceKey(operation.id),
+    }).catch(() => null);
+  }
   throw error;
 }
 
@@ -377,7 +513,7 @@ export async function confirmRoleTransition({ actorId, operationId, confirmed })
     where: { id: operationId },
     include: { subscriptions: true },
   });
-  if (!operation || operation.actorId !== actorId) {
+  if (!operation) {
     throw Object.assign(new Error("Role-change preview not found."), { code: "PREVIEW_NOT_FOUND" });
   }
   if (operation.status === "COMPLETED") return operation;
@@ -409,10 +545,39 @@ export async function confirmRoleTransition({ actorId, operationId, confirmed })
     }
     await assertRoleTransitionAllowed({ actorId, target, toRole: operation.toRole });
   } catch (error) {
-    return failOperation(operation, "EXPIRED", error);
+    return failOperation(
+      operation,
+      mayHaveStripeSideEffects ? "NEEDS_ATTENTION" : "EXPIRED",
+      error,
+    );
   }
   if (target.role !== operation.fromRole || target.roleVersion !== operation.targetRoleVersion) {
-    return failOperation(operation, "EXPIRED", Object.assign(new Error("The account role changed. Review the request again."), { code: "STALE_ROLE_VERSION" }));
+    return failOperation(
+      operation,
+      mayHaveStripeSideEffects ? "NEEDS_ATTENTION" : "EXPIRED",
+      Object.assign(new Error("The account role changed. Review the request again."), {
+        code: "STALE_ROLE_VERSION",
+      }),
+    );
+  }
+
+  if (roleTransitionRequiresCancellation(operation.toRole)) {
+    try {
+      await prisma.$transaction((tx) => claimRoleTransitionFence(
+        {
+          userId: operation.targetUserId,
+          operationId: operation.id,
+          expiresAt: null,
+        },
+        tx,
+      ));
+    } catch (error) {
+      return failOperation(
+        operation,
+        mayHaveStripeSideEffects ? "NEEDS_ATTENTION" : "EXPIRED",
+        error,
+      );
+    }
   }
 
   if (roleTransitionRequiresCancellation(operation.toRole) && operation.status !== "STRIPE_VERIFIED") {
@@ -425,7 +590,13 @@ export async function confirmRoleTransition({ actorId, operationId, confirmed })
     const previewIds = operation.subscriptions.map((item) => item.stripeSubscriptionId).sort();
     const currentIds = currentSubscriptions.map((item) => item.stripeSubscriptionId).sort();
     if (JSON.stringify(previewIds) !== JSON.stringify(currentIds)) {
-      return failOperation(operation, "EXPIRED", Object.assign(new Error("Subscriptions changed. Review the role change again."), { code: "SUBSCRIPTIONS_CHANGED" }));
+      return failOperation(
+        operation,
+        mayHaveStripeSideEffects ? "NEEDS_ATTENTION" : "EXPIRED",
+        Object.assign(new Error("Subscriptions changed. Review the role change again."), {
+          code: "SUBSCRIPTIONS_CHANGED",
+        }),
+      );
     }
 
     await prisma.roleTransitionOperation.update({
@@ -547,6 +718,15 @@ export async function confirmRoleTransition({ actorId, operationId, confirmed })
             errorMessage: null,
           },
         });
+        if (roleTransitionRequiresCancellation(operation.toRole)) {
+          await releaseBillingMutationFence(
+            {
+              userId: operation.targetUserId,
+              operationKey: roleTransitionFenceKey(operation.id),
+            },
+            tx,
+          );
+        }
         await writeAudit(
           {
             actorId,

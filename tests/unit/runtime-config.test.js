@@ -48,7 +48,7 @@ describe("runtime feature flags", () => {
     ]);
   });
 
-  it("blocks new Complimentary grants even if reserved flags are turned on", () => {
+  it("requires both rollout flags before allowing a new Complimentary grant", () => {
     expect(() =>
       assertComplimentaryRoleMutationEnabled(
         { fromRole: "USER", toRole: "COMPLIMENTARY" },
@@ -71,13 +71,20 @@ describe("runtime feature flags", () => {
           COMPLIMENTARY_ROLE_MUTATIONS_ENABLED: "true",
         },
       )
-    ).toThrow(/temporarily disabled/i);
+    ).not.toThrow();
     expect(
       isComplimentaryRoleMutationsEnabled({
         BILLING_MUTATION_FENCE_ENABLED: "true",
         COMPLIMENTARY_ROLE_MUTATIONS_ENABLED: "true",
       }),
-    ).toBe(false);
+    ).toBe(true);
+
+    expect(() =>
+      assertComplimentaryRoleMutationEnabled(
+        { fromRole: "USER", toRole: "COMPLIMENTARY" },
+        { COMPLIMENTARY_ROLE_MUTATIONS_ENABLED: "true" },
+      )
+    ).toThrow(/temporarily disabled/i);
   });
 
   it("enables event posting only in a fully isolated non-production environment", () => {
@@ -145,6 +152,8 @@ describe("runtime environment safety", () => {
         STRIPE_WEBHOOK_SECRET: "whsec_example",
         STRIPE_PRICE_STARTER: "price_starter",
         BLOB_READ_WRITE_TOKEN: "blob-token",
+        BILLING_MUTATION_FENCE_ENABLED: "true",
+        COMPLIMENTARY_ROLE_MUTATIONS_ENABLED: "true",
       },
       { environment: "production" },
     );
@@ -231,7 +240,7 @@ describe("runtime environment safety", () => {
     );
   });
 
-  it("rejects reserved rollout switches before their implementation phase", () => {
+  it("allows the implemented billing fence while rejecting unfinished switches", () => {
     const result = validateRuntimeConfiguration(
       {
         ...TEST_DATABASE_ENV,
@@ -248,6 +257,20 @@ describe("runtime environment safety", () => {
         "RESERVED_ROLLOUT_SWITCH",
         "RESERVED_RECONCILIATION_MODE",
       ]),
+    );
+  });
+
+  it("rejects Complimentary grants when the billing fence is disabled", () => {
+    const result = validateRuntimeConfiguration(
+      {
+        ...TEST_DATABASE_ENV,
+        COMPLIMENTARY_ROLE_MUTATIONS_ENABLED: "true",
+      },
+      { environment: "test" },
+    );
+
+    expect(result.issues.map((issue) => issue.code)).toContain(
+      "COMPLIMENTARY_ROLE_REQUIRES_BILLING_FENCE",
     );
   });
 });

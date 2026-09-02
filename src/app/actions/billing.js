@@ -94,6 +94,9 @@ export async function createCheckoutSessionAction(formData) {
       throw error;
     }
 
+    if (error?.code === "BILLING_MUTATION_IN_PROGRESS") {
+      redirectToBilling({ error: "billing_change_in_progress" });
+    }
     console.error("[billing] checkout session failed:", error);
     redirectToBilling({ error: "checkout_unavailable" });
   }
@@ -144,6 +147,9 @@ export async function createBillingPortalSessionAction(formData) {
       throw error;
     }
 
+    if (error?.code === "BILLING_MUTATION_IN_PROGRESS") {
+      redirectToBilling({ error: "billing_change_in_progress" });
+    }
     console.error("[billing] portal session failed:", error);
     redirectToBilling({ error: "portal_unavailable" });
   }
