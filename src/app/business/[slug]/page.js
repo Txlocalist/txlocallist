@@ -426,7 +426,7 @@ export default async function BusinessDetailPage({ params }) {
         )}
 
         {/* LOCATION */}
-        <section className={styles.locationSection}>
+        {business.address ? <section className={styles.locationSection}>
           <div className={styles.locationCard}>
 
             <div className={styles.locationInfo}>
@@ -465,17 +465,8 @@ export default async function BusinessDetailPage({ params }) {
               </a>
             </div>
 
-            <div className={styles.locationMapWrap}>
-              <div className={styles.mapPinWrap}>
-                <div className={styles.mapPingRing} />
-                <div className={styles.mapPin}>
-                  <span className="material-icons" style={{ fontSize: "1.75rem" }}>storefront</span>
-                </div>
-              </div>
-            </div>
-
           </div>
-        </section>
+        </section> : null}
 
         {/* ── JOBS ── */}
         {features.JOB_POSTINGS > 0 && business.jobs.length > 0 && (
