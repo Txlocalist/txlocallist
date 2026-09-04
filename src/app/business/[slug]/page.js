@@ -32,26 +32,10 @@ export async function generateMetadata({ params }) {
   };
 }
 
-export async function generateStaticParams() {
-  try {
-    const businesses = await prisma.business.findMany({
-      where: {
-        status: "ACTIVE",
-        publishedAt: { not: null },
-        owner: { deletedAt: null },
-      },
-      select: { slug: true },
-      take: 100,
-      orderBy: { publishedAt: "desc" },
-    });
-    return businesses.map((b) => ({ slug: b.slug }));
-  } catch {
-    return [];
-  }
-}
-
-export const revalidate = 3600;
-export const dynamicParams = true; // render unknown slugs on-demand, never 404 them early
+// This page renders request-specific save and like state from the session cookie.
+// Keep the route dynamic so new slugs and ISR revalidation never switch a static
+// render to a cookie-backed dynamic render at runtime.
+export const dynamic = "force-dynamic";
 
 const SOCIAL_ICONS = {
   instagram: "photo_camera",
