@@ -244,7 +244,9 @@ export async function adminDeleteEventAction(formData) {
   await requireAdmin();
   const id = formData.get("id")?.toString();
   if (!id) return;
-  await cancelEventPosting(id, "ADMIN");
+  const event = await prisma.event.findUnique({ where: { id }, select: { payments: { select: { id: true }, take: 1 } } });
+  if (!event || event.payments.length > 0) return;
+  await prisma.event.delete({ where: { id } });
   revalidatePath("/admin/events");
   revalidatePath("/admin/posts");
   revalidatePath("/dashboard/events");

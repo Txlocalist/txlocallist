@@ -126,6 +126,8 @@
 .assistText {
   color: #0f7d7a;
   font-size: 0.68rem;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
 }
 
 .input {

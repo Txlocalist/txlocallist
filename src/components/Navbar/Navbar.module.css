@@ -25,7 +25,7 @@
   display: inline-flex;
   align-items: center;
   flex: 0 0 auto;
-  width: 168px;
+  width: clamp(200px, 19vw, 232px);
   transform: rotate(-3deg);
   transform-origin: center;
   transition: transform var(--dur-sm) var(--ease-snap);
@@ -245,6 +245,6 @@
   }
 
   .logo {
-    width: 128px;
+    width: 158px;
   }
 }

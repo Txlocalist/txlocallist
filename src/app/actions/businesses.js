@@ -11,6 +11,8 @@ import { isMissingPrismaTableError, phase3SchemaMessage } from "@/lib/prisma-err
 
 const MIN_NAME_LENGTH = 3;
 const MIN_DESCRIPTION_LENGTH = 20;
+const MAX_TAGS = 5;
+const SOCIAL_PLATFORMS = ["facebook", "instagram", "linkedin", "tiktok", "youtube", "x"];
 
 function getTextValue(formData, fieldName) {
   return formData.get(fieldName)?.toString().trim() ?? "";
@@ -51,6 +53,28 @@ function normalizeIdList(values = []) {
 function normalizeHiringRoles(values = []) {
   if (!Array.isArray(values)) return [];
   return [...new Set(values.map((value) => value?.toString().trim()).filter(Boolean))];
+}
+
+function normalizeSocialLinks(values = {}) {
+  return SOCIAL_PLATFORMS.map((platform) => ({ platform, url: values?.[platform]?.toString().trim() || "" }))
+    .filter((link) => link.url);
+}
+
+function normalizeNewTagNames(value = "") {
+  return [...new Set(value.toString().split(",").map((name) => name.trim().slice(0, 50)).filter((name) => slugify(name)))];
+}
+
+async function resolveCity({ cityId, cityName }) {
+  if (cityId) return prisma.city.findUnique({ where: { id: cityId } });
+  const name = cityName?.toString().trim();
+  if (!name || name.length < 2) return null;
+  const slug = slugify(name);
+  if (!slug) return null;
+  return prisma.city.upsert({
+    where: { slug },
+    update: {},
+    create: { name, slug, state: "Texas" },
+  });
 }
 
 function parseStoredHiringRoles(raw) {
@@ -423,6 +447,8 @@ export async function createBusinessFromFormAction(data) {
   const tagIds = normalizeIdList(data.tagIds);
   const isHiring = Boolean(data.isHiring);
   const hiringRoles = normalizeHiringRoles(data.hiringRoles);
+  const socialLinks = normalizeSocialLinks(data.socialLinks);
+  const newTagNames = normalizeNewTagNames(data.newTags);
 
   const billingState = await getAccountAccess(user.id);
   if (!billingState?.hasCreatorAccess) {
@@ -438,24 +464,23 @@ export async function createBusinessFromFormAction(data) {
     return { success: false, message: `Description must be at least ${MIN_DESCRIPTION_LENGTH} characters.` };
   }
 
-  if (!data.cityId) {
-    return { success: false, message: "City is required." };
-  }
-
-  if (!data.address || !data.address.trim()) {
-    return { success: false, message: "Address is required." };
+  if (!data.cityId && !data.cityName?.trim()) {
+    return { success: false, message: "Choose a city or enter a new Texas city." };
   }
 
   if (data.website && !isValidHttpUrl(data.website)) {
     return { success: false, message: "Enter a valid website URL." };
   }
+  if (tagIds.length + newTagNames.length > MAX_TAGS) return { success: false, message: `Choose or suggest up to ${MAX_TAGS} tags total.` };
+  if (socialLinks.some((link) => !isValidHttpUrl(link.url))) return { success: false, message: "Enter valid social links starting with http:// or https://." };
+  if ((data.photos?.length || 0) > 1) return { success: false, message: "Upload one listing photo only." };
 
   if (isHiring && hiringRoles.length === 0) {
     return { success: false, message: "Add at least one hiring role when hiring is enabled." };
   }
 
   // Verify city exists
-  const city = await prisma.city.findUnique({ where: { id: data.cityId } });
+  const city = await resolveCity(data);
   if (!city) {
     return { success: false, message: "Selected city not found." };
   }
@@ -520,7 +545,7 @@ export async function createBusinessFromFormAction(data) {
 
   while (
     await prisma.business.findFirst({
-      where: { slug, cityId: data.cityId },
+      where: { slug, cityId: city.id },
     })
   ) {
     slug = `${baseSlug}-${slugCounter}`;
@@ -535,9 +560,9 @@ export async function createBusinessFromFormAction(data) {
           name: data.name.trim(),
           description: data.description.trim(),
           addressName: data.addressName?.trim() || data.name.trim(),
-          address: data.address.trim(),
+          address: data.address?.trim() || "",
           zipCode: data.zipCode?.trim() || inferredZipCode,
-          cityId: data.cityId,
+          cityId: city.id,
           phone: data.phone?.trim() || null,
           email: data.email?.trim().toLowerCase() || null,
           website: data.website?.trim() || null,
@@ -554,12 +579,6 @@ export async function createBusinessFromFormAction(data) {
                   create: categoryIds.map((categoryId) => ({ categoryId })),
                 }
               : undefined,
-          tags:
-            tagIds.length > 0
-              ? {
-                  create: tagIds.map((tagId) => ({ tagId })),
-                }
-              : undefined,
           photos:
             data.photos && data.photos.length > 0
               ? {
@@ -570,8 +589,16 @@ export async function createBusinessFromFormAction(data) {
                   })),
                 }
               : undefined,
+          socialLinks: socialLinks.length > 0 ? { create: socialLinks.map((link, order) => ({ ...link, order })) } : undefined,
         },
       });
+
+      const requestedTagIds = [...tagIds];
+      for (const tagName of newTagNames) {
+        const tag = await tx.tag.upsert({ where: { slug: slugify(tagName) }, update: {}, create: { name: tagName, slug: slugify(tagName) } });
+        requestedTagIds.push(tag.id);
+      }
+      if (requestedTagIds.length > 0) await tx.businessTag.createMany({ data: [...new Set(requestedTagIds)].map((tagId) => ({ businessId: createdBusiness.id, tagId })), skipDuplicates: true });
 
       if (normalizedHours.length > 0) {
         await tx.businessHours.createMany({
@@ -622,6 +649,8 @@ export async function updateBusinessAction(businessId, data) {
   const tagIds = normalizeIdList(data.tagIds);
   const isHiring = Boolean(data.isHiring);
   const hiringRoles = normalizeHiringRoles(data.hiringRoles);
+  const socialLinks = normalizeSocialLinks(data.socialLinks);
+  const newTagNames = normalizeNewTagNames(data.newTags);
 
   // Verify ownership
   const business = await prisma.business.findUnique({
@@ -650,13 +679,11 @@ export async function updateBusinessAction(businessId, data) {
     return { success: false, message: "City is required." };
   }
 
-  if (!data.address || !data.address.trim()) {
-    return { success: false, message: "Address is required." };
-  }
-
   if (data.website && !isValidHttpUrl(data.website)) {
     return { success: false, message: "Enter a valid website URL." };
   }
+  if (tagIds.length + newTagNames.length > MAX_TAGS) return { success: false, message: `Choose or suggest up to ${MAX_TAGS} tags total.` };
+  if (socialLinks.some((link) => !isValidHttpUrl(link.url))) return { success: false, message: "Enter valid social links starting with http:// or https://." };
 
   if (isHiring && hiringRoles.length === 0) {
     return { success: false, message: "Add at least one hiring role when hiring is enabled." };
@@ -729,7 +756,7 @@ export async function updateBusinessAction(businessId, data) {
           website: data.website?.trim() || null,
           isHiring,
           hiringRoles: JSON.stringify(hiringRoles),
-          address: data.address.trim(),
+          address: data.address?.trim() || "",
           cityId: data.cityId,
           lat,
           lng,
@@ -740,15 +767,19 @@ export async function updateBusinessAction(businessId, data) {
                   create: categoryIds.map((categoryId) => ({ categoryId })),
                 }
               : undefined,
-          tags:
-            tagIds.length > 0
-              ? {
-                  deleteMany: {},
-                  create: tagIds.map((tagId) => ({ tagId })),
-                }
-              : { deleteMany: {} },
+          tags: { deleteMany: {} },
+          socialLinks: {
+            deleteMany: {},
+            ...(socialLinks.length > 0 ? { create: socialLinks.map((link, order) => ({ ...link, order })) } : {}),
+          },
         },
       });
+      const requestedTagIds = [...tagIds];
+      for (const tagName of newTagNames) {
+        const tag = await tx.tag.upsert({ where: { slug: slugify(tagName) }, update: {}, create: { name: tagName, slug: slugify(tagName) } });
+        requestedTagIds.push(tag.id);
+      }
+      if (requestedTagIds.length > 0) await tx.businessTag.createMany({ data: [...new Set(requestedTagIds)].map((tagId) => ({ businessId, tagId })), skipDuplicates: true });
 
       if (normalizedHours) {
         await tx.businessHours.deleteMany({

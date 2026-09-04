@@ -37,12 +37,14 @@ export function EditBusinessForm({ business, cities, tags }) {
     phone: business.phone || "",
     email: business.email || "",
     website: business.website || "",
+    socialLinks: Object.fromEntries(["facebook", "instagram", "linkedin", "tiktok", "youtube", "x"].map((platform) => [platform, business.socialLinks?.find((link) => link.platform === platform)?.url || ""])),
     cityId: business.cityId || "",
     address: business.address || "",
     latitude: business.lat ?? "",
     longitude: business.lng ?? "",
     hours: createBusinessHoursFormState(business.hours),
     tagIds: business.tags?.map((bt) => bt.tagId) || [],
+    newTags: "",
     isHiring: business.isHiring ?? false,
     hiringRoles: parseHiringRoles(business.hiringRoles),
   });
@@ -64,9 +66,10 @@ export function EditBusinessForm({ business, cities, tags }) {
       ...prev,
       tagIds: prev.tagIds.includes(tagId)
         ? prev.tagIds.filter((id) => id !== tagId)
-        : [...prev.tagIds, tagId],
+        : prev.tagIds.length < 5 ? [...prev.tagIds, tagId] : prev.tagIds,
     }));
   };
+  const handleSocialChange = (platform, value) => setFormData((prev) => ({ ...prev, socialLinks: { ...prev.socialLinks, [platform]: value } }));
 
   const handleHiringRoleChange = (index, value) => {
     setFormData((prev) => ({
@@ -110,10 +113,6 @@ export function EditBusinessForm({ business, cities, tags }) {
       setError("City is required");
       return;
     }
-    if (!formData.address.trim()) {
-      setError("Address is required");
-      return;
-    }
     if (formData.isHiring && !formData.hiringRoles.some((role) => role.trim().length > 0)) {
       setError("Add at least one hiring role when hiring is enabled");
       return;
@@ -127,12 +126,14 @@ export function EditBusinessForm({ business, cities, tags }) {
         phone: formData.phone || null,
         email: formData.email || null,
         website: formData.website || null,
+        socialLinks: formData.socialLinks,
         cityId: formData.cityId,
         address: formData.address,
         latitude: formData.latitude,
         longitude: formData.longitude,
         hours: formData.hours,
         tagIds: formData.tagIds,
+        newTags: formData.newTags,
         isHiring: formData.isHiring,
         hiringRoles: formData.hiringRoles,
       });
@@ -183,6 +184,10 @@ export function EditBusinessForm({ business, cities, tags }) {
             className={formStyles.input}
             required
           />
+        </div>
+
+        <div className={formStyles.formRow}>
+          {Object.keys(formData.socialLinks).map((platform) => <div className={formStyles.formGroup} key={platform}><label htmlFor={`social-${platform}`} className={formStyles.label}>{platform === "x" ? "X / Twitter" : platform}</label><input id={`social-${platform}`} type="url" value={formData.socialLinks[platform]} onChange={(event) => handleSocialChange(platform, event.target.value)} placeholder={`https://${platform}.com/...`} className={formStyles.input} /></div>)}
         </div>
 
         <div className={formStyles.formGroup}>
@@ -273,7 +278,7 @@ export function EditBusinessForm({ business, cities, tags }) {
 
         <div className={formStyles.formGroup}>
           <label htmlFor="address" className={formStyles.label}>
-            Street Address *
+            Street Address (optional)
           </label>
           <input
             type="text"
@@ -283,7 +288,6 @@ export function EditBusinessForm({ business, cities, tags }) {
             onChange={handleChange}
             placeholder="123 Main Street"
             className={formStyles.input}
-            required
           />
         </div>
 
@@ -334,7 +338,7 @@ export function EditBusinessForm({ business, cities, tags }) {
         <h3 style={{ marginTop: "2rem" }}>Tags</h3>
 
         <div className={formStyles.formGroup}>
-          <label className={formStyles.label}>Tags (admin-managed, optional)</label>
+          <label className={formStyles.label}>Tags (up to five, admin-approved)</label>
           {tags.length > 0 ? (
             <div className={formStyles.categoryGrid}>
               {tags.map((tag) => (
@@ -343,6 +347,7 @@ export function EditBusinessForm({ business, cities, tags }) {
                     type="checkbox"
                     checked={formData.tagIds.includes(tag.id)}
                     onChange={() => handleTagToggle(tag.id)}
+                    disabled={!formData.tagIds.includes(tag.id) && formData.tagIds.length >= 5}
                   />
                   <span className={formStyles.categoryLabel}>{tag.name}</span>
                 </label>
@@ -354,6 +359,8 @@ export function EditBusinessForm({ business, cities, tags }) {
             </p>
           )}
         </div>
+
+        <div className={formStyles.formGroup}><label htmlFor="newTags" className={formStyles.label}>Suggest new tags (optional)</label><input id="newTags" name="newTags" value={formData.newTags} onChange={handleChange} className={formStyles.input} placeholder="family-owned, dog-friendly" /><p className={formStyles.checkboxHint}>Separate tags with commas. Selected and suggested tags may total five.</p></div>
 
         <div className={formStyles.formGroup}>
           <label className={formStyles.checkboxLabel}>
@@ -423,4 +430,3 @@ export function EditBusinessForm({ business, cities, tags }) {
     </form>
   );
 }
-

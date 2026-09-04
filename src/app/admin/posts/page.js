@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import {
   activateBusinessAction,
+  adminDeleteEventAction,
   issueEventPaymentRefundAction,
   restoreEventAfterDisputeAction,
   suspendBusinessAction,
@@ -612,6 +613,12 @@ export default async function AdminPostsPage({ searchParams }) {
                           </form>
                         );
                       }) : null}
+                      {isAdmin && payments.length === 0 ? (
+                        <form action={adminDeleteEventAction}>
+                          <input type="hidden" name="id" value={event.id} />
+                          <button type="submit" className={styles.deleteButton}>Delete Event</button>
+                        </form>
+                      ) : null}
                     </div>
                   </div>
                 </div>

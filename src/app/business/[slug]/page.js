@@ -1,5 +1,14 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import {
+  FaFacebookF,
+  FaInstagram,
+  FaLinkedinIn,
+  FaTiktok,
+  FaXTwitter,
+  FaYoutube,
+} from "react-icons/fa6";
+import { FaLink } from "react-icons/fa";
 
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -38,13 +47,20 @@ export async function generateMetadata({ params }) {
 export const dynamic = "force-dynamic";
 
 const SOCIAL_ICONS = {
-  instagram: "photo_camera",
-  facebook:  "thumb_up",
-  twitter:   "tag",
-  tiktok:    "music_note",
-  youtube:   "play_circle",
-  linkedin:  "work",
+  instagram: FaInstagram,
+  facebook: FaFacebookF,
+  twitter: FaXTwitter,
+  x: FaXTwitter,
+  tiktok: FaTiktok,
+  youtube: FaYoutube,
+  linkedin: FaLinkedinIn,
 };
+
+function getSocialLabel(platform) {
+  if (platform?.toLowerCase() === "x") return "X (formerly Twitter)";
+  const value = platform?.trim() || "social profile";
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
 
 function getDomain(url) {
   try { return new URL(url).hostname.replace(/^www\./, ""); }
@@ -67,7 +83,7 @@ export default async function BusinessDetailPage({ params }) {
 
   const user = await getCurrentUser().catch(() => null);
 
-  const business = await prisma.business.findFirst({
+  const coreBusiness = await prisma.business.findFirst({
     where: {
       slug,
       status: "ACTIVE",
@@ -80,12 +96,31 @@ export default async function BusinessDetailPage({ params }) {
       photos:      { orderBy: { order: "asc" } },
       categories:  { select: { category: { select: { id: true, name: true, slug: true } } } },
       tags:        { select: { tag: { select: { id: true, name: true, slug: true } } } },
-      socialLinks: { orderBy: { order: "asc" } },
-      jobs:        { where: { status: "ACTIVE" }, orderBy: { createdAt: "desc" }, take: 5 },
     },
   });
 
-  if (!business || business.status !== "ACTIVE") notFound();
+  if (!coreBusiness || coreBusiness.status !== "ACTIVE") notFound();
+
+  const [socialLinks, jobs] = await Promise.all([
+    prisma.socialLink.findMany({
+      where: { businessId: coreBusiness.id },
+      orderBy: { order: "asc" },
+    }).catch((error) => {
+      if (!isMissingPrismaTableError(error)) throw error;
+      console.error("[business-detail] SocialLink table is unavailable; hiding social links.");
+      return [];
+    }),
+    prisma.job.findMany({
+      where: { businessId: coreBusiness.id, status: "ACTIVE" },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+    }).catch((error) => {
+      if (!isMissingPrismaTableError(error)) throw error;
+      console.error("[business-detail] Job table is unavailable; hiding jobs.");
+      return [];
+    }),
+  ]);
+  const business = { ...coreBusiness, socialLinks, jobs };
 
   let businessHours = [];
   try {
@@ -321,18 +356,23 @@ export default async function BusinessDetailPage({ params }) {
               {showSocials && business.socialLinks.length > 0 && (
                 <div className={styles.socialRow}>
                   {business.socialLinks.map((link) => (
-                    <a
-                      key={link.id}
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={styles.socialIcon}
-                      title={link.platform}
-                    >
-                      <span className="material-icons" style={{ fontSize: "1.1rem" }}>
-                        {SOCIAL_ICONS[link.platform?.toLowerCase()] ?? "link"}
-                      </span>
-                    </a>
+                    (() => {
+                      const Icon = SOCIAL_ICONS[link.platform?.toLowerCase()] ?? FaLink;
+                      const label = getSocialLabel(link.platform);
+                      return (
+                        <a
+                          key={link.id}
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={styles.socialIcon}
+                          aria-label={`Visit ${business.name} on ${label}`}
+                          title={label}
+                        >
+                          <Icon aria-hidden="true" focusable="false" />
+                        </a>
+                      );
+                    })()
                   ))}
                 </div>
               )}
@@ -370,7 +410,7 @@ export default async function BusinessDetailPage({ params }) {
         )}
 
         {/* LOCATION */}
-        <section className={styles.locationSection}>
+        {business.address ? <section className={styles.locationSection}>
           <div className={styles.locationCard}>
 
             <div className={styles.locationInfo}>
@@ -409,17 +449,8 @@ export default async function BusinessDetailPage({ params }) {
               </a>
             </div>
 
-            <div className={styles.locationMapWrap}>
-              <div className={styles.mapPinWrap}>
-                <div className={styles.mapPingRing} />
-                <div className={styles.mapPin}>
-                  <span className="material-icons" style={{ fontSize: "1.75rem" }}>storefront</span>
-                </div>
-              </div>
-            </div>
-
           </div>
-        </section>
+        </section> : null}
 
         {/* ── JOBS ── */}
         {features.JOB_POSTINGS > 0 && business.jobs.length > 0 && (
