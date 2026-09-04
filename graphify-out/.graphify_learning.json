@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-01T21:22:21.630548+00:00",
+  "generated_at": "2026-09-04T20:26:27.129151+00:00",
   "nodes": {
     "docs_event_posting_launch_one_time_event_posting_launch": {
       "code_fingerprint": "e4934220b53e1cb58d33a5b084f6e869a2fa858f0969d9d733fc8fc76c66ead1",
@@ -12,7 +12,7 @@
           "q": "ok so how should we go about the next phase  to move into launch readiness?"
         }
       ],
-      "score": 0.996474671,
+      "score": 0.930578147,
       "source_file": "docs/event-posting-launch.md",
       "status": "tentative",
       "uses": 1
@@ -28,7 +28,7 @@
           "q": "ok so how should we go about the next phase  to move into launch readiness?"
         }
       ],
-      "score": 0.996474671,
+      "score": 0.930578147,
       "source_file": "scripts/verify-event-posting-readiness.mjs",
       "status": "tentative",
       "uses": 1
@@ -44,7 +44,7 @@
           "q": "Match the About page to the supplied visual reference"
         }
       ],
-      "score": 0.329206366,
+      "score": 0.307436064,
       "source_file": "src/app/about/page.js",
       "status": "tentative",
       "uses": 1
@@ -52,42 +52,72 @@
     "src_app_actions_admin": {
       "code_fingerprint": "a3334b48bbb8b1633d7b671105bc9eb526c94c7afaa4d5639b7e27295fa8af5f",
       "label": "admin.js",
-      "last": "2026-09-01T17:42:15.491612+00:00",
+      "last": "2026-09-02T00:35:15.049061+00:00",
       "provenance": [
+        {
+          "date": "2026-09-02T00:35:15.049061+00:00",
+          "outcome": "useful",
+          "q": "added vercel variables. lets keep going so we can push this feature live. skip test in sandbox because we already did this step."
+        },
+        {
+          "date": "2026-09-02T00:26:18.469117+00:00",
+          "outcome": "useful",
+          "q": "added vercel variables. lets keep going so we can push this feature live. skip test in sandbox because we already did this step."
+        },
+        {
+          "date": "2026-09-01T23:58:43.325705+00:00",
+          "outcome": "useful",
+          "q": "ok how can wew make this feature live on the prod site and prod vercel env variables?"
+        },
+        {
+          "date": "2026-09-01T23:53:45.294036+00:00",
+          "outcome": "useful",
+          "q": "ehy is it working the loca env and not in the production env?"
+        },
         {
           "date": "2026-09-01T17:42:15.491612+00:00",
           "outcome": "useful",
           "q": "ok so how should we go about the next phase  to move into launch readiness?"
-        },
-        {
-          "date": "2026-09-01T17:31:42.348127+00:00",
-          "outcome": "useful",
-          "q": "lets move on to the next safe phase in the sandbox moderation lifecycle"
         }
       ],
-      "score": 1.992780639,
+      "score": 5.60675235,
       "source_file": "src/app/actions/admin.js",
       "status": "preferred",
-      "uses": 2
+      "uses": 6
     },
     "src_app_admin_users_page_adminuserspage": {
-      "code_fingerprint": "d0a1b5269eae862ff56f88984a0b696a2cd84c45c888ba5ec3deb5a9d2d4a02d",
+      "code_fingerprint": "c281ef6c24f860e08be47d2c648a5363cdfb830d8642c9be461b41c61d16a789",
       "label": "AdminUsersPage()",
-      "last": "2026-08-28T17:42:39.832968+00:00",
+      "last": "2026-09-02T00:38:46.395435+00:00",
       "provenance": [
+        {
+          "date": "2026-09-02T00:38:46.395435+00:00",
+          "outcome": "useful",
+          "q": "still looks like it is not implemented and still greyed out"
+        },
+        {
+          "date": "2026-09-01T23:53:45.294036+00:00",
+          "outcome": "useful",
+          "q": "ehy is it working the loca env and not in the production env?"
+        },
+        {
+          "date": "2026-09-01T23:48:55.052884+00:00",
+          "outcome": "useful",
+          "q": "how can we make it production enabled"
+        },
         {
           "date": "2026-08-28T17:42:39.832968+00:00",
           "outcome": "useful",
           "q": "Inspect UserRoleControl.jsx and users.module.css for viewport centering and delete dialog accessibility."
         }
       ],
-      "score": 0.90851428,
+      "score": 3.657463136,
       "source_file": "src/app/admin/users/page.js",
-      "status": "tentative",
-      "uses": 1
+      "status": "preferred",
+      "uses": 4
     },
     "src_app_admin_users_userrolecontrol": {
-      "code_fingerprint": "171e8908c26001aa23debe1c2036be3fe0a67f08b136a30f0204323ac5c68758",
+      "code_fingerprint": "583125fbefdb8020ee3d7811dceebb0f54499fb0d838f1d63ddf31660ad0e285",
       "label": "UserRoleControl.jsx",
       "last": "2026-08-28T17:42:39.832968+00:00",
       "provenance": [
@@ -97,24 +127,60 @@
           "q": "Inspect UserRoleControl.jsx and users.module.css for viewport centering and delete dialog accessibility."
         }
       ],
-      "score": 0.90851428,
+      "score": 0.848434547,
       "source_file": "src/app/admin/users/UserRoleControl.jsx",
       "status": "tentative",
       "uses": 1
     },
     "src_app_admin_users_userrolecontrol_userrolecontrol": {
-      "code_fingerprint": "171e8908c26001aa23debe1c2036be3fe0a67f08b136a30f0204323ac5c68758",
+      "code_fingerprint": "583125fbefdb8020ee3d7811dceebb0f54499fb0d838f1d63ddf31660ad0e285",
       "label": "UserRoleControl()",
-      "last": "2026-08-28T17:42:39.832968+00:00",
+      "last": "2026-09-02T00:38:46.395435+00:00",
       "provenance": [
         {
-          "date": "2026-08-28T17:42:39.832968+00:00",
+          "date": "2026-09-02T00:38:46.395435+00:00",
           "outcome": "useful",
-          "q": "Inspect UserRoleControl.jsx and users.module.css for viewport centering and delete dialog accessibility."
+          "q": "still looks like it is not implemented and still greyed out"
+        },
+        {
+          "date": "2026-09-02T00:35:15.049061+00:00",
+          "outcome": "useful",
+          "q": "added vercel variables. lets keep going so we can push this feature live. skip test in sandbox because we already did this step."
+        },
+        {
+          "date": "2026-09-02T00:26:18.469117+00:00",
+          "outcome": "useful",
+          "q": "added vercel variables. lets keep going so we can push this feature live. skip test in sandbox because we already did this step."
+        },
+        {
+          "date": "2026-09-01T23:58:43.325705+00:00",
+          "outcome": "useful",
+          "q": "ok how can wew make this feature live on the prod site and prod vercel env variables?"
+        },
+        {
+          "date": "2026-09-01T23:53:45.294036+00:00",
+          "outcome": "useful",
+          "q": "ehy is it working the loca env and not in the production env?"
         }
       ],
-      "score": 0.90851428,
+      "score": 7.403073603,
       "source_file": "src/app/admin/users/UserRoleControl.jsx",
+      "status": "preferred",
+      "uses": 8
+    },
+    "src_app_business_slug_page_businessdetailpage": {
+      "code_fingerprint": "0b99db0a83ed1336347a02f235c355d6f9d9b2c911e342fa8dd4f345ff830717",
+      "label": "BusinessDetailPage()",
+      "last": "2026-09-04T20:23:10.446332+00:00",
+      "provenance": [
+        {
+          "date": "2026-09-04T20:23:10.446332+00:00",
+          "outcome": "useful",
+          "q": "Diagnose why newly signed-up business landing pages opened from Explore return a server error."
+        }
+      ],
+      "score": 0.999947405,
+      "source_file": "src/app/business/[slug]/page.js",
       "status": "tentative",
       "uses": 1
     },
@@ -129,7 +195,7 @@
           "q": "Trace the event detail page implementation, event image fields and fallback behavior, save/favorite counting system, and the equivalent real saved-count flow used on business landing pages."
         }
       ],
-      "score": 0.314872144,
+      "score": 0.294049758,
       "source_file": "src/app/dashboard/events/saved/page.js",
       "status": "tentative",
       "uses": 1
@@ -145,7 +211,7 @@
           "q": "How is the how-it-works page composed, which shared components and routes does it depend on, and what must be preserved during a visual redesign?"
         }
       ],
-      "score": 0.329512206,
+      "score": 0.307721679,
       "source_file": "src/app/how-it-works/page.js",
       "status": "tentative",
       "uses": 1
@@ -161,7 +227,7 @@
           "q": "Inspect graphify-out for context before redesigning the how it works page."
         }
       ],
-      "score": 0.328889762,
+      "score": 0.307140396,
       "source_file": "src/app/layout.js",
       "status": "tentative",
       "uses": 1
@@ -182,7 +248,7 @@
           "q": "Inspect graphify-out for context before redesigning the how it works page."
         }
       ],
-      "score": 0.658401968,
+      "score": 0.614862075,
       "source_file": "src/app/pricing/page.js",
       "status": "preferred",
       "uses": 2
@@ -198,7 +264,7 @@
           "q": "Add a beautiful skeleton loader for the results page that looks like the cards."
         }
       ],
-      "score": 0.613921853,
+      "score": 0.573323414,
       "source_file": "src/app/results/icons.js",
       "status": "tentative",
       "uses": 1
@@ -219,7 +285,7 @@
           "q": "Inspect graphify-out for context before redesigning the how it works page."
         }
       ],
-      "score": 0.658401968,
+      "score": 0.614862075,
       "source_file": "src/app/results/page.js",
       "status": "preferred",
       "uses": 2
@@ -227,8 +293,13 @@
     "src_app_results_resultsexperience": {
       "code_fingerprint": "06728a31ec20a975d4899c727b98be683c49786d9f6ffa23363ce015db679157",
       "label": "ResultsExperience.jsx",
-      "last": "2026-08-11T18:35:02.631821+00:00",
+      "last": "2026-09-04T20:23:10.446332+00:00",
       "provenance": [
+        {
+          "date": "2026-09-04T20:23:10.446332+00:00",
+          "outcome": "useful",
+          "q": "Diagnose why newly signed-up business landing pages opened from Explore return a server error."
+        },
         {
           "date": "2026-08-11T18:35:02.631821+00:00",
           "outcome": "useful",
@@ -240,10 +311,10 @@
           "q": "Remove the toggle from the search on the results search bar, and when loading /results without a filter or search load 15 recently added businesses."
         }
       ],
-      "score": 1.227519739,
+      "score": 2.146291691,
       "source_file": "src/app/results/ResultsExperience.jsx",
       "status": "preferred",
-      "uses": 2
+      "uses": 3
     },
     "src_components_footer_footer_footer": {
       "code_fingerprint": "1e8de55b6b43824c8878d98642219431d5157bc7cb6cec4fdabb9e8de3b0b9e2",
@@ -256,7 +327,7 @@
           "q": "Inspect graphify-out for context before redesigning the how it works page."
         }
       ],
-      "score": 0.328889762,
+      "score": 0.307140396,
       "source_file": "src/components/Footer/Footer.jsx",
       "status": "tentative",
       "uses": 1
@@ -272,7 +343,7 @@
           "q": "Inspect graphify-out for context before redesigning the how it works page."
         }
       ],
-      "score": 0.328889762,
+      "score": 0.307140396,
       "source_file": "src/components/Navbar/Navbar.jsx",
       "status": "tentative",
       "uses": 1
@@ -288,7 +359,7 @@
           "q": "Remove the toggle from the search on the results search bar, and when loading /results without a filter or search load 15 recently added businesses."
         }
       ],
-      "score": 0.613597886,
+      "score": 0.573020871,
       "source_file": "src/components/SearchBar/SearchBar.jsx",
       "status": "tentative",
       "uses": 1
@@ -304,7 +375,7 @@
           "q": "Inspect graphify-out for context before redesigning the how it works page."
         }
       ],
-      "score": 0.328889762,
+      "score": 0.307140396,
       "source_file": "src/components/StaticPageLayout/StaticPageLayout.jsx",
       "status": "tentative",
       "uses": 1
@@ -320,7 +391,7 @@
           "q": "Review Admin soft-delete design for User accounts and identify correctness gaps or needed deletedAt filters."
         }
       ],
-      "score": 0.90858245,
+      "score": 0.848498209,
       "source_file": "src/lib/auth/session.js",
       "status": "tentative",
       "uses": 1
@@ -336,7 +407,7 @@
           "q": "lets move on to the next safe phase in the sandbox moderation lifecycle"
         }
       ],
-      "score": 0.996305968,
+      "score": 0.930420601,
       "source_file": "src/lib/event-dates.js",
       "status": "tentative",
       "uses": 1
@@ -352,7 +423,7 @@
           "q": "ok so how should we go about the next phase  to move into launch readiness?"
         }
       ],
-      "score": 0.996474671,
+      "score": 0.930578147,
       "source_file": "src/lib/event-disputes.js",
       "status": "tentative",
       "uses": 1
@@ -383,10 +454,26 @@
           "q": "Review Admin soft-delete design for User accounts and identify correctness gaps or needed deletedAt filters."
         }
       ],
-      "score": 3.879089841,
+      "score": 3.622566979,
       "source_file": "src/lib/event-payments.js",
       "status": "preferred",
       "uses": 4
+    },
+    "src_lib_event_payments_createeventcheckoutsessioninternal": {
+      "code_fingerprint": "dfbc1a93f6c5d4897891bd039fa87acbda0944e2311b0614c0780e9369d50e95",
+      "label": "createEventCheckoutSessionInternal()",
+      "last": "2026-09-01T21:23:42.106493+00:00",
+      "provenance": [
+        {
+          "date": "2026-09-01T21:23:42.106493+00:00",
+          "outcome": "useful",
+          "q": "why is one time posting still unavailable?"
+        }
+      ],
+      "score": 0.933890446,
+      "source_file": "src/lib/event-payments.js",
+      "status": "tentative",
+      "uses": 1
     },
     "src_lib_event_payments_handleeventcheckoutsessionprocessing": {
       "code_fingerprint": "dfbc1a93f6c5d4897891bd039fa87acbda0944e2311b0614c0780e9369d50e95",
@@ -399,7 +486,7 @@
           "q": "lets move on to the next phase. i did add the new DB keys and sandbox stripe keys in the the local.env. the only thing i did not add is a webhook. i need to know how we should set that up"
         }
       ],
-      "score": 0.977726752,
+      "score": 0.913070022,
       "source_file": "src/lib/event-payments.js",
       "status": "tentative",
       "uses": 1
@@ -415,7 +502,7 @@
           "q": "lets move on to the next phase. i did add the new DB keys and sandbox stripe keys in the the local.env. the only thing i did not add is a webhook. i need to know how we should set that up"
         }
       ],
-      "score": 0.977726752,
+      "score": 0.913070022,
       "source_file": "src/lib/event-payments.js",
       "status": "tentative",
       "uses": 1
@@ -431,7 +518,7 @@
           "q": "Trace the event detail page implementation, event image fields and fallback behavior, save/favorite counting system, and the equivalent real saved-count flow used on business landing pages."
         }
       ],
-      "score": 0.314872144,
+      "score": 0.294049758,
       "source_file": "src/lib/events.js",
       "status": "tentative",
       "uses": 1
@@ -447,8 +534,24 @@
           "q": "Trace the event detail page implementation, event image fields and fallback behavior, save/favorite counting system, and the equivalent real saved-count flow used on business landing pages."
         }
       ],
-      "score": 0.314872144,
+      "score": 0.294049758,
       "source_file": "src/lib/events.js",
+      "status": "tentative",
+      "uses": 1
+    },
+    "src_lib_pricing_iseventpostingenabled": {
+      "code_fingerprint": "4804f200622dfed9a1b240f0c9902d58e98ee2a53b0cacce81e4da364fef296a",
+      "label": "isEventPostingEnabled()",
+      "last": "2026-09-01T21:23:42.106493+00:00",
+      "provenance": [
+        {
+          "date": "2026-09-01T21:23:42.106493+00:00",
+          "outcome": "useful",
+          "q": "why is one time posting still unavailable?"
+        }
+      ],
+      "score": 0.933890446,
+      "source_file": "src/lib/pricing.js",
       "status": "tentative",
       "uses": 1
     },
@@ -463,26 +566,72 @@
           "q": "i cant sign in can you fix this prisma issue"
         }
       ],
-      "score": 0.907993771,
+      "score": 0.847948459,
       "source_file": "src/lib/prisma.js",
       "status": "tentative",
       "uses": 1
     },
     "src_lib_role_transitions": {
-      "code_fingerprint": "4f474f9def3c57a25ab5ed7395a30dca3ceb159b0ca7af3ab32b63bf249e1e1f",
+      "code_fingerprint": "e4e09f581b651db66cd3658e5eb05d3536ce8709a0a825c746bd17420a85cfff",
       "label": "role-transitions.js",
-      "last": "2026-08-28T17:47:20.410597+00:00",
+      "last": "2026-09-02T00:38:46.395435+00:00",
       "provenance": [
         {
-          "date": "2026-08-28T17:47:20.410597+00:00",
+          "date": "2026-09-02T00:38:46.395435+00:00",
           "outcome": "useful",
-          "q": "Review Admin soft-delete design for User accounts and identify correctness gaps or needed deletedAt filters."
+          "q": "still looks like it is not implemented and still greyed out"
+        },
+        {
+          "date": "2026-09-02T00:35:15.049061+00:00",
+          "outcome": "useful",
+          "q": "added vercel variables. lets keep going so we can push this feature live. skip test in sandbox because we already did this step."
+        },
+        {
+          "date": "2026-09-02T00:26:18.469117+00:00",
+          "outcome": "useful",
+          "q": "added vercel variables. lets keep going so we can push this feature live. skip test in sandbox because we already did this step."
+        },
+        {
+          "date": "2026-09-01T23:58:43.325705+00:00",
+          "outcome": "useful",
+          "q": "ok how can wew make this feature live on the prod site and prod vercel env variables?"
+        },
+        {
+          "date": "2026-09-01T23:53:45.294036+00:00",
+          "outcome": "useful",
+          "q": "ehy is it working the loca env and not in the production env?"
         }
       ],
-      "score": 0.90858245,
+      "score": 7.403137265,
       "source_file": "src/lib/role-transitions.js",
-      "status": "tentative",
-      "uses": 1
+      "status": "preferred",
+      "uses": 8
+    },
+    "vercel": {
+      "code_fingerprint": "f50bb4766498fd7826cbd53e6060fbe50152da0548166c853cded9fab8948a71",
+      "label": "vercel.json",
+      "last": "2026-09-02T00:35:15.049061+00:00",
+      "provenance": [
+        {
+          "date": "2026-09-02T00:35:15.049061+00:00",
+          "outcome": "useful",
+          "q": "added vercel variables. lets keep going so we can push this feature live. skip test in sandbox because we already did this step."
+        },
+        {
+          "date": "2026-09-02T00:26:18.469117+00:00",
+          "outcome": "useful",
+          "q": "added vercel variables. lets keep going so we can push this feature live. skip test in sandbox because we already did this step."
+        },
+        {
+          "date": "2026-09-01T23:58:43.325705+00:00",
+          "outcome": "useful",
+          "q": "ok how can wew make this feature live on the prod site and prod vercel env variables?"
+        }
+      ],
+      "score": 2.809612,
+      "source_file": "vercel.json",
+      "status": "preferred",
+      "uses": 3
     }
   },
   "version": 1
