@@ -40,91 +40,6 @@
   color: rgba(45, 36, 30, 0.8);
 }
 
-.featurePanel {
-  display: grid;
-  grid-template-columns: 1fr minmax(280px, 420px);
-  gap: 1.4rem;
-  padding: 1.55rem;
-  background: #1f1d16;
-  color: #fffaf0;
-  border-radius: 2rem;
-  overflow: hidden;
-  border: 3px solid rgba(45, 36, 30, 0.3);
-  margin-bottom: 1rem;
-}
-
-.featureContent {
-  display: grid;
-  align-content: center;
-  gap: 0.95rem;
-  padding: 0.45rem;
-}
-
-.featureBadge {
-  width: fit-content;
-  padding: 0.4rem 0.75rem;
-  border-radius: 999px;
-  background: rgba(249, 200, 70, 0.14);
-  border: 1px solid rgba(249, 200, 70, 0.25);
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #f8d768;
-}
-
-.featureTitle {
-  margin: 0;
-  max-width: 8ch;
-  font-family: var(--font-sans), sans-serif;
-  font-size: clamp(2rem, 4vw, 3.35rem);
-  line-height: 0.95;
-  font-weight: 800;
-}
-
-.featureDescription {
-  margin: 0;
-  max-width: 32rem;
-  color: rgba(255, 250, 240, 0.78);
-  line-height: 1.7;
-}
-
-.featurePrimary,
-.featureSecondary {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.85rem 1.15rem;
-  border-radius: 999px;
-  border: 2px solid transparent;
-  font-weight: 700;
-}
-
-.featurePrimary {
-  background: #b45312;
-  color: #fff8ef;
-  width: fit-content;
-  border-color: #fff8ef;
-}
-
-.featureSecondary {
-  border-color: rgba(255, 250, 240, 0.14);
-  background: transparent;
-  color: #fff8ef;
-}
-
-.featureMedia {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.ambassadorImage {
-  width: 100%;
-  height: auto;
-  object-fit: contain;
-}
-
 .metricsGrid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -352,7 +267,6 @@
 }
 
 @media (max-width: 1100px) {
-  .featurePanel,
   .lowerGrid {
     grid-template-columns: 1fr;
   }
@@ -365,14 +279,6 @@
 @media (max-width: 700px) {
   .title {
     max-width: none;
-  }
-
-  .featurePanel {
-    padding: 1rem;
-  }
-
-  .featureMedia {
-    order: -1;
   }
 
   .metricsGrid {

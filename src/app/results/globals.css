@@ -934,8 +934,7 @@
 
 .results-empty-primary,
 .results-empty-secondary,
-.results-trust-primary,
-.results-trust-secondary {
+.results-trust-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -955,8 +954,7 @@
   border: 2px solid var(--retro-brown);
 }
 
-.results-empty-secondary,
-.results-trust-secondary {
+.results-empty-secondary {
   background: rgba(255, 250, 242, 0.92);
   color: var(--retro-brown);
   border: 2px solid rgba(45, 36, 30, 0.14);
@@ -1628,8 +1626,7 @@
   }
   .results-empty-primary,
   .results-empty-secondary,
-  .results-trust-primary,
-  .results-trust-secondary {
+  .results-trust-primary {
     width: 100%;
   }
   .results-trust-strip {

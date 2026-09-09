@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-09T17:41:58.403653+00:00",
+  "generated_at": "2026-09-09T22:01:19.225169+00:00",
   "nodes": {
     "docs_event_posting_launch_one_time_event_posting_launch": {
       "code_fingerprint": "e4934220b53e1cb58d33a5b084f6e869a2fa858f0969d9d733fc8fc76c66ead1",
@@ -12,7 +12,7 @@
           "q": "ok so how should we go about the next phase  to move into launch readiness?"
         }
       ],
-      "score": 0.831241695,
+      "score": 0.827789884,
       "source_file": "docs/event-posting-launch.md",
       "status": "tentative",
       "uses": 1
@@ -28,7 +28,7 @@
           "q": "ok so how should we go about the next phase  to move into launch readiness?"
         }
       ],
-      "score": 0.831241695,
+      "score": 0.827789884,
       "source_file": "scripts/verify-event-posting-readiness.mjs",
       "status": "tentative",
       "uses": 1
@@ -44,13 +44,13 @@
           "q": "Match the About page to the supplied visual reference"
         }
       ],
-      "score": 0.274618177,
+      "score": 0.273477799,
       "source_file": "src/app/about/page.js",
       "status": "tentative",
       "uses": 1
     },
     "src_app_actions_admin": {
-      "code_fingerprint": "b424fa3a76565dc9aba5ca495a04fba371bf78074bed123c846899f1be97e3ef",
+      "code_fingerprint": "268126eb4ade598053ee10aa3470c30b293fd421e3203f447bb9895cb0cad81d",
       "label": "admin.js",
       "last": "2026-09-02T00:35:15.049061+00:00",
       "provenance": [
@@ -80,13 +80,29 @@
           "q": "ok so how should we go about the next phase  to move into launch readiness?"
         }
       ],
-      "score": 5.008248193,
+      "score": 4.987450961,
       "source_file": "src/app/actions/admin.js",
       "status": "preferred",
       "uses": 6
     },
+    "src_app_actions_businesses": {
+      "code_fingerprint": "1cb791642432367d6ae0db78c8d0e0a53a1b810edf331ec2bf29cdf8608d5a82",
+      "label": "businesses.js",
+      "last": "2026-09-09T17:53:45.761199+00:00",
+      "provenance": [
+        {
+          "date": "2026-09-09T17:53:45.761199+00:00",
+          "outcome": "useful",
+          "q": "when a new event is made the categories say event crategorie? why is it displaying event when these are business categories. can we fix that? seems like there is a bug when a business is created and category is selected and it gets added to the explore page."
+        }
+      ],
+      "score": 0.996035796,
+      "source_file": "src/app/actions/businesses.js",
+      "status": "tentative",
+      "uses": 1
+    },
     "src_app_admin_users_page_adminuserspage": {
-      "code_fingerprint": "c281ef6c24f860e08be47d2c648a5363cdfb830d8642c9be461b41c61d16a789",
+      "code_fingerprint": "36e7108f27332f7509539a88b419a24cda6f4080df551372554b5fb7b62399da",
       "label": "AdminUsersPage()",
       "last": "2026-09-02T00:38:46.395435+00:00",
       "provenance": [
@@ -111,7 +127,7 @@
           "q": "Inspect UserRoleControl.jsx and users.module.css for viewport centering and delete dialog accessibility."
         }
       ],
-      "score": 3.267039812,
+      "score": 3.253473115,
       "source_file": "src/app/admin/users/page.js",
       "status": "preferred",
       "uses": 4
@@ -127,7 +143,7 @@
           "q": "Inspect UserRoleControl.jsx and users.module.css for viewport centering and delete dialog accessibility."
         }
       ],
-      "score": 0.75786668,
+      "score": 0.754719565,
       "source_file": "src/app/admin/users/UserRoleControl.jsx",
       "status": "tentative",
       "uses": 1
@@ -163,13 +179,13 @@
           "q": "ehy is it working the loca env and not in the production env?"
         }
       ],
-      "score": 6.612817489,
+      "score": 6.585357128,
       "source_file": "src/app/admin/users/UserRoleControl.jsx",
       "status": "preferred",
       "uses": 8
     },
     "src_app_business_slug_page_businessdetailpage": {
-      "code_fingerprint": "525ab4d4d71791f43e7fa582067e14563b9d642e610f25a0bb1019aaf04836a1",
+      "code_fingerprint": "eb25cc1a1b8024281892b38160b7f654bc09e0d1395f3b5158a265f0de99822b",
       "label": "BusinessDetailPage()",
       "last": "2026-09-04T20:30:46.482238+00:00",
       "provenance": [
@@ -184,13 +200,29 @@
           "q": "Diagnose why newly signed-up business landing pages opened from Explore return a server error."
         }
       ],
-      "score": 1.786520915,
+      "score": 1.779102215,
       "source_file": "src/app/business/[slug]/page.js",
       "status": "preferred",
       "uses": 2
     },
+    "src_app_dashboard_businesses_new_createbusinessform": {
+      "code_fingerprint": "79c2bb9718d43aabc120ff1a2abe244a015f067eab900b36670e8e412b492f31",
+      "label": "CreateBusinessForm.jsx",
+      "last": "2026-09-09T17:53:45.761199+00:00",
+      "provenance": [
+        {
+          "date": "2026-09-09T17:53:45.761199+00:00",
+          "outcome": "useful",
+          "q": "when a new event is made the categories say event crategorie? why is it displaying event when these are business categories. can we fix that? seems like there is a bug when a business is created and category is selected and it gets added to the explore page."
+        }
+      ],
+      "score": 0.996035796,
+      "source_file": "src/app/dashboard/businesses/new/CreateBusinessForm.jsx",
+      "status": "tentative",
+      "uses": 1
+    },
     "src_app_dashboard_events_saved_page_savedeventspage": {
-      "code_fingerprint": "64401794f556130abe906ad99e44f07cbf4b7d280891daac0ab9011123534a8a",
+      "code_fingerprint": "40634706c6603f57946afb403efafa8bba0171f4ff6d815bd98e63eefe716a70",
       "label": "SavedEventsPage()",
       "last": "2026-07-13T21:00:57.816871+00:00",
       "provenance": [
@@ -200,7 +232,7 @@
           "q": "Trace the event detail page implementation, event image fields and fallback behavior, save/favorite counting system, and the equivalent real saved-count flow used on business landing pages."
         }
       ],
-      "score": 0.26266082,
+      "score": 0.261570096,
       "source_file": "src/app/dashboard/events/saved/page.js",
       "status": "tentative",
       "uses": 1
@@ -216,7 +248,7 @@
           "q": "How is the how-it-works page composed, which shared components and routes does it depend on, and what must be preserved during a visual redesign?"
         }
       ],
-      "score": 0.274873304,
+      "score": 0.273731866,
       "source_file": "src/app/how-it-works/page.js",
       "status": "tentative",
       "uses": 1
@@ -232,7 +264,7 @@
           "q": "Inspect graphify-out for context before redesigning the how it works page."
         }
       ],
-      "score": 0.274354071,
+      "score": 0.27321479,
       "source_file": "src/app/layout.js",
       "status": "tentative",
       "uses": 1
@@ -253,7 +285,7 @@
           "q": "Inspect graphify-out for context before redesigning the how it works page."
         }
       ],
-      "score": 0.549227375,
+      "score": 0.546946655,
       "source_file": "src/app/pricing/page.js",
       "status": "preferred",
       "uses": 2
@@ -269,13 +301,13 @@
           "q": "Add a beautiful skeleton loader for the results page that looks like the cards."
         }
       ],
-      "score": 0.512122843,
+      "score": 0.509996204,
       "source_file": "src/app/results/icons.js",
       "status": "tentative",
       "uses": 1
     },
     "src_app_results_page_resultspage": {
-      "code_fingerprint": "c1af15d11200bde00b27792a20eb29ee58912485c46a4cce3ba69633c848ea54",
+      "code_fingerprint": "d9100a9afa09c56ee88719a6865a4e7abb0dc25e1149471a500d33f0f2b0ded6",
       "label": "ResultsPage()",
       "last": "2026-07-15T20:13:24.315412+00:00",
       "provenance": [
@@ -290,16 +322,21 @@
           "q": "Inspect graphify-out for context before redesigning the how it works page."
         }
       ],
-      "score": 0.549227375,
+      "score": 0.546946655,
       "source_file": "src/app/results/page.js",
       "status": "preferred",
       "uses": 2
     },
     "src_app_results_resultsexperience": {
-      "code_fingerprint": "14395aad88515c093ff60bbe1374774ffa4bccd82320e20579e612617bcee34a",
+      "code_fingerprint": "5ecc3099dae25ce2ff2b95ea3c9a56b0550a495af838a44adffaa7888e3ddb9f",
       "label": "ResultsExperience.jsx",
-      "last": "2026-09-04T20:23:10.446332+00:00",
+      "last": "2026-09-09T17:53:45.761199+00:00",
       "provenance": [
+        {
+          "date": "2026-09-09T17:53:45.761199+00:00",
+          "outcome": "useful",
+          "q": "when a new event is made the categories say event crategorie? why is it displaying event when these are business categories. can we fix that? seems like there is a bug when a business is created and category is selected and it gets added to the explore page."
+        },
         {
           "date": "2026-09-04T20:23:10.446332+00:00",
           "outcome": "useful",
@@ -316,10 +353,10 @@
           "q": "Remove the toggle from the search on the results search bar, and when loading /results without a filter or search load 15 recently added businesses."
         }
       ],
-      "score": 1.917181429,
+      "score": 2.905255945,
       "source_file": "src/app/results/ResultsExperience.jsx",
       "status": "preferred",
-      "uses": 3
+      "uses": 4
     },
     "src_components_footer_footer_footer": {
       "code_fingerprint": "1e8de55b6b43824c8878d98642219431d5157bc7cb6cec4fdabb9e8de3b0b9e2",
@@ -332,7 +369,7 @@
           "q": "Inspect graphify-out for context before redesigning the how it works page."
         }
       ],
-      "score": 0.274354071,
+      "score": 0.27321479,
       "source_file": "src/components/Footer/Footer.jsx",
       "status": "tentative",
       "uses": 1
@@ -348,7 +385,7 @@
           "q": "Inspect graphify-out for context before redesigning the how it works page."
         }
       ],
-      "score": 0.274354071,
+      "score": 0.27321479,
       "source_file": "src/components/Navbar/Navbar.jsx",
       "status": "tentative",
       "uses": 1
@@ -364,7 +401,7 @@
           "q": "Remove the toggle from the search on the results search bar, and when loading /results without a filter or search load 15 recently added businesses."
         }
       ],
-      "score": 0.511852596,
+      "score": 0.509727079,
       "source_file": "src/components/SearchBar/SearchBar.jsx",
       "status": "tentative",
       "uses": 1
@@ -380,7 +417,7 @@
           "q": "Inspect graphify-out for context before redesigning the how it works page."
         }
       ],
-      "score": 0.274354071,
+      "score": 0.27321479,
       "source_file": "src/components/StaticPageLayout/StaticPageLayout.jsx",
       "status": "tentative",
       "uses": 1
@@ -401,7 +438,7 @@
           "q": "Review Admin soft-delete design for User accounts and identify correctness gaps or needed deletedAt filters."
         }
       ],
-      "score": 1.651238471,
+      "score": 1.644381544,
       "source_file": "src/lib/auth/session.js",
       "status": "preferred",
       "uses": 2
@@ -417,13 +454,13 @@
           "q": "Can you fix the business landing-page server error?"
         }
       ],
-      "score": 0.893314925,
+      "score": 0.889605349,
       "source_file": "src/lib/auth/session.js",
       "status": "tentative",
       "uses": 1
     },
     "src_lib_event_dates": {
-      "code_fingerprint": "efc29fe279e306a0e8dbc9eee1d6b0af74da7a4f241e70d73172477910430c9b",
+      "code_fingerprint": "a760de4a3be1977d947cffe7e109ca83e960d2314f6d27e4f23f7a1de7c44e31",
       "label": "event-dates.js",
       "last": "2026-09-01T17:31:42.348127+00:00",
       "provenance": [
@@ -433,7 +470,7 @@
           "q": "lets move on to the next safe phase in the sandbox moderation lifecycle"
         }
       ],
-      "score": 0.831100966,
+      "score": 0.827649739,
       "source_file": "src/lib/event-dates.js",
       "status": "tentative",
       "uses": 1
@@ -449,13 +486,13 @@
           "q": "ok so how should we go about the next phase  to move into launch readiness?"
         }
       ],
-      "score": 0.831241695,
+      "score": 0.827789884,
       "source_file": "src/lib/event-disputes.js",
       "status": "tentative",
       "uses": 1
     },
     "src_lib_event_payments": {
-      "code_fingerprint": "dfbc1a93f6c5d4897891bd039fa87acbda0944e2311b0614c0780e9369d50e95",
+      "code_fingerprint": "1529a3201ef35c1fcdc583b2a02123bfa9804824e9e8a61d8b06d5fe3859884b",
       "label": "event-payments.js",
       "last": "2026-09-01T17:42:15.491612+00:00",
       "provenance": [
@@ -480,13 +517,13 @@
           "q": "Review Admin soft-delete design for User accounts and identify correctness gaps or needed deletedAt filters."
         }
       ],
-      "score": 3.235868715,
+      "score": 3.222431459,
       "source_file": "src/lib/event-payments.js",
       "status": "preferred",
       "uses": 4
     },
     "src_lib_event_payments_createeventcheckoutsessioninternal": {
-      "code_fingerprint": "dfbc1a93f6c5d4897891bd039fa87acbda0944e2311b0614c0780e9369d50e95",
+      "code_fingerprint": "1529a3201ef35c1fcdc583b2a02123bfa9804824e9e8a61d8b06d5fe3859884b",
       "label": "createEventCheckoutSessionInternal()",
       "last": "2026-09-01T21:23:42.106493+00:00",
       "provenance": [
@@ -496,13 +533,13 @@
           "q": "why is one time posting still unavailable?"
         }
       ],
-      "score": 0.834200415,
+      "score": 0.830736317,
       "source_file": "src/lib/event-payments.js",
       "status": "tentative",
       "uses": 1
     },
     "src_lib_event_payments_handleeventcheckoutsessionprocessing": {
-      "code_fingerprint": "dfbc1a93f6c5d4897891bd039fa87acbda0944e2311b0614c0780e9369d50e95",
+      "code_fingerprint": "1529a3201ef35c1fcdc583b2a02123bfa9804824e9e8a61d8b06d5fe3859884b",
       "label": "handleEventCheckoutSessionProcessing()",
       "last": "2026-08-31T21:58:30.009077+00:00",
       "provenance": [
@@ -512,13 +549,13 @@
           "q": "lets move on to the next phase. i did add the new DB keys and sandbox stripe keys in the the local.env. the only thing i did not add is a webhook. i need to know how we should set that up"
         }
       ],
-      "score": 0.815602509,
+      "score": 0.812215642,
       "source_file": "src/lib/event-payments.js",
       "status": "tentative",
       "uses": 1
     },
     "src_lib_event_payments_synceventpaymentfromcheckoutsession": {
-      "code_fingerprint": "dfbc1a93f6c5d4897891bd039fa87acbda0944e2311b0614c0780e9369d50e95",
+      "code_fingerprint": "1529a3201ef35c1fcdc583b2a02123bfa9804824e9e8a61d8b06d5fe3859884b",
       "label": "syncEventPaymentFromCheckoutSession()",
       "last": "2026-08-31T21:58:30.009077+00:00",
       "provenance": [
@@ -528,13 +565,13 @@
           "q": "lets move on to the next phase. i did add the new DB keys and sandbox stripe keys in the the local.env. the only thing i did not add is a webhook. i need to know how we should set that up"
         }
       ],
-      "score": 0.815602509,
+      "score": 0.812215642,
       "source_file": "src/lib/event-payments.js",
       "status": "tentative",
       "uses": 1
     },
     "src_lib_events_geteventbyid": {
-      "code_fingerprint": "4c10d86c166d5954634f163f769c061e9ef6cff69cb7bd6ded603c1e7d05efd4",
+      "code_fingerprint": "63a98135d4e56866d62425ff217086fdf817b97a2012560179eedd81ef5f7604",
       "label": "getEventById()",
       "last": "2026-07-13T21:00:57.816871+00:00",
       "provenance": [
@@ -544,13 +581,13 @@
           "q": "Trace the event detail page implementation, event image fields and fallback behavior, save/favorite counting system, and the equivalent real saved-count flow used on business landing pages."
         }
       ],
-      "score": 0.26266082,
+      "score": 0.261570096,
       "source_file": "src/lib/events.js",
       "status": "tentative",
       "uses": 1
     },
     "src_lib_events_getpublishedevents": {
-      "code_fingerprint": "4c10d86c166d5954634f163f769c061e9ef6cff69cb7bd6ded603c1e7d05efd4",
+      "code_fingerprint": "63a98135d4e56866d62425ff217086fdf817b97a2012560179eedd81ef5f7604",
       "label": "getPublishedEvents()",
       "last": "2026-07-13T21:00:57.816871+00:00",
       "provenance": [
@@ -560,7 +597,7 @@
           "q": "Trace the event detail page implementation, event image fields and fallback behavior, save/favorite counting system, and the equivalent real saved-count flow used on business landing pages."
         }
       ],
-      "score": 0.26266082,
+      "score": 0.261570096,
       "source_file": "src/lib/events.js",
       "status": "tentative",
       "uses": 1
@@ -576,7 +613,7 @@
           "q": "why is one time posting still unavailable?"
         }
       ],
-      "score": 0.834200415,
+      "score": 0.830736317,
       "source_file": "src/lib/pricing.js",
       "status": "tentative",
       "uses": 1
@@ -592,7 +629,7 @@
           "q": "i cant sign in can you fix this prisma issue"
         }
       ],
-      "score": 0.75743248,
+      "score": 0.754287169,
       "source_file": "src/lib/prisma.js",
       "status": "tentative",
       "uses": 1
@@ -628,7 +665,7 @@
           "q": "ehy is it working the loca env and not in the production env?"
         }
       ],
-      "score": 6.612874355,
+      "score": 6.585413758,
       "source_file": "src/lib/role-transitions.js",
       "status": "preferred",
       "uses": 8
@@ -654,7 +691,7 @@
           "q": "ok how can wew make this feature live on the prod site and prod vercel env variables?"
         }
       ],
-      "score": 2.509694266,
+      "score": 2.499272519,
       "source_file": "vercel.json",
       "status": "preferred",
       "uses": 3

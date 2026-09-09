@@ -1,7 +1,4 @@
-import Image from "next/image";
 import Link from "next/link";
-
-import ambassadorImage from "@/app/assets/Ambasodor.png";
 
 import styles from "./overview.module.css";
 
@@ -104,33 +101,6 @@ export function OverviewContent({
                 : "No listings yet. Upgrade your account in billing before creating your first listing."}
             </div>
           )}
-        </div>
-      </section>
-
-      <section className={styles.featurePanel}>
-        <div className={styles.featureContent}>
-          <p className={styles.featureBadge}>Texas spotlight</p>
-          <h2 className={styles.featureTitle}>Join the Localist Ambassador Circle</h2>
-          <p className={styles.featureDescription}>
-            Become a top-tier business partner and get featured in our monthly print editorial sent to 50,000 households.
-          </p>
-
-          <Link href="/about#pricing" className={styles.featurePrimary}>
-            Learn More
-            <span className="material-icons" aria-hidden="true">
-              star_outline
-            </span>
-          </Link>
-        </div>
-
-        <div className={styles.featureMedia}>
-          <Image
-            src={ambassadorImage}
-            alt="Ambassador spotlight sign"
-            className={styles.ambassadorImage}
-            sizes="(max-width: 920px) 100vw, 42vw"
-            priority
-          />
         </div>
       </section>
 

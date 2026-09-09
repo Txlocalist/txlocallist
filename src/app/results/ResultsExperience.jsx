@@ -35,14 +35,6 @@ function eventDateLabel(event) {
   );
 }
 
-function buildSuggestBusinessHref({ query = "", location = "" } = {}) {
-  const params = new URLSearchParams();
-  if (query) params.set("name", query);
-  if (location) params.set("city", location);
-  const queryString = params.toString();
-  return queryString ? `/suggest-business?${queryString}` : "/suggest-business";
-}
-
 /* ─── Card views ──────────────────────────────────────────── */
 function BusinessEngagement({ biz, saved, count, saving, onSave, isLoggedIn, list = false }) {
   const numericSaveCount = Number(count);
@@ -361,11 +353,6 @@ export default function ResultsExperience({
   const [pagination, setPagination] = useState({ businesses: {}, events: {} });
 
   const currentYear = new Date().getFullYear();
-  const suggestBusinessHref = buildSuggestBusinessHref({
-    query: lastSearch.q,
-    location: lastSearch.loc,
-  });
-
   function replaceResultsUrl({
     query = urlParams.get("q") || "",
     location = urlParams.get("loc") || "",
@@ -713,19 +700,15 @@ export default function ResultsExperience({
                 description="Tap the bookmark on any listing and it will land here for quick revisits."
                 primaryLabel="Explore Businesses"
                 primaryAction={clearSearch}
-                secondaryLabel="Suggest a Business"
-                secondaryHref={suggestBusinessHref}
               />
             )
           : (
               <EmptyResultsState
                 eyebrow="No matches"
                 title="Nothing matched that search."
-                description="Try broadening your search, removing a filter chip, or telling us about a great local business we should add."
+                description="Try broadening your search or removing a filter chip."
                 primaryLabel="Clear Filters"
                 primaryAction={clearSearch}
-                secondaryLabel="Suggest a Business"
-                secondaryHref={suggestBusinessHref}
               />
             );
       }
@@ -767,11 +750,9 @@ export default function ResultsExperience({
         <EmptyResultsState
           eyebrow="No events"
           title={`No events found near ${lastSearch.loc || lastSearch.q || "this area"}.`}
-          description="If you know about something worth showing up for, send it our way or post one from the dashboard."
-          primaryLabel="Suggest a Local Spot"
-          primaryHref={suggestBusinessHref}
-          secondaryLabel="Clear Filters"
-          secondaryAction={clearSearch}
+          description="Try broadening your search or removing a filter to see more events."
+          primaryLabel="Clear Filters"
+          primaryAction={clearSearch}
         />
       );
     }
@@ -1053,14 +1034,11 @@ export default function ResultsExperience({
                   <p className="font-accent results-trust-eyebrow">TX Localist Promise</p>
                   <h3 className="results-trust-title">No ads. No sponsored placements. Just local.</h3>
                   <p className="results-trust-description">
-                    If something great is missing from the directory, tell us and we&apos;ll take a look.
+                    Own a local business? Add your listing and help neighbors find you.
                   </p>
                 </div>
                 <div className="results-trust-actions">
-                  <Link href={suggestBusinessHref} className="results-trust-primary">
-                    Suggest a Business
-                  </Link>
-                  <Link href="/post-your-business" className="results-trust-secondary">
+                  <Link href="/post-your-business" className="results-trust-primary">
                     Add Your Listing
                   </Link>
                 </div>
