@@ -440,15 +440,6 @@ export default function HomeExperience({
       )}
 
       <section className={styles.ctaSection} aria-labelledby="cta-heading">
-        <div className={styles.ctaBg} aria-hidden="true">
-          <Image
-            alt=""
-            fill
-            className={styles.ctaBgImage}
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuBRyvcjY9K8xM4cLlT8qibxFqStnZHkHvPZehIiK60agkd3qaqgqhzVsncUqeV7XCZhseo8qtgJczyAv3PZUJ4ostdVn9_1II07tsiGIExEzrwnS4M52YpDQIdAPQJRE-SmctrFIeUHtEjq5A_7CKGBYtSKgk9NtI9doaiNeJSksFXZk0G9fpxAD00yCbhaHFKTo8e-2FaTQQU1SzhUaSGFUKNy-Scuy-vA49OSHWwI3uOk7wbJhs8xyt94Y31ZY7mnPOy8COiHodU"
-            sizes="100vw"
-          />
-        </div>
         <div className={styles.ctaContainer}>
           <h2 id="cta-heading" className={styles.ctaTitle}>
             {isEvents ? "Find the " : "Skip the "}

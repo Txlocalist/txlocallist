@@ -1093,29 +1093,7 @@
   overflow: hidden;
   position: relative;
   isolation: isolate;
-}
-
-.ctaBg {
-  position: absolute;
-  inset: 0;
-  z-index: -10;
-  background-color: var(--retro-brown);
-}
-
-.ctaBgImage {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0.3;
-  mix-blend-mode: overlay;
-  transition:
-    opacity 420ms var(--ease-snap),
-    filter 420ms var(--ease-snap);
-}
-
-.eventsMode .ctaBgImage {
-  opacity: 0.2;
-  filter: saturate(0.8) contrast(1.12);
+  background: var(--background);
 }
 
 .eventsMode .ctaSection {
@@ -1179,12 +1157,13 @@
 
 .ctaContainer {
   position: relative;
-  max-width: 52rem;
+  width: min(70rem, 100%);
+  max-width: none;
   margin: 0 auto;
   padding: clamp(2rem, 6vw, 4.5rem) clamp(1.5rem, 6vw, 5rem);
   border: var(--stroke-bold);
   border-radius: var(--radius-xl);
-  background: #fffaf0;
+  background: var(--retro-brown);
   box-shadow: var(--shadow-stack-xl);
   text-align: center;
 }
@@ -1192,7 +1171,7 @@
 .ctaTitle {
   font-family: var(--font-display), cursive;
   font-size: 3rem;
-  color: var(--retro-brown);
+  color: #fffaf0;
   margin-bottom: 1.25rem;
   text-shadow: 3px 3px 0 rgba(74, 55, 40, 0.18);
 }
@@ -1208,7 +1187,7 @@
 }
 
 .ctaTagline {
-  color: var(--retro-brown-soft);
+  color: #fffaf0;
   font-family: var(--font-accent), cursive;
   font-size: 1.5rem;
   margin-bottom: 3rem;
