@@ -1092,7 +1092,7 @@
   padding: 8rem 1.5rem;
   overflow: hidden;
   position: relative;
-
+  isolation: isolate;
 }
 
 .ctaBg {
@@ -1178,17 +1178,23 @@
 }
 
 .ctaContainer {
-  max-width: 56rem;
+  position: relative;
+  max-width: 52rem;
   margin: 0 auto;
+  padding: clamp(2rem, 6vw, 4.5rem) clamp(1.5rem, 6vw, 5rem);
+  border: var(--stroke-bold);
+  border-radius: var(--radius-xl);
+  background: #fffaf0;
+  box-shadow: var(--shadow-stack-xl);
   text-align: center;
 }
 
 .ctaTitle {
   font-family: var(--font-display), cursive;
   font-size: 3rem;
-  color: white;
-  margin-bottom: 2rem;
-  text-shadow: 4px 4px 0 rgba(74, 55, 40, 0.5);
+  color: var(--retro-brown);
+  margin-bottom: 1.25rem;
+  text-shadow: 3px 3px 0 rgba(74, 55, 40, 0.18);
 }
 
 @media (min-width: 768px) {
@@ -1202,7 +1208,7 @@
 }
 
 .ctaTagline {
-  color: var(--retro-yellow);
+  color: var(--retro-brown-soft);
   font-family: var(--font-accent), cursive;
   font-size: 1.5rem;
   margin-bottom: 3rem;

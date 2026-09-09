@@ -3,7 +3,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { logoutAction } from "@/app/actions/auth";
-import logo from "@/app/assets/Tx-Localist-01.png";
 import styles from "@/app/dashboard/DashboardShell.module.css";
 import { getCurrentSession } from "@/lib/auth/session";
 import { isStaffRole } from "@/lib/account-access";
@@ -50,10 +49,10 @@ export async function AdminShell({ children, activeTab = "overview" }) {
             <Link href="/" className={styles.brandLink}>
               <div className={styles.brandMark}>
                 <Image
-                  src={logo}
-                  alt="TX Local List"
-                  width={56}
-                  height={56}
+                  src="/Main-Logo.svg"
+                  alt="Texas Localist"
+                  width={170}
+                  height={82}
                   className={styles.brandImage}
                   priority
                 />

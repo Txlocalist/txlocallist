@@ -48,6 +48,12 @@ jobs:
             grep '^DATABASE_URL=' .env >> "$GITHUB_ENV"
           fi
 
+      - name: Install project dependencies
+        run: npm ci
+
+      - name: Seed homepage directory listings
+        run: npm run db:seed-local-businesses
+
       - name: Build Project Artifacts
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
 

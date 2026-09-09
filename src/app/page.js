@@ -2,6 +2,9 @@ import LandingPageTemplate from "./LandingPageTemplate";
 import { redirect } from "next/navigation";
 import { getTopRatedLocals } from "@/lib/top-rated-locals";
 
+// The home showcase is database-backed and must not be frozen at build time.
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Texas Localist | Find What's Nearby. Fast.",
   description:

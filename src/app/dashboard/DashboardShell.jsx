@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import logo from "@/app/assets/Tx-Localist-01.png";
 import { logoutAction } from "@/app/actions/auth";
 import { getCurrentSession } from "@/lib/auth/session";
 import { getAccountAccess } from "@/lib/account-access";
@@ -123,10 +122,10 @@ export async function DashboardLayout({ children, activeTab = "overview" }) {
             <Link href="/" className={styles.brandLink}>
               <div className={styles.brandMark}>
                 <Image
-                  src={logo}
-                  alt="TX Local List"
-                  width={56}
-                  height={56}
+                  src="/Main-Logo.svg"
+                  alt="Texas Localist"
+                  width={170}
+                  height={82}
                   className={styles.brandImage}
                   priority
                 />
