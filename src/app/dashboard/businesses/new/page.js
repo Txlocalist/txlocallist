@@ -3,6 +3,7 @@ import { DashboardLayout } from "../../DashboardShell";
 import { CreateBusinessForm } from "./CreateBusinessForm";
 import styles from "../../dashboard.module.css";
 import { getAccountAccess } from "@/lib/account-access";
+import { isEventCategoryTagName } from "@/lib/event-categories.mjs";
 import { prisma } from "@/lib/prisma";
 import { getCurrentSession } from "@/lib/auth/session";
 import { isMissingPrismaTableError, phase3SchemaMessage } from "@/lib/prisma-errors";
@@ -58,14 +59,19 @@ export default async function NewBusinessPage() {
   }
 
   let cities = [];
+  let categories = [];
   let tags = [];
   let schemaNotice = null;
 
   try {
-    [cities, tags] = await Promise.all([
+    const [availableCities, availableCategories, availableTags] = await Promise.all([
       prisma.city.findMany({ orderBy: { name: "asc" } }),
+      prisma.category.findMany({ orderBy: { name: "asc" } }),
       prisma.tag.findMany({ orderBy: { name: "asc" } }),
     ]);
+    cities = availableCities;
+    categories = availableCategories;
+    tags = availableTags.filter((tag) => !isEventCategoryTagName(tag.name));
   } catch (error) {
     if (!isMissingPrismaTableError(error)) {
       throw error;
@@ -90,12 +96,12 @@ export default async function NewBusinessPage() {
           <div className={styles.emptyState}>
             <h2 className={styles.emptyStateTitle}>Form Not Ready Yet</h2>
             <p className={styles.emptyStateDescription}>
-              {schemaNotice} Once the database is updated, the city and tag options will appear here.
+              {schemaNotice} Once the database is updated, the city, category, and tag options will appear here.
             </p>
           </div>
         </div>
       ) : (
-        <CreateBusinessForm cities={cities} tags={tags} />
+        <CreateBusinessForm cities={cities} categories={categories} tags={tags} />
       )}
     </DashboardLayout>
   );

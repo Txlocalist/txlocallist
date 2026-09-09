@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth/session";
 import { getAccountAccess } from "@/lib/account-access";
 import { normalizeBusinessHoursInput } from "@/lib/business-hours";
+import { isEventCategoryTagName } from "@/lib/event-categories.mjs";
 import { prisma } from "@/lib/prisma";
 import { isMissingPrismaTableError, phase3SchemaMessage } from "@/lib/prisma-errors";
 
@@ -62,6 +63,20 @@ function normalizeSocialLinks(values = {}) {
 
 function normalizeNewTagNames(value = "") {
   return [...new Set(value.toString().split(",").map((name) => name.trim().slice(0, 50)).filter((name) => slugify(name)))];
+}
+
+async function areBusinessTagIdsValid(tagIds) {
+  if (tagIds.length === 0) return true;
+
+  const selectedTags = await prisma.tag.findMany({
+    where: { id: { in: tagIds } },
+    select: { id: true, name: true },
+  });
+
+  return (
+    selectedTags.length === tagIds.length &&
+    selectedTags.every((tag) => !isEventCategoryTagName(tag.name))
+  );
 }
 
 async function resolveCity({ cityId, cityName }) {
@@ -223,18 +238,11 @@ export async function createBusinessAction(_prevState, formData) {
     }
   }
 
-  // Verify tags exist (if any selected)
-  if (tagIds.length > 0) {
-    const selectedTags = await prisma.tag.findMany({
-      where: { id: { in: tagIds } },
-      select: { id: true },
+  // Event categories share the Tag table, but are reserved for events.
+  if (!(await areBusinessTagIdsValid(tagIds))) {
+    return buildErrorState("One or more selected tags are not available for business listings.", {
+      tagIds: "Reload the page and select business tags again.",
     });
-
-    if (selectedTags.length !== tagIds.length) {
-      return buildErrorState("One or more selected tags are no longer available.", {
-        tagIds: "Reload the page and select tags again.",
-      });
-    }
   }
 
   if (!billingState.activePlanId) {
@@ -308,6 +316,7 @@ export async function createBusinessAction(_prevState, formData) {
 
   revalidatePath("/dashboard/businesses");
   revalidatePath("/search");
+  revalidatePath("/results");
 
   // Redirect to the edit page so they can add more photos and publish
   redirect(`/dashboard/businesses/${business.id}/edit?created=1`);
@@ -361,6 +370,7 @@ export async function publishBusinessAction(businessId) {
 
   revalidatePath(`/business/${business.slug}`);
   revalidatePath("/search");
+  revalidatePath("/results");
   revalidatePath("/dashboard/businesses");
 
   return { success: true, message: "Business submitted for review." };
@@ -400,6 +410,7 @@ export async function pauseBusinessAction(businessId) {
 
   revalidatePath(`/business/${businessId}`);
   revalidatePath("/search");
+  revalidatePath("/results");
 
   return { success: true, message: "Business paused successfully." };
 }
@@ -450,6 +461,10 @@ export async function createBusinessFromFormAction(data) {
   const socialLinks = normalizeSocialLinks(data.socialLinks);
   const newTagNames = normalizeNewTagNames(data.newTags);
 
+  if (newTagNames.some(isEventCategoryTagName)) {
+    return { success: false, message: "Event categories cannot be used as business tags." };
+  }
+
   const billingState = await getAccountAccess(user.id);
   if (!billingState?.hasCreatorAccess) {
     return { success: false, message: "Creator access is required before creating a listing." };
@@ -497,16 +512,9 @@ export async function createBusinessFromFormAction(data) {
     }
   }
 
-  // Verify tags exist
-  if (tagIds.length > 0) {
-    const selectedTags = await prisma.tag.findMany({
-      where: { id: { in: tagIds } },
-      select: { id: true },
-    });
-
-    if (selectedTags.length !== tagIds.length) {
-      return { success: false, message: "One or more selected tags are no longer available." };
-    }
+  // Event categories share the Tag table, but are reserved for events.
+  if (!(await areBusinessTagIdsValid(tagIds))) {
+    return { success: false, message: "One or more selected tags are not available for business listings." };
   }
 
   let normalizedHours = [];
@@ -617,6 +625,7 @@ export async function createBusinessFromFormAction(data) {
 
     revalidatePath("/dashboard/businesses");
     revalidatePath("/search");
+    revalidatePath("/results");
 
     return {
       success: true,
@@ -651,6 +660,10 @@ export async function updateBusinessAction(businessId, data) {
   const hiringRoles = normalizeHiringRoles(data.hiringRoles);
   const socialLinks = normalizeSocialLinks(data.socialLinks);
   const newTagNames = normalizeNewTagNames(data.newTags);
+
+  if (newTagNames.some(isEventCategoryTagName)) {
+    return { success: false, message: "Event categories cannot be used as business tags." };
+  }
 
   // Verify ownership
   const business = await prisma.business.findUnique({
@@ -707,16 +720,9 @@ export async function updateBusinessAction(businessId, data) {
     }
   }
 
-  // Verify tags exist
-  if (tagIds.length > 0) {
-    const selectedTags = await prisma.tag.findMany({
-      where: { id: { in: tagIds } },
-      select: { id: true },
-    });
-
-    if (selectedTags.length !== tagIds.length) {
-      return { success: false, message: "One or more selected tags are no longer available." };
-    }
+  // Event categories share the Tag table, but are reserved for events.
+  if (!(await areBusinessTagIdsValid(tagIds))) {
+    return { success: false, message: "One or more selected tags are not available for business listings." };
   }
 
   let normalizedHours = null;
@@ -760,13 +766,12 @@ export async function updateBusinessAction(businessId, data) {
           cityId: data.cityId,
           lat,
           lng,
-          categories:
-            categoryIds.length > 0
-              ? {
-                  deleteMany: {},
-                  create: categoryIds.map((categoryId) => ({ categoryId })),
-                }
-              : undefined,
+          categories: {
+            deleteMany: {},
+            ...(categoryIds.length > 0
+              ? { create: categoryIds.map((categoryId) => ({ categoryId })) }
+              : {}),
+          },
           tags: { deleteMany: {} },
           socialLinks: {
             deleteMany: {},
@@ -803,6 +808,7 @@ export async function updateBusinessAction(businessId, data) {
     revalidatePath("/dashboard/businesses");
     revalidatePath(`/business/${business.slug}`);
     revalidatePath("/search");
+    revalidatePath("/results");
 
     return { success: true, message: "Business updated successfully!" };
   } catch (error) {

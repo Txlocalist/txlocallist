@@ -67,10 +67,22 @@ export default async function ResultsPage({ searchParams }) {
   const params = await searchParams;
   const q   = params?.q   ?? "";
   const loc = params?.loc ?? "";
+  const initialCategory = params?.category ?? "";
   const initialBrowseAll = params?.browse === "all";
   const initialJobsOnly = params?.jobs === "1";
-  const [availableTags, activeBusinessCities, publishedEventCities] = await Promise.all([
-    prisma.tag.findMany({
+  const [availableCategories, activeBusinessCities, publishedEventCities] = await Promise.all([
+    prisma.category.findMany({
+      where: {
+        businessCategories: {
+          some: {
+            business: {
+              status: "ACTIVE",
+              publishedAt: { not: null },
+              owner: { deletedAt: null },
+            },
+          },
+        },
+      },
       orderBy: { name: "asc" },
       select: { id: true, name: true, slug: true },
     }),
@@ -158,13 +170,14 @@ export default async function ResultsPage({ searchParams }) {
     <ResultsExperience
       initialQuery={q}
       initialLocation={loc}
+      initialCategory={initialCategory}
       initialBrowseAll={initialBrowseAll}
       initialJobsOnly={initialJobsOnly}
       user={user}
       dashboardPath={dashboardPath}
       savedIds={savedIds}
       initialFavoriteBusinesses={favoriteBusinesses}
-      availableTags={availableTags}
+      availableCategories={availableCategories}
       availableCities={availableCities}
     />
   );

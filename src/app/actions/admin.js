@@ -29,6 +29,7 @@ export async function suspendBusinessAction(formData) {
   await prisma.business.update({ where: { id }, data: { status: "SUSPENDED" } });
   revalidatePath("/admin/businesses");
   revalidatePath("/admin/posts");
+  revalidatePath("/results");
 }
 
 /** Activate (unsuspend) a business listing */
@@ -43,6 +44,7 @@ export async function activateBusinessAction(formData) {
   if (result.count !== 1) return;
   revalidatePath("/admin/businesses");
   revalidatePath("/admin/posts");
+  revalidatePath("/results");
 }
 
 /** Archive (soft delete) a business listing */
@@ -53,6 +55,7 @@ export async function archiveBusinessAction(formData) {
   await prisma.business.update({ where: { id }, data: { status: "ARCHIVED" } });
   revalidatePath("/admin/businesses");
   revalidatePath("/admin/posts");
+  revalidatePath("/results");
 }
 
 function revalidateAdminModerationPaths() {
@@ -115,6 +118,7 @@ export async function updatePostModerationStatusAction(formData) {
     revalidatePath(`/business/${business.slug}`);
     revalidatePath("/dashboard/businesses");
     revalidatePath("/search");
+    revalidatePath("/results");
     revalidateAdminModerationPaths();
 
     if (nextStatus === "ACTIVE" && business.owner?.email) {

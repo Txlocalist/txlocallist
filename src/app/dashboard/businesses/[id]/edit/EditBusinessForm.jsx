@@ -24,7 +24,7 @@ function parseHiringRoles(raw) {
  * Business edit form.
  * Similar to CreateBusinessForm but for existing listings.
  */
-export function EditBusinessForm({ business, cities, tags }) {
+export function EditBusinessForm({ business, cities, categories, tags }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -43,7 +43,10 @@ export function EditBusinessForm({ business, cities, tags }) {
     latitude: business.lat ?? "",
     longitude: business.lng ?? "",
     hours: createBusinessHoursFormState(business.hours),
-    tagIds: business.tags?.map((bt) => bt.tagId) || [],
+    categoryIds: business.categories?.map((bc) => bc.categoryId) || [],
+    tagIds: business.tags
+      ?.map((bt) => bt.tagId)
+      .filter((tagId) => tags.some((tag) => tag.id === tagId)) || [],
     newTags: "",
     isHiring: business.isHiring ?? false,
     hiringRoles: parseHiringRoles(business.hiringRoles),
@@ -67,6 +70,14 @@ export function EditBusinessForm({ business, cities, tags }) {
       tagIds: prev.tagIds.includes(tagId)
         ? prev.tagIds.filter((id) => id !== tagId)
         : prev.tagIds.length < 5 ? [...prev.tagIds, tagId] : prev.tagIds,
+    }));
+  };
+  const handleCategoryToggle = (categoryId) => {
+    setFormData((prev) => ({
+      ...prev,
+      categoryIds: prev.categoryIds.includes(categoryId)
+        ? prev.categoryIds.filter((id) => id !== categoryId)
+        : [...prev.categoryIds, categoryId],
     }));
   };
   const handleSocialChange = (platform, value) => setFormData((prev) => ({ ...prev, socialLinks: { ...prev.socialLinks, [platform]: value } }));
@@ -132,6 +143,7 @@ export function EditBusinessForm({ business, cities, tags }) {
         latitude: formData.latitude,
         longitude: formData.longitude,
         hours: formData.hours,
+        categoryIds: formData.categoryIds,
         tagIds: formData.tagIds,
         newTags: formData.newTags,
         isHiring: formData.isHiring,
@@ -335,7 +347,27 @@ export function EditBusinessForm({ business, cities, tags }) {
           }
         />
 
-        <h3 style={{ marginTop: "2rem" }}>Tags</h3>
+        <h3 style={{ marginTop: "2rem" }}>Categories & Tags</h3>
+
+        <div className={formStyles.formGroup}>
+          <label className={formStyles.label}>Business categories</label>
+          {categories.length > 0 ? (
+            <div className={formStyles.categoryGrid}>
+              {categories.map((category) => (
+                <label key={category.id} className={formStyles.categoryCheckbox}>
+                  <input
+                    type="checkbox"
+                    checked={formData.categoryIds.includes(category.id)}
+                    onChange={() => handleCategoryToggle(category.id)}
+                  />
+                  <span className={formStyles.categoryLabel}>{category.name}</span>
+                </label>
+              ))}
+            </div>
+          ) : (
+            <p className={formStyles.stepDescription}>No business categories are available yet.</p>
+          )}
+        </div>
 
         <div className={formStyles.formGroup}>
           <label className={formStyles.label}>Tags (up to five, admin-approved)</label>

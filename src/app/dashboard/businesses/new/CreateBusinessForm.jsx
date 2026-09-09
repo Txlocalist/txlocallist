@@ -12,7 +12,7 @@ import { createBusinessHoursFormState, getBusinessHoursDisplayRows } from "@/lib
  * Multi-step business creation form.
  * Steps: Basic Info -> Location -> Tags -> Photos -> Review
  */
-export function CreateBusinessForm({ cities, tags }) {
+export function CreateBusinessForm({ cities, categories, tags }) {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -36,7 +36,8 @@ export function CreateBusinessForm({ cities, tags }) {
     longitude: "",
     hours: createBusinessHoursFormState(),
     
-    // Step 3: Tags
+    // Step 3: Categories and tags
+    categoryIds: [],
     tagIds: [],
     newTags: "",
     isHiring: false,
@@ -67,6 +68,15 @@ export function CreateBusinessForm({ cities, tags }) {
       tagIds: prev.tagIds.includes(tagId)
         ? prev.tagIds.filter((id) => id !== tagId)
         : prev.tagIds.length < 5 ? [...prev.tagIds, tagId] : prev.tagIds,
+    }));
+  };
+
+  const handleCategoryToggle = (categoryId) => {
+    setFormData((prev) => ({
+      ...prev,
+      categoryIds: prev.categoryIds.includes(categoryId)
+        ? prev.categoryIds.filter((id) => id !== categoryId)
+        : [...prev.categoryIds, categoryId],
     }));
   };
 
@@ -159,6 +169,7 @@ export function CreateBusinessForm({ cities, tags }) {
         latitude: formData.latitude ? parseFloat(formData.latitude) : null,
         longitude: formData.longitude ? parseFloat(formData.longitude) : null,
         hours: formData.hours,
+        categoryIds: formData.categoryIds,
         tagIds: formData.tagIds,
         newTags: formData.newTags,
         isHiring: formData.isHiring,
@@ -397,13 +408,33 @@ export function CreateBusinessForm({ cities, tags }) {
         </div>
       )}
 
-      {/* Step 3: Tags */}
+      {/* Step 3: Categories and tags */}
       {step === 3 && (
         <div className={formStyles.step}>
-          <h2 className={formStyles.stepTitle}>Tags</h2>
+          <h2 className={formStyles.stepTitle}>Categories & Tags</h2>
           <p className={formStyles.stepDescription}>
-            Choose up to five admin-approved tags that fit your business
+            Choose the business categories customers should find you under, plus up to five tags
           </p>
+
+          <div className={formStyles.formGroup}>
+            <label className={formStyles.label}>Business categories</label>
+            {categories.length > 0 ? (
+              <div className={formStyles.categoryGrid}>
+                {categories.map((category) => (
+                  <label key={category.id} className={formStyles.categoryCheckbox}>
+                    <input
+                      type="checkbox"
+                      checked={formData.categoryIds.includes(category.id)}
+                      onChange={() => handleCategoryToggle(category.id)}
+                    />
+                    <span className={formStyles.categoryLabel}>{category.name}</span>
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <p className={formStyles.stepDescription}>No business categories are available yet.</p>
+            )}
+          </div>
 
           <div className={formStyles.formGroup}>
             <label className={formStyles.label}>Tags (admin-managed, optional)</label>
@@ -522,6 +553,18 @@ export function CreateBusinessForm({ cities, tags }) {
               {cities.find((c) => c.id === formData.cityId)?.name}
             </p>
             <p>{formData.address}</p>
+          </div>
+
+          <div className={formStyles.reviewCard}>
+            <h3>Categories</h3>
+            <p>
+              {formData.categoryIds.length > 0
+                ? formData.categoryIds
+                    .map((id) => categories.find((category) => category.id === id)?.name)
+                    .filter(Boolean)
+                    .join(", ")
+                : "No categories selected"}
+            </p>
           </div>
 
           <div className={formStyles.reviewCard}>

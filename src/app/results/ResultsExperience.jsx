@@ -317,13 +317,14 @@ function EmptyResultsState({
 export default function ResultsExperience({
   initialQuery = "",
   initialLocation = "",
+  initialCategory = "",
   initialBrowseAll = false,
   initialJobsOnly = false,
   user = null,
   dashboardPath = null,
   savedIds = [],
   initialFavoriteBusinesses = [],
-  availableTags = [],
+  availableCategories = [],
   availableCities = [],
 }) {
   const router    = useRouter();
@@ -335,6 +336,7 @@ export default function ResultsExperience({
   const [events,      setEvents]      = useState([]);
   const [hasSearched, setHasSearched] = useState(false);
   const [lastSearch,  setLastSearch]  = useState({ q: initialQuery, loc: initialLocation });
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [viewMode,         setViewMode]         = useState("card"); // "card" | "list"
   const [showCities,       setShowCities]       = useState(false);
   const [showCategories,   setShowCategories]   = useState(false);
@@ -361,6 +363,7 @@ export default function ResultsExperience({
   function replaceResultsUrl({
     query = "",
     location = "",
+    category = "",
     type = "businesses",
     jobs = false,
     browse = "",
@@ -368,6 +371,7 @@ export default function ResultsExperience({
     const params = new URLSearchParams();
     if (query) params.set("q", query);
     if (location) params.set("loc", location);
+    if (category) params.set("category", category);
     if (type && type !== "businesses") params.set("tab", type);
     if (jobs) params.set("jobs", "1");
     if (browse === "all") params.set("browse", "all");
@@ -383,7 +387,7 @@ export default function ResultsExperience({
 
   useEffect(() => {
     const hasInitialSearch = Boolean(
-      initialQuery || initialLocation || initialBrowseAll || initialJobsOnly
+      initialQuery || initialLocation || initialCategory || initialBrowseAll || initialJobsOnly
     );
 
     runSearch(
@@ -392,9 +396,10 @@ export default function ResultsExperience({
       "",
       initialJobsOnly ? "jobs" : initialBrowseAll ? "all" : hasInitialSearch ? "search" : "new",
       initialJobsOnly,
-      hasInitialSearch ? undefined : INITIAL_RECENT_BUSINESS_LIMIT
+      hasInitialSearch ? undefined : INITIAL_RECENT_BUSINESS_LIMIT,
+      initialCategory
     );
-  }, [initialBrowseAll, initialJobsOnly, initialLocation, initialQuery]);
+  }, [initialBrowseAll, initialCategory, initialJobsOnly, initialLocation, initialQuery]);
 
   function syncFavoriteBusinesses(biz, shouldBeSaved, count) {
     setFavoriteBusinesses((prev) => {
@@ -424,11 +429,13 @@ export default function ResultsExperience({
     sort = "",
     browseTab = "search",
     nextJobsOnly = false,
-    limit
+    limit,
+    category = ""
   ) {
     setIsSearching(true);
     setHasSearched(true);
     setLastSearch({ q, loc });
+    setSelectedCategory(category);
     setActiveSort(sort);
     setActiveBrowseTab(browseTab);
     setJobsOnly(nextJobsOnly);
@@ -439,6 +446,7 @@ export default function ResultsExperience({
     if (sort) bizP.set("sort", sort);
     if (nextJobsOnly) bizP.set("jobs", "1");
     if (limit) bizP.set("limit", String(limit));
+    if (category) bizP.set("category", category);
 
     const evtP = new URLSearchParams();
     if (loc) evtP.set("city", loc);
@@ -527,11 +535,20 @@ export default function ResultsExperience({
     replaceResultsUrl({
       query: nextQuery,
       location: nextLocation,
+      category: selectedCategory,
       type: activeTab,
       jobs: jobsOnly,
       browse: activeBrowseTab === "all" ? "all" : "",
     });
-    runSearch(nextQuery, nextLocation, activeSort, activeBrowseTab || "search", jobsOnly);
+    runSearch(
+      nextQuery,
+      nextLocation,
+      activeSort,
+      activeBrowseTab || "search",
+      jobsOnly,
+      undefined,
+      selectedCategory
+    );
   }
 
   function removeLocationFilter() {
@@ -541,6 +558,7 @@ export default function ResultsExperience({
 
     if (
       !lastSearch.q &&
+      !selectedCategory &&
       activeTab === "businesses" &&
       activeBrowseTab !== "popular" &&
       activeBrowseTab !== "all" &&
@@ -553,27 +571,49 @@ export default function ResultsExperience({
     replaceResultsUrl({
       query: lastSearch.q,
       location: nextLocation,
+      category: selectedCategory,
       type: activeTab,
       jobs: jobsOnly,
       browse: activeBrowseTab === "all" ? "all" : "",
     });
-    runSearch(lastSearch.q, nextLocation, activeSort, activeBrowseTab || "search", jobsOnly);
+    runSearch(
+      lastSearch.q,
+      nextLocation,
+      activeSort,
+      activeBrowseTab || "search",
+      jobsOnly,
+      undefined,
+      selectedCategory
+    );
+  }
+
+  function removeCategoryFilter() {
+    if (activeBrowseTab === "favorites") return;
+
+    replaceResultsUrl({
+      query: lastSearch.q,
+      location: lastSearch.loc,
+      type: "businesses",
+      jobs: jobsOnly,
+      browse: activeBrowseTab === "all" ? "all" : "",
+    });
+    runSearch(lastSearch.q, lastSearch.loc, activeSort, activeBrowseTab || "search", jobsOnly);
   }
 
   function removeBrowseFilter() {
     if (activeBrowseTab === "favorites") {
-      if (lastSearch.q || lastSearch.loc) {
-        replaceResultsUrl({ query: lastSearch.q, location: lastSearch.loc, type: activeTab });
-        runSearch(lastSearch.q, lastSearch.loc, "", "search");
+      if (lastSearch.q || lastSearch.loc || selectedCategory) {
+        replaceResultsUrl({ query: lastSearch.q, location: lastSearch.loc, category: selectedCategory, type: activeTab });
+        runSearch(lastSearch.q, lastSearch.loc, "", "search", false, undefined, selectedCategory);
       } else {
         clearSearch();
       }
       return;
     }
 
-    if (lastSearch.q || lastSearch.loc || activeTab === "events") {
-      replaceResultsUrl({ query: lastSearch.q, location: lastSearch.loc, type: activeTab });
-      runSearch(lastSearch.q, lastSearch.loc, "", "search");
+    if (lastSearch.q || lastSearch.loc || selectedCategory || activeTab === "events") {
+      replaceResultsUrl({ query: lastSearch.q, location: lastSearch.loc, category: selectedCategory, type: activeTab });
+      runSearch(lastSearch.q, lastSearch.loc, "", "search", false, undefined, selectedCategory);
     } else {
       clearSearch();
     }
@@ -595,10 +635,11 @@ export default function ResultsExperience({
     replaceResultsUrl({
       query: lastSearch.q,
       location: lastSearch.loc,
+      category: selectedCategory,
       type: "businesses",
       browse: "all",
     });
-    runSearch(lastSearch.q, lastSearch.loc, "", "all", false);
+    runSearch(lastSearch.q, lastSearch.loc, "", "all", false, undefined, selectedCategory);
   }
 
   async function toggleSave(biz) {
@@ -712,6 +753,19 @@ export default function ResultsExperience({
       label: `Query: ${lastSearch.q}`,
       tone: "default",
       onRemove: removeQueryFilter,
+    });
+  }
+
+  if (hasSearched && activeBrowseTab !== "favorites" && selectedCategory) {
+    const categoryName = availableCategories.find(
+      (category) => category.slug === selectedCategory
+    )?.name;
+
+    activeFilterChips.push({
+      key: "category",
+      label: `Category: ${categoryName || selectedCategory}`,
+      tone: "default",
+      onRemove: removeCategoryFilter,
     });
   }
 
@@ -887,21 +941,25 @@ export default function ResultsExperience({
               </button>
               {showCategories && (
                 <div className="cities-dropdown">
-                  {availableTags.length > 0 ? (
-                    availableTags.map((tag) => (
+                  {availableCategories.length > 0 ? (
+                    availableCategories.map((category) => (
                       <button
-                        key={tag.id}
+                        key={category.id}
                         type="button"
                         className="font-accent city-option"
                         onClick={() => {
                           setShowCategories(false);
                           setActiveTab("businesses");
-                          replaceResultsUrl({ query: tag.name, location: lastSearch.loc, type: "businesses" });
-                          runSearch(tag.name, lastSearch.loc, "", "search");
+                          replaceResultsUrl({
+                            location: lastSearch.loc,
+                            category: category.slug,
+                            type: "businesses",
+                          });
+                          runSearch("", lastSearch.loc, "", "search", false, undefined, category.slug);
                         }}
                       >
                         <span className="material-icons city-option-pin">sell</span>
-                        {tag.name}
+                        {category.name}
                       </button>
                     ))
                   ) : (

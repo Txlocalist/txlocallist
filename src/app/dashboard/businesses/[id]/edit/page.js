@@ -3,6 +3,7 @@ import { DashboardLayout } from "../../../DashboardShell";
 import { EditBusinessForm } from "./EditBusinessForm";
 import styles from "../../../dashboard.module.css";
 import { getAccountAccess } from "@/lib/account-access";
+import { isEventCategoryTagName } from "@/lib/event-categories.mjs";
 import { prisma } from "@/lib/prisma";
 import { getCurrentSession } from "@/lib/auth/session";
 import { isMissingPrismaTableError, phase3SchemaMessage } from "@/lib/prisma-errors";
@@ -30,6 +31,7 @@ export default async function EditBusinessPage({ params }) {
   let business;
   let businessHours = [];
   let cities = [];
+  let categories = [];
   let tags = [];
   let schemaNotice = null;
 
@@ -96,10 +98,14 @@ export default async function EditBusinessPage({ params }) {
   }
 
   try {
-    [cities, tags] = await Promise.all([
+    const [availableCities, availableCategories, availableTags] = await Promise.all([
       prisma.city.findMany({ orderBy: { name: "asc" } }),
+      prisma.category.findMany({ orderBy: { name: "asc" } }),
       prisma.tag.findMany({ orderBy: { name: "asc" } }),
     ]);
+    cities = availableCities;
+    categories = availableCategories;
+    tags = availableTags.filter((tag) => !isEventCategoryTagName(tag.name));
   } catch (error) {
     if (!isMissingPrismaTableError(error)) {
       throw error;
@@ -118,7 +124,7 @@ export default async function EditBusinessPage({ params }) {
           <div className={styles.emptyState}>
             <h2 className={styles.emptyStateTitle}>Reference Data Unavailable</h2>
             <p className={styles.emptyStateDescription}>
-              {phase3SchemaMessage} Finish the schema update so cities and tags can load.
+              {phase3SchemaMessage} Finish the schema update so cities, categories, and tags can load.
             </p>
           </div>
         </div>
@@ -140,6 +146,7 @@ export default async function EditBusinessPage({ params }) {
       <EditBusinessForm
         business={{ ...business, hours: businessHours }}
         cities={cities}
+        categories={categories}
         tags={tags}
       />
     </DashboardLayout>
