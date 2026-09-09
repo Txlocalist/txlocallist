@@ -1,3 +1,5 @@
+import ResultsSort from "@/components/ResultsSort/ResultsSort";
+import { resultOrderBy, sortResults } from "@/lib/results-sort";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
@@ -8,7 +10,8 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentSession } from "@/lib/auth/session";
 import { isMissingPrismaTableError, phase3SchemaMessage } from "@/lib/prisma-errors";
 
-export default async function ApplicationsPage() {
+export default async function ApplicationsPage({ searchParams }) {
+  const params = await searchParams;
   const session = await getCurrentSession();
 
   if (!session || !session.user) {
@@ -46,7 +49,7 @@ export default async function ApplicationsPage() {
           },
         },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: resultOrderBy(params?.sort, { name: "firstName" }),
     });
   } catch (error) {
     if (!isMissingPrismaTableError(error)) {
@@ -66,6 +69,7 @@ export default async function ApplicationsPage() {
         </div>
       </div>
 
+      <ResultsSort />
       {schemaNotice && (
         <div className={styles.card}>
           <div className={styles.emptyState}>
@@ -109,7 +113,7 @@ export default async function ApplicationsPage() {
             </div>
 
             <div className={styles.tableBody}>
-              {applications.map((application) => (
+              {sortResults(applications, params?.sort, { name: (item) => `${item.firstName} ${item.lastName}` }).map((application) => (
                 <div key={application.id} className={styles.tableRow}>
                   <div className={styles.tableCol} style={{ flex: 2 }}>
                     <div>

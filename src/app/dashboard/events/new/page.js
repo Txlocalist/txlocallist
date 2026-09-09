@@ -43,7 +43,7 @@ export default async function NewEventPage() {
 
   try {
     businesses = await prisma.business.findMany({
-      where: { ownerId: user.id, status: "ACTIVE" },
+      where: { ownerId: user.id, status: "ACTIVE", deletedAt: null },
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     });

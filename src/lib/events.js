@@ -1,3 +1,5 @@
+import { formatEventCityLabel, mergeEventCityLabels } from "@/lib/cities";
+import { getPublicEventAccessWhere } from "@/lib/listing-visibility";
 import { prisma } from "@/lib/prisma";
 import { isUnavailablePrismaRelationError } from "@/lib/prisma-errors";
 import {
@@ -62,10 +64,7 @@ function inferEventType(event) {
 }
 
 function formatCityLabel(city, state) {
-  const cityValue = String(city || "").trim();
-  const stateValue = String(state || "").trim().toUpperCase();
-  if (!cityValue) return "Texas";
-  return stateValue ? `${cityValue}, ${stateValue}` : cityValue;
+  return formatEventCityLabel(city, state);
 }
 
 function parseDateKey(dateKey) {
@@ -173,6 +172,7 @@ function normalizeEvent(event) {
     categoryTags,
     tags,
     type,
+    createdAt: event.createdAt?.toISOString() ?? null,
     startDate: event.startDate ? event.startDate.toISOString() : null,
     endDate: event.endDate ? event.endDate.toISOString() : null,
     timezone,
@@ -197,6 +197,7 @@ export async function getPublishedEvents(userId = null) {
     select: {
       id: true,
       title: true,
+      createdAt: true,
       description: true,
       imageUrl: true,
       eventUrl: true,
@@ -326,24 +327,28 @@ export function groupEventsByDate(events) {
 }
 
 export async function getEventsPageData(filters = {}, { userId = null } = {}) {
-  const events = await getPublishedEvents(userId);
+  const [events, managedCities] = await Promise.all([
+    getPublishedEvents(userId),
+    prisma.city.findMany({ select: { name: true, state: true }, orderBy: { name: "asc" } }),
+  ]);
   const filteredEvents = filterEvents(events, filters);
 
   return {
     allEvents: events,
     filteredEvents,
     groupedEvents: groupEventsByDate(filteredEvents),
-    cities: getEventCities(events),
+    cities: mergeEventCityLabels(managedCities, events),
     categories: getEventCategories(events),
   };
 }
 
 export async function getEventById(id) {
   const event = await prisma.event.findFirst({
-    where: { id, status: "PUBLISHED", creator: { deletedAt: null } },
+    where: { id, ...getPublicEventAccessWhere() },
     select: {
       id: true,
       title: true,
+      createdAt: true,
       description: true,
       imageUrl: true,
       eventUrl: true,

@@ -112,11 +112,11 @@ async function getValidatedEventInput(formData, user, existingEvent = null) {
   if (values.businessId) {
     business = await prisma.business.findUnique({
       where: { id: values.businessId },
-      select: { id: true, ownerId: true, status: true },
+      select: { id: true, ownerId: true, status: true, deletedAt: true },
     });
 
     if (
-      !business ||
+      !business || business.deletedAt ||
       (user.role !== "ADMIN" && business.ownerId !== user.id) ||
       business.status !== "ACTIVE"
     ) {
@@ -329,7 +329,7 @@ export async function resubmitEventAction(formData) {
   const event = await prisma.event.findUnique({
     where: { id: eventId },
     include: {
-      business: { select: { id: true, ownerId: true, status: true } },
+      business: { select: { id: true, ownerId: true, status: true, deletedAt: true } },
       payments: {
         where: { status: "PAID" },
         orderBy: { paidAt: "asc" },
@@ -343,7 +343,7 @@ export async function resubmitEventAction(formData) {
     },
   });
 
-  if (!event || (event.creatorId !== user.id && user.role !== "ADMIN")) {
+  if (!event || event.deletedAt || (event.creatorId !== user.id && user.role !== "ADMIN")) {
     redirect("/dashboard/events?resubmit=invalid");
   }
   if (
@@ -366,13 +366,14 @@ export async function resubmitEventAction(formData) {
     ) {
       redirect("/dashboard/events?resubmit=payment");
     }
-  } else if (event.postingMethod === "SUBSCRIPTION" && !isStaffRole(user.role)) {
+  } else if (["SUBSCRIPTION", "LEGACY"].includes(event.postingMethod) && !isStaffRole(user.role)) {
     const billingState = await getAccountAccess(user.id).catch(() => null);
     if (
       !billingState?.hasMembershipAccess ||
-      !event.business ||
-      event.business.ownerId !== user.id ||
-      event.business.status !== "ACTIVE"
+      (event.postingMethod === "SUBSCRIPTION" && (
+        !event.business || event.business.deletedAt ||
+        event.business.ownerId !== user.id || event.business.status !== "ACTIVE"
+      ))
     ) {
       redirect("/dashboard/events?resubmit=membership");
     }
@@ -381,6 +382,8 @@ export async function resubmitEventAction(formData) {
   const resubmitted = await prisma.event.updateMany({
     where: {
       id: event.id,
+      deletedAt: null,
+      ...(user.role === "ADMIN" ? {} : { creatorId: user.id }),
       status: "DRAFT",
       updatedAt: event.updatedAt,
     },
@@ -401,7 +404,7 @@ export async function updateEventAction(prevState, formData) {
     ? await prisma.event.findUnique({ where: { id: eventId } })
     : null;
 
-  if (!event || (event.creatorId !== user.id && user.role !== "ADMIN")) {
+  if (!event || event.deletedAt || (event.creatorId !== user.id && user.role !== "ADMIN")) {
     return { error: "Event not found.", fieldErrors: {} };
   }
 
@@ -415,12 +418,13 @@ export async function updateEventAction(prevState, formData) {
   const input = await getValidatedEventInput(formData, user, event);
   if (input.error) return input;
 
-  if (event.postingMethod === "SUBSCRIPTION" && !isStaffRole(user.role)) {
+  if (["SUBSCRIPTION", "LEGACY"].includes(event.postingMethod) && !isStaffRole(user.role)) {
     const billingState = await getAccountAccess(user.id).catch(() => null);
     if (
       !billingState?.hasMembershipAccess ||
-      !input.business ||
-      input.business.ownerId !== user.id
+      (event.postingMethod === "SUBSCRIPTION" && (
+        !input.business || input.business.ownerId !== user.id
+      ))
     ) {
       return {
         error: "An active membership and linked active business are required to edit this event.",
@@ -476,6 +480,8 @@ export async function updateEventAction(prevState, formData) {
       const updated = await tx.event.updateMany({
         where: {
           id: event.id,
+          deletedAt: null,
+          ...(user.role === "ADMIN" ? {} : { creatorId: user.id }),
           status: event.status,
           updatedAt: event.updatedAt,
         },
@@ -562,9 +568,9 @@ export async function deleteEventAction(formData) {
 
   const event = await prisma.event.findUnique({
     where: { id: eventId },
-    select: { id: true, creatorId: true, endDate: true },
+    select: { id: true, creatorId: true, endDate: true, deletedAt: true },
   });
-  if (!event || (event.creatorId !== user.id && user.role !== "ADMIN")) return;
+  if (!event || event.deletedAt || (event.creatorId !== user.id && user.role !== "ADMIN")) return;
   if (event.endDate && event.endDate <= new Date()) return;
 
   try {

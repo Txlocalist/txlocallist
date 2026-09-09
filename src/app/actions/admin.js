@@ -26,7 +26,7 @@ export async function suspendBusinessAction(formData) {
   await requireStaff();
   const id = formData.get("id")?.toString();
   if (!id) return;
-  await prisma.business.update({ where: { id }, data: { status: "SUSPENDED" } });
+  await prisma.business.update({ where: { id, deletedAt: null, status: { not: "ARCHIVED" } }, data: { status: "SUSPENDED" } });
   revalidatePath("/admin/businesses");
   revalidatePath("/admin/posts");
   revalidatePath("/results");
@@ -38,7 +38,7 @@ export async function activateBusinessAction(formData) {
   const id = formData.get("id")?.toString();
   if (!id) return;
   const result = await prisma.business.updateMany({
-    where: { id, owner: { deletedAt: null } },
+    where: { id, deletedAt: null, status: { not: "ARCHIVED" }, owner: { deletedAt: null } },
     data: { status: "ACTIVE" },
   });
   if (result.count !== 1) return;
@@ -52,7 +52,7 @@ export async function archiveBusinessAction(formData) {
   await requireAdmin();
   const id = formData.get("id")?.toString();
   if (!id) return;
-  await prisma.business.update({ where: { id }, data: { status: "ARCHIVED" } });
+  await prisma.business.update({ where: { id }, data: { status: "ARCHIVED", deletedAt: new Date() } });
   revalidatePath("/admin/businesses");
   revalidatePath("/admin/posts");
   revalidatePath("/results");
@@ -97,11 +97,13 @@ export async function updatePostModerationStatusAction(formData) {
         slug: true,
         name: true,
         publishedAt: true,
+        deletedAt: true,
+        status: true,
         owner: { select: { email: true, deletedAt: true } },
       },
     });
 
-    if (!business || business.owner.deletedAt) return;
+    if (!business || business.deletedAt || business.status === "ARCHIVED" || business.owner.deletedAt) return;
 
     const nextStatus = mapModerationChoice(statusChoice, "business");
     const data =
@@ -110,7 +112,7 @@ export async function updatePostModerationStatusAction(formData) {
         : { status: nextStatus, publishedAt: null };
 
     const updated = await prisma.business.updateMany({
-      where: { id: entityId, owner: { deletedAt: null } },
+      where: { id: entityId, deletedAt: null, status: { not: "ARCHIVED" }, owner: { deletedAt: null } },
       data,
     });
     if (updated.count !== 1) return;
@@ -250,7 +252,9 @@ export async function adminDeleteEventAction(formData) {
   if (!id) return;
   const event = await prisma.event.findUnique({ where: { id }, select: { payments: { select: { id: true }, take: 1 } } });
   if (!event || event.payments.length > 0) return;
-  await prisma.event.delete({ where: { id } });
+  await cancelEventPosting(id, "ADMIN");
+  await prisma.event.updateMany({ where: { id, deletedAt: null }, data: { deletedAt: new Date() } });
+  revalidatePath("/", "layout");
   revalidatePath("/admin/events");
   revalidatePath("/admin/posts");
   revalidatePath("/dashboard/events");

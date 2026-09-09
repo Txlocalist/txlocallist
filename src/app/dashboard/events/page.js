@@ -1,8 +1,12 @@
+import { getOwnedEventWhere } from "@/lib/listing-visibility";
+import { getAccountAccess } from "@/lib/account-access";
+import DeleteListingButton from "@/components/DeleteListingButton/DeleteListingButton";
+import ResultsSort from "@/components/ResultsSort/ResultsSort";
+import { resultOrderBy } from "@/lib/results-sort";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import {
-  deleteEventAction,
   resubmitEventAction,
   retryEventCheckoutAction,
 } from "@/app/actions/events";
@@ -18,7 +22,6 @@ import {
 
 import { DashboardLayout } from "../DashboardShell";
 import styles from "../dashboard.module.css";
-import CancelEventButton from "./CancelEventButton";
 
 const EVENT_POST_PRICE = formatWholeDollarPrice(EVENT_POST_PRICE_CENTS);
 
@@ -35,6 +38,7 @@ export default async function DashboardEventsPage({ searchParams }) {
   if (!session?.user) redirect("/login");
 
   const user = session.user;
+  const access = await getAccountAccess(user.id);
   const params = await searchParams;
   const created = params?.created === "1";
   const updated = params?.updated === "1";
@@ -50,10 +54,10 @@ export default async function DashboardEventsPage({ searchParams }) {
 
   try {
     events = await prisma.event.findMany({
-      where: { creatorId: user.id },
-      orderBy: { createdAt: "desc" },
+      where: getOwnedEventWhere(user.id),
+      orderBy: resultOrderBy(params?.sort, { name: "sortName" }),
       include: {
-        business: { select: { name: true } },
+        business: { select: { name: true, status: true } },
         payments: {
           orderBy: { createdAt: "desc" },
           select: { status: true, failureReason: true },
@@ -94,6 +98,8 @@ export default async function DashboardEventsPage({ searchParams }) {
         </div>
       </div>
 
+      <ResultsSort />
+      {!access?.hasCreatorAccess && <p role="status">Membership events are suspended while your subscription is inactive. You can still delete them. Separately purchased events keep their posting access.</p>}
       {created && <div className={styles.successBanner}>Your event was submitted for admin review.</div>}
       {updated && <div className={styles.successBanner}>Your event changes were saved.</div>}
       {resubmitted && <div className={styles.successBanner}>Your corrected event was resubmitted for admin review.</div>}
@@ -247,17 +253,17 @@ export default async function DashboardEventsPage({ searchParams }) {
                 </div>
                 <div className={styles.tableCol} style={{ flex: 1 }} data-label="Status">
                   <span className={styles[getEventStatusClass(event.status)]}>
-                    {changesRequested ? "CHANGES REQUESTED" : event.status}
+                    {(["SUBSCRIPTION", "LEGACY"].includes(event.postingMethod) && (!access?.hasCreatorAccess || (event.business && event.business.status !== "ACTIVE")) && event.status === "PUBLISHED") ? "SUSPENDED" : changesRequested ? "CHANGES REQUESTED" : event.status}
                   </span>
                 </div>
                 <div className={styles.tableCol} style={{ flex: 1 }} data-label="Actions">
                   <div className={styles.actionButtons}>
-                    {event.status === "PUBLISHED" ? (
+                    {event.status === "PUBLISHED" && (event.postingMethod === "ONE_TIME" || (access?.hasCreatorAccess && (!event.business || event.business.status === "ACTIVE"))) ? (
                       <Link href={`/events/${event.id}`} className={styles.actionButton} target="_blank">
                         View
                       </Link>
                     ) : null}
-                    {!(["CANCELLED", "DENIED"].includes(event.status)) && !isEventPast(event) ? (
+                    {(event.postingMethod === "ONE_TIME" || access?.hasCreatorAccess) && !(["CANCELLED", "DENIED"].includes(event.status)) && !isEventPast(event) ? (
                       <Link href={`/dashboard/events/${event.id}/edit`} className={styles.actionButton}>
                         Edit
                       </Link>
@@ -278,7 +284,7 @@ export default async function DashboardEventsPage({ searchParams }) {
                         </button>
                       </form>
                     ) : null}
-                    {changesRequested && !isEventPast(event) ? (
+                    {changesRequested && (event.postingMethod === "ONE_TIME" || access?.hasCreatorAccess) && !isEventPast(event) ? (
                       <form action={resubmitEventAction}>
                         <input type="hidden" name="eventId" value={event.id} />
                         <button type="submit" className={styles.publishButton}>
@@ -286,12 +292,7 @@ export default async function DashboardEventsPage({ searchParams }) {
                         </button>
                       </form>
                     ) : null}
-                    {!(["CANCELLED", "DENIED"].includes(event.status)) && !isEventPast(event) ? (
-                      <form action={deleteEventAction}>
-                        <input type="hidden" name="eventId" value={event.id} />
-                        <CancelEventButton className={styles.deleteButton} />
-                      </form>
-                    ) : null}
+                    <DeleteListingButton id={event.id} name={event.title} kind="event" />
                   </div>
                 </div>
               </div>

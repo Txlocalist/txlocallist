@@ -610,6 +610,7 @@ async function createEventCheckoutSessionInternal({ eventId, userId }) {
       id: true,
       creatorId: true,
       postingMethod: true,
+          deletedAt: true,
       status: true,
       title: true,
       startDate: true,
@@ -617,7 +618,7 @@ async function createEventCheckoutSessionInternal({ eventId, userId }) {
     },
   });
 
-  if (!event || event.creatorId !== userId) {
+  if (!event || event.deletedAt || event.creatorId !== userId) {
     throw new Error("Event not found.");
   }
 
@@ -823,13 +824,14 @@ async function createEventCheckoutSessionInternal({ eventId, userId }) {
         select: {
           creatorId: true,
           postingMethod: true,
+          deletedAt: true,
           status: true,
           startDate: true,
           endDate: true,
         },
       });
       const stillEligible = Boolean(
-        currentEvent &&
+        currentEvent && !currentEvent.deletedAt &&
         currentEvent.creatorId === userId &&
         currentEvent.postingMethod === "ONE_TIME" &&
         currentEvent.status === "DRAFT" &&
@@ -1104,6 +1106,7 @@ export async function syncEventPaymentFromCheckoutSession(
           id: true,
           creatorId: true,
           postingMethod: true,
+          deletedAt: true,
           status: true,
           startDate: true,
           endDate: true,
@@ -1157,7 +1160,7 @@ export async function syncEventPaymentFromCheckoutSession(
     }
 
     const eventIsEligible = Boolean(
-      event &&
+      event && !event.deletedAt &&
       event.creatorId === current.userId &&
       event.postingMethod === "ONE_TIME" &&
       event.status === "DRAFT" &&
@@ -1186,6 +1189,7 @@ export async function syncEventPaymentFromCheckoutSession(
       where: {
         id: current.eventId,
         creatorId: current.userId,
+        deletedAt: null,
         postingMethod: "ONE_TIME",
         status: "DRAFT",
         startDate: current.eventStartDate,
@@ -1301,10 +1305,11 @@ export async function denyEventForRevision({ eventId, reviewerId, comment }) {
       select: {
         id: true,
         status: true,
+        deletedAt: true,
         updatedAt: true,
       },
     });
-    if (!event) throw new Error("Event not found.");
+    if (!event || event.deletedAt) throw new Error("Event not found.");
     if (event.status !== "PENDING") {
       throw new Error("Only a pending event can be denied.");
     }
@@ -1313,6 +1318,7 @@ export async function denyEventForRevision({ eventId, reviewerId, comment }) {
       where: {
         id: eventId,
         status: "PENDING",
+        deletedAt: null,
         updatedAt: event.updatedAt,
       },
       data: {
@@ -1415,7 +1421,7 @@ export async function approveEventForPublication({
       },
     });
 
-    if (!event) throw new Error("Event not found.");
+    if (!event || event.deletedAt) throw new Error("Event not found.");
     if (event.creator?.deletedAt) {
       throw new Error("Events belonging to a deleted account cannot be published.");
     }
@@ -1435,6 +1441,7 @@ export async function approveEventForPublication({
         status: "PENDING",
         endDate: { gt: new Date() },
         creator: { deletedAt: null },
+        deletedAt: null,
       },
       data: {
         status: "PUBLISHED",
@@ -1690,7 +1697,7 @@ export async function restoreEventAfterFavorableDispute({ eventId, adminId }) {
       throw new Error("Only an administrator can restore a disputed event.");
     }
     if (
-      !event ||
+      !event || event.deletedAt ||
       event.status !== "CANCELLED" ||
       event.cancellationReason !== "PAYMENT_DISPUTE"
     ) {
@@ -1732,6 +1739,7 @@ export async function restoreEventAfterFavorableDispute({ eventId, adminId }) {
         cancellationReason: "PAYMENT_DISPUTE",
         endDate: { gt: new Date() },
         creator: { deletedAt: null },
+        deletedAt: null,
       },
       data: {
         status: "PENDING",
@@ -1819,11 +1827,21 @@ async function resolveCheckoutBeforeCancellation(attempt) {
   );
 }
 
-export async function cancelEventPosting(eventId, reason = "ORGANIZER") {
+export async function cancelEventPosting(eventId, reason = "ORGANIZER", { deleteForOwnerId = null } = {}) {
   if (!DIRECT_CANCELLATION_REASONS.has(reason)) {
     throw new Error("Invalid event cancellation reason.");
   }
 
+  const originalEvent = await prisma.event.findUnique({ where: { id: eventId } });
+  if (!originalEvent || (deleteForOwnerId && originalEvent.creatorId !== deleteForOwnerId)) throw new Error("Event not found.");
+  if (originalEvent.deletedAt) return;
+  // If Stripe cannot be checked, unresolved Checkout must not be assumed unpaid.
+  if (!isStripeConfigured()) {
+    const unresolved = await prisma.eventPayment.count({ where: { eventId, status: { in: ACTIVE_CHECKOUT_STATUSES } } });
+    if (unresolved) throw new Error("Payment verification is unavailable. Retry when Stripe is available.");
+  }
+
+  const verifiedAttemptIds = new Set();
   if (isStripeConfigured()) {
     const knownAttempts = await prisma.eventPayment.findMany({
       where: {
@@ -1859,30 +1877,44 @@ export async function cancelEventPosting(eventId, reason = "ORGANIZER") {
       }
 
       await resolveCheckoutBeforeCancellation(resolvedAttempt);
+      verifiedAttemptIds.add(attempt.id);
     }
   }
 
   const remainingAttempts = await withSerializableRetry(async (tx) => {
+    const currentEvent = await tx.event.findUnique({ where: { id: eventId } });
+    if (!currentEvent || (deleteForOwnerId && currentEvent.creatorId !== deleteForOwnerId)) throw new Error("Event not found.");
+    if (currentEvent.deletedAt) return [];
     const attempts = await tx.eventPayment.findMany({
       where: {
         eventId,
         status: { in: ["CREATED", "PROCESSING"] },
       },
       select: {
+        id: true,
         eventId: true,
         userId: true,
         stripeCheckoutSessionId: true,
       },
     });
 
+    // The serializable read also fences new checkout reservations during removal.
+    if (attempts.some((attempt) => !verifiedAttemptIds.has(attempt.id))) {
+      throw new Error("A new payment is being prepared. Wait before canceling this event.");
+    }
+
     await tx.event.update({
       where: { id: eventId },
       data: {
         status: "CANCELLED",
         cancelledAt: new Date(),
-        cancellationReason: reason,
+        cancellationReason: currentEvent.status === "CANCELLED" ? currentEvent.cancellationReason : reason,
+        ...(deleteForOwnerId ? { deletedAt: new Date() } : {}),
       },
     });
+    if (deleteForOwnerId) await tx.auditLog.create({ data: {
+      actorId: deleteForOwnerId, action: "OWNER_DELETE", entity: "Event", entityId: eventId,
+    } });
     await tx.eventPayment.updateMany({
       where: { eventId, status: { in: ["CREATED", "PROCESSING"] } },
       data: {

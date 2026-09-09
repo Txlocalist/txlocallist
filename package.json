@@ -14,6 +14,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "test:listings:ui": "playwright test --config playwright.listings.config.mjs",
+    "test:listings:db": "node scripts/test-listings-db.mjs",
     "env:verify": "node scripts/verify-runtime-config.mjs",
     "env:verify:production": "node scripts/verify-runtime-config.mjs --environment=production",
     "db:generate": "prisma generate",
@@ -56,9 +58,11 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
+    "@prisma/adapter-pg": "7.7.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.2",
     "prisma": "^7.7.0",
+    "vite": "8.2.1",
     "vitest": "^4.1.10"
   }
 }

@@ -1,3 +1,6 @@
+import ResultsSort from "@/components/ResultsSort/ResultsSort";
+import { resultOrderBy } from "@/lib/results-sort";
+import { getPublicBusinessWhere } from "@/lib/listing-visibility";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
@@ -37,7 +40,7 @@ export async function generateStaticParams() {
   }
 }
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 export default async function CategoryPage({ params, searchParams }) {
   const { category: categorySlug } = await params;
@@ -58,8 +61,7 @@ export default async function CategoryPage({ params, searchParams }) {
 
   const businesses = await prisma.business.findMany({
     where: {
-      status: "ACTIVE",
-      publishedAt: { not: null },
+      ...getPublicBusinessWhere(),
       categories: { some: { categoryId: category.id } },
       city: cityFilter,
     },
@@ -68,22 +70,9 @@ export default async function CategoryPage({ params, searchParams }) {
       photos: { take: 1 },
       plan: { select: { slug: true, features: true } },
     },
-    orderBy: { publishedAt: "desc" },
-    take: 50,
+    orderBy: resultOrderBy(resolvedSearchParams?.sort, { name: "sortName" }),
   });
 
-  // Group by city
-  const citiesMap = new Map();
-  businesses.forEach((business) => {
-    const citySlug = business.city.slug;
-    if (!citiesMap.has(citySlug)) {
-      citiesMap.set(citySlug, {
-        name: business.city.name,
-        businesses: [],
-      });
-    }
-    citiesMap.get(citySlug).businesses.push(business);
-  });
 
   return (
     <>
@@ -102,37 +91,10 @@ export default async function CategoryPage({ params, searchParams }) {
           </p>
         </section>
 
-        {/* Results by City */}
+        <ResultsSort />
         {businesses.length > 0 ? (
-          <div className={styles.citySections}>
-            {Array.from(citiesMap.entries()).map(([citySlug, cityData]) => (
-              <section key={citySlug} className={styles.citySection}>
-                <h2 className={styles.cityTitle}>
-                  <Link href={`/cities/${citySlug}`} className={styles.cityLink}>
-                    {cityData.name}
-                  </Link>
-                </h2>
-
-                <div className={styles.businessGrid}>
-                  {cityData.businesses.map((business) => (
-                    <BusinessCard
-                      key={business.id}
-                      business={{
-                        slug: business.slug,
-                        name: business.name,
-                        city: business.city.name,
-                        description: business.description,
-                        price: "$",
-                        category: category.name,
-                        imageUrl: business.photos[0]?.url || "/placeholder.jpg",
-                        imageAlt: business.name,
-                      }}
-                      badgeTone="teal"
-                    />
-                  ))}
-                </div>
-              </section>
-            ))}
+          <div className={styles.businessGrid}>
+            {businesses.map((business) => <BusinessCard key={business.id} business={{ slug: business.slug, name: business.name, city: business.city.name, description: business.description, price: "$", category: category.name, imageUrl: business.photos[0]?.url || "/placeholder.jpg", imageAlt: business.name }} badgeTone="teal" />)}
           </div>
         ) : (
           <section className={styles.emptyState}>

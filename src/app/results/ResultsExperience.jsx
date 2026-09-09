@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import logoImage from "@/app/assets/Tx-Localist-01.png";
@@ -17,9 +17,12 @@ import {
   PlusCircleIcon,
   ShareIcon,
 } from "./icons";
+import ResultsSort from "@/components/ResultsSort/ResultsSort";
+import { normalizeSort, sortResults } from "@/lib/results-sort";
 import ResultsCardSkeleton from "./ResultsCardSkeleton";
 
 const INITIAL_RECENT_BUSINESS_LIMIT = 15;
+const EMPTY_ITEMS = [];
 const numberFormatter = new Intl.NumberFormat("en-US");
 
 function eventDateLabel(event) {
@@ -322,8 +325,8 @@ export default function ResultsExperience({
   initialJobsOnly = false,
   user = null,
   dashboardPath = null,
-  savedIds = [],
-  initialFavoriteBusinesses = [],
+  savedIds = EMPTY_ITEMS,
+  initialFavoriteBusinesses = EMPTY_ITEMS,
   availableCategories = [],
   availableCities = [],
 }) {
@@ -341,7 +344,7 @@ export default function ResultsExperience({
   const [showCities,       setShowCities]       = useState(false);
   const [showCategories,   setShowCategories]   = useState(false);
   const [showMobileCities, setShowMobileCities] = useState(false);
-  const [activeSort,       setActiveSort]       = useState(""); // "" | "popular"
+  const [activeSort,       setActiveSort]       = useState(normalizeSort(urlParams.get("sort"), activeTab === "events" ? "upcoming" : "newest", ["popular", "upcoming"])); // "" | "popular"
   const [activeBrowseTab,  setActiveBrowseTab]  = useState(
     initialJobsOnly ? "jobs" : initialBrowseAll ? "all" : initialQuery || initialLocation ? "search" : ""
   );
@@ -354,6 +357,9 @@ export default function ResultsExperience({
   );
   const [savingIds, setSavingIds] = useState(() => new Set());
 
+  const requestVersion = useRef(0);
+  const [pagination, setPagination] = useState({ businesses: {}, events: {} });
+
   const currentYear = new Date().getFullYear();
   const suggestBusinessHref = buildSuggestBusinessHref({
     query: lastSearch.q,
@@ -361,12 +367,14 @@ export default function ResultsExperience({
   });
 
   function replaceResultsUrl({
-    query = "",
-    location = "",
-    category = "",
-    type = "businesses",
-    jobs = false,
-    browse = "",
+    query = urlParams.get("q") || "",
+    location = urlParams.get("loc") || "",
+    category = urlParams.get("category") || "",
+    type = urlParams.get("tab") === "events" ? "events" : "businesses",
+    jobs = urlParams.get("jobs") === "1",
+    browse = urlParams.get("browse") || "",
+    sort = activeSort,
+    page = 1,
   }) {
     const params = new URLSearchParams();
     if (query) params.set("q", query);
@@ -374,10 +382,13 @@ export default function ResultsExperience({
     if (category) params.set("category", category);
     if (type && type !== "businesses") params.set("tab", type);
     if (jobs) params.set("jobs", "1");
-    if (browse === "all") params.set("browse", "all");
+    if (["all", "popular", "favorites"].includes(browse)) params.set("browse", browse);
+    const extras = type === "events" ? ["upcoming"] : browse === "favorites" ? [] : ["popular"];
+    params.set("sort", normalizeSort(sort, type === "events" ? "upcoming" : browse === "popular" ? "popular" : "newest", extras));
+    if (page > 1) params.set("page", String(page));
 
     const queryString = params.toString();
-    router.replace(queryString ? "/results?" + queryString : "/results", { scroll: false });
+    router.push(queryString ? "/results?" + queryString : "/results", { scroll: false });
   }
 
   useEffect(() => {
@@ -386,20 +397,25 @@ export default function ResultsExperience({
   }, [urlParams]);
 
   useEffect(() => {
-    const hasInitialSearch = Boolean(
-      initialQuery || initialLocation || initialCategory || initialBrowseAll || initialJobsOnly
-    );
+    const q = urlParams.get("q") || "";
+    const loc = urlParams.get("loc") || "";
+    const category = urlParams.get("category") || "";
+    const jobs = urlParams.get("jobs") === "1";
+    const browse = urlParams.get("browse");
+    const mode = ["favorites", "popular", "all"].includes(browse) ? browse : jobs ? "jobs" : q || loc || category ? "search" : "new";
+    const type = urlParams.get("tab") === "events" ? "events" : "businesses";
+    const extras = type === "events" ? ["upcoming"] : mode === "favorites" ? [] : ["popular"];
+    const sort = normalizeSort(urlParams.get("sort"), type === "events" ? "upcoming" : mode === "popular" ? "popular" : "newest", extras);
+    runSearch(q, loc, sort, mode, jobs, mode === "new" ? INITIAL_RECENT_BUSINESS_LIMIT : undefined, category, Math.max(1, parseInt(urlParams.get("page"), 10) || 1));
+    return () => { requestVersion.current += 1; };
+    // URL is the source of truth for refresh and browser navigation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlParams]);
 
-    runSearch(
-      initialQuery,
-      initialLocation,
-      "",
-      initialJobsOnly ? "jobs" : initialBrowseAll ? "all" : hasInitialSearch ? "search" : "new",
-      initialJobsOnly,
-      hasInitialSearch ? undefined : INITIAL_RECENT_BUSINESS_LIMIT,
-      initialCategory
-    );
-  }, [initialBrowseAll, initialCategory, initialJobsOnly, initialLocation, initialQuery]);
+  useEffect(() => {
+    setFavoriteBusinesses(initialFavoriteBusinesses);
+    setSavedMap(Object.fromEntries(savedIds.map((id) => [id, { saved: true }])));
+  }, [initialFavoriteBusinesses, savedIds]);
 
   function syncFavoriteBusinesses(biz, shouldBeSaved, count) {
     setFavoriteBusinesses((prev) => {
@@ -430,8 +446,11 @@ export default function ResultsExperience({
     browseTab = "search",
     nextJobsOnly = false,
     limit,
-    category = ""
+    category = "",
+    page = 1
   ) {
+    const version = ++requestVersion.current;
+    sort = normalizeSort(sort || activeSort, "newest", ["popular", "upcoming"]);
     setIsSearching(true);
     setHasSearched(true);
     setLastSearch({ q, loc });
@@ -440,7 +459,9 @@ export default function ResultsExperience({
     setActiveBrowseTab(browseTab);
     setJobsOnly(nextJobsOnly);
 
+    if (browseTab === "favorites") { setIsSearching(false); return; }
     const bizP = new URLSearchParams();
+    bizP.set("page", String(page));
     if (q)    bizP.set("q",    q);
     if (loc)  bizP.set("loc",  loc);
     if (sort) bizP.set("sort", sort);
@@ -450,7 +471,9 @@ export default function ResultsExperience({
 
     const evtP = new URLSearchParams();
     if (loc) evtP.set("city", loc);
-    else if (q) evtP.set("city", q);
+    if (q) evtP.set("q", q);
+    evtP.set("sort", sort === "popular" ? "newest" : sort);
+    evtP.set("page", String(page));
     evtP.set("limit", "12");
 
     try {
@@ -458,15 +481,18 @@ export default function ResultsExperience({
         fetch("/api/search?" + bizP).then((r) => r.json()),
         fetch("/api/events?" + evtP).then((r) => r.ok ? r.json() : { events: [] }).catch(() => ({ events: [] })),
       ]);
+      if (version !== requestVersion.current) return;
+      setPagination({ businesses: bizRes?.data ?? {}, events: evtRes ?? {} });
       const bizList = bizRes?.data?.results ?? [];
       const evtList = evtRes?.events ?? [];
       setBusinesses(bizList);
       setEvents(evtList);
     } catch (_) {
+      if (version !== requestVersion.current) return;
       setBusinesses([]);
       setEvents([]);
     } finally {
-      setIsSearching(false);
+      if (version === requestVersion.current) setIsSearching(false);
     }
   }
 
@@ -474,30 +500,30 @@ export default function ResultsExperience({
     setActiveTab(type);
     const preserveJobs = type === "businesses" && jobsOnly;
     replaceResultsUrl({ query, location, type, jobs: preserveJobs });
-    runSearch(query, location, "", preserveJobs ? "jobs" : "search", preserveJobs);
+
   }
 
   function clearSearch() {
     setActiveTab("businesses");
     setViewMode("card");
-    replaceResultsUrl({ query: "", location: "", type: "businesses" });
-    runSearch("", "", "", "new", false, INITIAL_RECENT_BUSINESS_LIMIT);
+    replaceResultsUrl({ query: "", location: "", category: "", type: "businesses", jobs: false, browse: "", sort: "newest" });
+
   }
 
   function openNewListings() {
     setActiveTab("businesses");
     setViewMode("card");
     setJobsOnly(false);
-    replaceResultsUrl({ query: "", location: "", type: "businesses" });
-    runSearch("", "", "", "new", false, INITIAL_RECENT_BUSINESS_LIMIT);
+    replaceResultsUrl({ query: "", location: "", category: "", type: "businesses", jobs: false, browse: "", sort: "newest" });
+
   }
 
   function openMostSaved() {
     setActiveTab("businesses");
     setViewMode("card");
     setJobsOnly(false);
-    replaceResultsUrl({ query: "", location: lastSearch.loc, type: "businesses" });
-    runSearch("", lastSearch.loc, "popular", "popular");
+    replaceResultsUrl({ query: "", location: lastSearch.loc, category: "", type: "businesses", jobs: false, browse: "popular", sort: "popular" });
+
   }
 
   function openFavorites() {
@@ -508,139 +534,19 @@ export default function ResultsExperience({
 
     setActiveTab("businesses");
     setViewMode("card");
-    setActiveSort("");
+    setActiveSort("newest");
     setJobsOnly(false);
     setActiveBrowseTab("favorites");
     setHasSearched(true);
-    replaceResultsUrl({ query: "", location: "", type: "businesses" });
+    replaceResultsUrl({ query: "", location: "", category: "", type: "businesses", jobs: false, browse: "favorites", sort: "newest" });
   }
 
-  function removeQueryFilter() {
-    if (activeBrowseTab === "favorites") return;
-
-    const nextQuery = "";
-    const nextLocation = activeBrowseTab === "new" ? "" : lastSearch.loc;
-
-    if (
-      !nextLocation &&
-      activeTab === "businesses" &&
-      activeBrowseTab !== "popular" &&
-      activeBrowseTab !== "all" &&
-      !jobsOnly
-    ) {
-      clearSearch();
-      return;
-    }
-
-    replaceResultsUrl({
-      query: nextQuery,
-      location: nextLocation,
-      category: selectedCategory,
-      type: activeTab,
-      jobs: jobsOnly,
-      browse: activeBrowseTab === "all" ? "all" : "",
-    });
-    runSearch(
-      nextQuery,
-      nextLocation,
-      activeSort,
-      activeBrowseTab || "search",
-      jobsOnly,
-      undefined,
-      selectedCategory
-    );
-  }
-
-  function removeLocationFilter() {
-    if (activeBrowseTab === "favorites") return;
-
-    const nextLocation = "";
-
-    if (
-      !lastSearch.q &&
-      !selectedCategory &&
-      activeTab === "businesses" &&
-      activeBrowseTab !== "popular" &&
-      activeBrowseTab !== "all" &&
-      !jobsOnly
-    ) {
-      clearSearch();
-      return;
-    }
-
-    replaceResultsUrl({
-      query: lastSearch.q,
-      location: nextLocation,
-      category: selectedCategory,
-      type: activeTab,
-      jobs: jobsOnly,
-      browse: activeBrowseTab === "all" ? "all" : "",
-    });
-    runSearch(
-      lastSearch.q,
-      nextLocation,
-      activeSort,
-      activeBrowseTab || "search",
-      jobsOnly,
-      undefined,
-      selectedCategory
-    );
-  }
-
-  function removeCategoryFilter() {
-    if (activeBrowseTab === "favorites") return;
-
-    replaceResultsUrl({
-      query: lastSearch.q,
-      location: lastSearch.loc,
-      type: "businesses",
-      jobs: jobsOnly,
-      browse: activeBrowseTab === "all" ? "all" : "",
-    });
-    runSearch(lastSearch.q, lastSearch.loc, activeSort, activeBrowseTab || "search", jobsOnly);
-  }
-
-  function removeBrowseFilter() {
-    if (activeBrowseTab === "favorites") {
-      if (lastSearch.q || lastSearch.loc || selectedCategory) {
-        replaceResultsUrl({ query: lastSearch.q, location: lastSearch.loc, category: selectedCategory, type: activeTab });
-        runSearch(lastSearch.q, lastSearch.loc, "", "search", false, undefined, selectedCategory);
-      } else {
-        clearSearch();
-      }
-      return;
-    }
-
-    if (lastSearch.q || lastSearch.loc || selectedCategory || activeTab === "events") {
-      replaceResultsUrl({ query: lastSearch.q, location: lastSearch.loc, category: selectedCategory, type: activeTab });
-      runSearch(lastSearch.q, lastSearch.loc, "", "search", false, undefined, selectedCategory);
-    } else {
-      clearSearch();
-    }
-  }
-
-  function removeEventsFilter() {
-    setActiveTab("businesses");
-
-    if (lastSearch.q || lastSearch.loc) {
-      replaceResultsUrl({ query: lastSearch.q, location: lastSearch.loc, type: "businesses" });
-      runSearch(lastSearch.q, lastSearch.loc, "", "search");
-    } else {
-      clearSearch();
-    }
-  }
-
-  function removeJobsFilter() {
-    setJobsOnly(false);
-    replaceResultsUrl({
-      query: lastSearch.q,
-      location: lastSearch.loc,
-      category: selectedCategory,
-      type: "businesses",
-      browse: "all",
-    });
-    runSearch(lastSearch.q, lastSearch.loc, "", "all", false, undefined, selectedCategory);
-  }
+  function removeQueryFilter() { replaceResultsUrl({ query: "" }); }
+  function removeLocationFilter() { replaceResultsUrl({ location: "" }); }
+  function removeCategoryFilter() { replaceResultsUrl({ category: "" }); }
+  function removeBrowseFilter() { replaceResultsUrl({ browse: "all" }); }
+  function removeEventsFilter() { replaceResultsUrl({ type: "businesses" }); }
+  function removeJobsFilter() { replaceResultsUrl({ jobs: false }); }
 
   async function toggleSave(biz) {
     if (!user) {
@@ -701,6 +607,16 @@ export default function ResultsExperience({
     };
   }
 
+  const visibleFavoriteBusinesses = sortResults(favoriteBusinesses.filter((item) => {
+        const text = [item.name, item.description, ...(item.tags || []).map((tag) => tag.name)].join(" ").toLowerCase();
+        const city = (item.city?.name || item.city || "").toLowerCase();
+        const location = lastSearch.loc.replace(/,?\s+(?:TX|Texas)$/i, "").trim().toLowerCase();
+        return (!lastSearch.q || text.includes(lastSearch.q.toLowerCase())) &&
+          (!location || city.includes(location) || item.city?.slug === location) &&
+          (!selectedCategory || item.categories?.some((category) => category.slug === selectedCategory)) &&
+          (!jobsOnly || item.activeJobCount > 0);
+      }), activeSort, { date: (item) => item.savedAt });
+
   const activeFilterChips = [];
 
   if (hasSearched) {
@@ -714,7 +630,7 @@ export default function ResultsExperience({
   if (hasSearched && activeBrowseTab === "new") {
     activeFilterChips.push({
       key: "new",
-      label: "New",
+      label: activeSort === "newest" ? "New" : "All Businesses",
       tone: "new",
       onRemove: removeBrowseFilter,
     });
@@ -723,7 +639,7 @@ export default function ResultsExperience({
   if (hasSearched && activeBrowseTab === "popular") {
     activeFilterChips.push({
       key: "popular",
-      label: "Most Saved",
+      label: activeSort === "popular" ? "Most Saved" : "All Businesses",
       tone: "popular",
       onRemove: removeBrowseFilter,
     });
@@ -747,7 +663,7 @@ export default function ResultsExperience({
     });
   }
 
-  if (hasSearched && activeBrowseTab !== "favorites" && lastSearch.q) {
+  if (hasSearched && lastSearch.q) {
     activeFilterChips.push({
       key: "query",
       label: `Query: ${lastSearch.q}`,
@@ -756,7 +672,7 @@ export default function ResultsExperience({
     });
   }
 
-  if (hasSearched && activeBrowseTab !== "favorites" && selectedCategory) {
+  if (hasSearched && selectedCategory) {
     const categoryName = availableCategories.find(
       (category) => category.slug === selectedCategory
     )?.name;
@@ -769,7 +685,7 @@ export default function ResultsExperience({
     });
   }
 
-  if (hasSearched && activeBrowseTab !== "favorites" && lastSearch.loc) {
+  if (hasSearched && lastSearch.loc) {
     activeFilterChips.push({
       key: "location",
       label: `Near ${lastSearch.loc}`,
@@ -786,7 +702,7 @@ export default function ResultsExperience({
 
     /* ── Business results ── */
     if (activeTab === "businesses") {
-      const visibleBusinesses = activeBrowseTab === "favorites" ? favoriteBusinesses : businesses;
+      const visibleBusinesses = activeBrowseTab === "favorites" ? visibleFavoriteBusinesses : businesses;
 
       if (visibleBusinesses.length === 0) {
         return activeBrowseTab === "favorites"
@@ -907,8 +823,8 @@ export default function ResultsExperience({
                         className="font-accent city-option"
                         onClick={() => {
                           setShowCities(false);
-                          replaceResultsUrl({ query: "", location: city, type: activeTab });
-                          runSearch("", city, "", "search");
+                          replaceResultsUrl({ location: city, type: activeTab });
+
                         }}
                       >
                         <span className="material-icons city-option-pin">place</span>
@@ -955,7 +871,7 @@ export default function ResultsExperience({
                             category: category.slug,
                             type: "businesses",
                           });
-                          runSearch("", lastSearch.loc, "", "search", false, undefined, category.slug);
+
                         }}
                       >
                         <span className="material-icons city-option-pin">sell</span>
@@ -1038,8 +954,8 @@ export default function ResultsExperience({
             </div>
             <SearchBar
               action="/results"
-              initialQuery={activeBrowseTab === "favorites" ? "" : lastSearch.q}
-              initialLocation={activeBrowseTab === "favorites" ? "" : lastSearch.loc}
+              initialQuery={lastSearch.q}
+              initialLocation={lastSearch.loc}
               defaultLocation={
                 activeBrowseTab === "favorites" || activeBrowseTab === "all" || jobsOnly
                   ? ""
@@ -1065,10 +981,10 @@ export default function ResultsExperience({
                     activeTab === "businesses"
                       ? `${
                           activeBrowseTab === "favorites"
-                            ? favoriteBusinesses.length
+                            ? visibleFavoriteBusinesses.length
                             : businesses.length
                         } ${
-                          (activeBrowseTab === "favorites" ? favoriteBusinesses.length : businesses.length) !== 1
+                          (activeBrowseTab === "favorites" ? visibleFavoriteBusinesses.length : businesses.length) !== 1
                             ? "BUSINESSES"
                             : "BUSINESS"
                         }${
@@ -1088,6 +1004,12 @@ export default function ResultsExperience({
 
                 {/* Right: view toggle + clear */}
                 <div className="results-header-right">
+                  <ResultsSort value={activeSort} events={activeTab === "events"} popular={activeTab === "businesses" && activeBrowseTab !== "favorites"} saved={activeBrowseTab === "favorites"} onChange={(sort) => replaceResultsUrl({ query: lastSearch.q, location: lastSearch.loc, category: selectedCategory, type: activeTab, jobs: jobsOnly, browse: activeBrowseTab, sort })} />
+                  {activeBrowseTab !== "favorites" && <div className="results-pages" role="group" aria-label="Results pages">
+                    <button type="button" disabled={isSearching || !(pagination[activeTab]?.page > 1)} onClick={() => replaceResultsUrl({ query: lastSearch.q, location: lastSearch.loc, category: selectedCategory, type: activeTab, jobs: jobsOnly, browse: activeBrowseTab, page: pagination[activeTab].page - 1 })}>Previous</button>
+                    <span aria-live="polite"> Page {pagination[activeTab]?.page || 1} </span>
+                    <button type="button" disabled={isSearching || !pagination[activeTab]?.hasMore} onClick={() => replaceResultsUrl({ query: lastSearch.q, location: lastSearch.loc, category: selectedCategory, type: activeTab, jobs: jobsOnly, browse: activeBrowseTab, page: (pagination[activeTab]?.page || 1) + 1 })}>Next</button>
+                  </div>}
                   <div className="view-toggle" role="group" aria-label="View mode">
                     {[
                       { mode: "card", icon: "grid_view",  label: "Card view" },
@@ -1226,8 +1148,8 @@ export default function ResultsExperience({
                     className="font-accent mobile-city-btn"
                     onClick={() => {
                       setShowMobileCities(false);
-                      replaceResultsUrl({ query: "", location: city, type: activeTab });
-                      runSearch("", city, "", "search");
+                      replaceResultsUrl({ location: city, type: activeTab });
+
                     }}
                   >
                     {city}

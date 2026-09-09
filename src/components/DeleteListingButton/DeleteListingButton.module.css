@@ -1,0 +1,11 @@
+.trigger { color: #a42321; border: 1px solid currentColor; border-radius: 6px; background: transparent; padding: .5rem .8rem; cursor: pointer; }
+.dialog { margin: auto; max-height: calc(100dvh - 2rem); overflow-y: auto; max-width: 500px; width: calc(100% - 2rem); border: 1px solid #b5a18c; border-radius: 16px; padding: 1.5rem; background: #fff8ec; color: #3b2b22; box-shadow: 0 20px 65px #0004; }
+.dialog::backdrop { background: #201a16aa; }
+.dialog h2 { margin-top: 0; overflow-wrap: anywhere; }
+.dialog p { line-height: 1.55; }
+.actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: .75rem; margin-top: 1.5rem; }
+.actions button { min-height: 44px; padding: .6rem 1rem; border: 1px solid #b5a18c; border-radius: 8px; cursor: pointer; font: inherit; }
+.actions .danger { background: #a42321; color: white; border-color: #a42321; }
+.actions button:disabled { opacity: .6; cursor: wait; }
+.actions button:focus-visible { outline: 3px solid #258c88; outline-offset: 3px; }
+.error { color: #a42321; }

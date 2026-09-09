@@ -749,6 +749,7 @@
 
 .results-header {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.5rem;
@@ -763,9 +764,15 @@
 
 .results-header-right {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 1rem;
 }
+
+.results-pages { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.results-pages button { min-height: 44px; padding: .45rem .7rem; border: 1px solid var(--retro-brown); border-radius: 6px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.results-pages button:disabled { opacity: .45; cursor: default; }
+.results-pages button:focus-visible { outline: 3px solid var(--retro-teal); outline-offset: 2px; }
 
 .active-filter-row {
   display: flex;

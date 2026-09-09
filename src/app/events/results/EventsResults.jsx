@@ -3,12 +3,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { getBlobImageUrl } from "@/lib/blob";
 import { LikeCount } from "@/components/LikeCount";
 
 import "./events-results.css";
+import ResultsSort from "@/components/ResultsSort/ResultsSort";
+import { normalizeSort, sortResults } from "@/lib/results-sort";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = [
@@ -241,9 +243,11 @@ export default function EventsResults({
   isLoggedIn = false,
 }) {
   const router = useRouter();
+  const urlParams = useSearchParams();
   const leftColumnRef = useRef(null);
 
   const [view, setView] = useState("cards");
+  const sort = normalizeSort(urlParams.get("sort"), "upcoming", ["upcoming"]);
   const [query, setQuery] = useState(initialFilters.query || "");
   const [cityInput, setCityInput] = useState(initialFilters.location || "");
   const [city, setCity] = useState(initialFilters.location || "");
@@ -255,35 +259,25 @@ export default function EventsResults({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [monthModalOpen, setMonthModalOpen] = useState(false);
 
+  useEffect(() => {
+    setQuery(initialFilters.query || "");
+    setCityInput(initialFilters.location || "");
+    setCity(initialFilters.location || "");
+    setDateFilter(initialFilters.date || "");
+    setCategoryFilter(initialFilters.category || "");
+  }, [initialFilters.query, initialFilters.location, initialFilters.date, initialFilters.category]);
+
   const filtered = useMemo(
     () => filterEvents(allEvents, { query, city, category: categoryFilter, date: dateFilter }),
     [allEvents, query, city, categoryFilter, dateFilter]
   );
 
   const firstVisibleDate = firstSelectableEventDate(filtered, dateFilter);
-  const [selectedDate, setSelectedDate] = useState(firstVisibleDate || "");
+  const selectedDate = /^\d{4}-\d{2}-\d{2}$/.test(dateFilter) ? dateFilter : "";
   const [month, setMonth] = useState(() => {
     const date = dateObj(firstVisibleDate) || new Date();
     return new Date(date.getFullYear(), date.getMonth(), 1);
   });
-
-  useEffect(() => {
-    if (!filtered.length) return;
-    const filterKeys = dateWindowKeys(dateFilter);
-    const selectionMatchesEvents = selectedDate &&
-      filtered.some((event) => eventOccursOn(event, selectedDate));
-    const selectionMatchesFilter = !filterKeys || filterKeys.has(selectedDate);
-
-    if (
-      (selectedDate && (!selectionMatchesEvents || !selectionMatchesFilter)) ||
-      (!selectedDate && filterKeys)
-    ) {
-      const next = firstSelectableEventDate(filtered, dateFilter);
-      setSelectedDate(next);
-      const date = dateObj(next);
-      if (date) setMonth(new Date(date.getFullYear(), date.getMonth(), 1));
-    }
-  }, [dateFilter, filtered, selectedDate]);
 
   useEffect(() => {
     function onKey(event) {
@@ -298,8 +292,8 @@ export default function EventsResults({
   }, []);
 
   const visible = useMemo(
-    () => (selectedDate ? filtered.filter((event) => eventOccursOn(event, selectedDate)) : filtered),
-    [filtered, selectedDate]
+    () => sortResults(selectedDate ? filtered.filter((event) => eventOccursOn(event, selectedDate)) : filtered, sort, { extras: ["upcoming"] }),
+    [filtered, selectedDate, sort]
   );
 
   const calendarCounts = useMemo(() => {
@@ -371,19 +365,21 @@ export default function EventsResults({
   }, [agendaForSelected, selectedDate]);
 
   const listGroups = useMemo(() => {
+    if (sort !== "upcoming") return visible.length ? [["sorted", visible]] : [];
     const grouped = {};
     visible.forEach((event) => {
       const key = selectedDate || event.dateKey || "undated";
       (grouped[key] ||= []).push(event);
     });
     return Object.entries(grouped);
-  }, [visible, selectedDate]);
+  }, [visible, selectedDate, sort]);
 
   const selectedDateObj = dateObj(selectedDate);
   const monthTitle = `${MONTHS[month.getMonth()]} ${month.getFullYear()}`;
 
   function updateUrl(next = {}) {
     const params = new URLSearchParams();
+    params.set("sort", next.sort ?? sort);
     const nextQuery = next.query ?? query;
     const nextCity = next.city ?? city;
     const nextDate = next.date ?? dateFilter;
@@ -392,7 +388,7 @@ export default function EventsResults({
     if (nextCity) params.set("loc", nextCity);
     if (nextDate) params.set("date", nextDate);
     if (nextCategory) params.set("category", nextCategory);
-    router.replace(params.toString() ? `/events/results?${params.toString()}` : "/events/results", {
+    router.push(params.toString() ? `/events/results?${params.toString()}` : "/events/results", {
       scroll: false,
     });
   }
@@ -451,7 +447,7 @@ export default function EventsResults({
   }
 
   function selectDay(key) {
-    setSelectedDate(key);
+    updateUrl({ date: key });
     leftColumnRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     if (window.innerWidth <= 980) setMonthModalOpen(false);
   }
@@ -463,7 +459,7 @@ export default function EventsResults({
   function goToday() {
     const today = dateObj(todayKey()) || new Date();
     setMonth(new Date(today.getFullYear(), today.getMonth(), 1));
-    setSelectedDate(keyFromDate(today));
+    updateUrl({ date: keyFromDate(today) });
   }
 
   function toggleSave(id) {
@@ -484,7 +480,7 @@ export default function EventsResults({
   }
 
   function showAllEvents() {
-    setSelectedDate("");
+    updateUrl({ date: "" });
     setView("list");
     if (typeof window !== "undefined" && window.innerWidth <= 980) {
       setSidebarOpen(false);
@@ -746,6 +742,7 @@ export default function EventsResults({
                 </p>
               </div>
               <div className="view-tools">
+                <ResultsSort value={sort} events onChange={(next) => updateUrl({ sort: next })} />
                 <div className="summary-pill">
                   <span>{visible.length}</span> events
                   {selectedDateObj ? (
@@ -804,7 +801,7 @@ export default function EventsResults({
                   {listGroups.length ? (
                     listGroups.map(([date, items]) => (
                       <div key={date} className="day-group">
-                        <h3>{fmtLong(date)}</h3>
+                        <h3>{date === "sorted" ? "Events" : fmtLong(date)}</h3>
                         {items.map((event) => (
                           <Link key={event.id} className="list-row" href={`/events/${event.id}`}>
                             <div className="list-time">{eventTimeLabelOn(event, date)}</div>
@@ -879,7 +876,7 @@ export default function EventsResults({
                     <div>
                       <div className="agenda-date">{selectedDate ? fmtLong(selectedDate) : "Pick a day"}</div>
                       <div className="agenda-meta">
-                        {`${agendaForSelected.length} event${agendaForSelected.length !== 1 ? "s" : ""}`}
+                        {selectedDate ? `${agendaForSelected.length} event${agendaForSelected.length !== 1 ? "s" : ""}` : "Daily schedule"}
                       </div>
                     </div>
                     <button className="today-btn" type="button" onClick={() => setView("list")}>
@@ -909,8 +906,8 @@ export default function EventsResults({
                         ))
                     ) : (
                       <div className="empty">
-                        <h3>Nothing on the calendar yet.</h3>
-                        <p>Try another date or help locals find what is happening.</p>
+                        <h3>{selectedDate ? "No events on this day." : "Choose a calendar date."}</h3>
+                        <p>{selectedDate ? "Try another date or help locals find what is happening." : "Select a day above to see its events in time order."}</p>
                       </div>
                     )}
                   </div>

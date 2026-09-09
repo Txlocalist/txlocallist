@@ -1,3 +1,4 @@
+import { getPublicBusinessWhere } from "@/lib/listing-visibility";
 /**
  * POST /api/favorites
  * Body: { businessId: string }
@@ -38,6 +39,8 @@ export async function POST(request) {
       where: { userId_businessId: { userId: user.id, businessId } },
     });
   } else {
+    const business = await prisma.business.findFirst({ where: { id: businessId, ...getPublicBusinessWhere() }, select: { id: true } });
+    if (!business) return Response.json({ error: "Business not available" }, { status: 404 });
     await prisma.favorite.create({
       data: { userId: user.id, businessId },
     });

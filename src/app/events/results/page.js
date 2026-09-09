@@ -14,6 +14,7 @@ export default async function EventResultsPage({ searchParams }) {
     location: params?.loc ?? "",
     category: params?.category ?? "",
     date: params?.date ?? "",
+    sort: params?.sort ?? "upcoming",
   };
   const user = await getCurrentUser().catch(() => null);
   const data = await getEventsPageData(filters, { userId: user?.id });

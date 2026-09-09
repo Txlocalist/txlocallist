@@ -88,7 +88,7 @@ export default async function EditBusinessPage({ params }) {
     );
   }
 
-  if (!business) {
+  if (!business || business.deletedAt || business.status === "ARCHIVED") {
     return <div>Business not found</div>;
   }
 

@@ -1,3 +1,5 @@
+import ResultsSort from "@/components/ResultsSort/ResultsSort";
+import { resultOrderBy } from "@/lib/results-sort";
 import Link from "next/link";
 
 import { AdminShell } from "../AdminShell";
@@ -41,12 +43,13 @@ function toneClass(tone) {
   }[tone] ?? styles.toneNeutral;
 }
 
-function pageHref({ page, query, role, access }) {
+function pageHref({ page, query, role, access, sort }) {
   const params = new URLSearchParams();
   if (page > 1) params.set("page", String(page));
   if (query) params.set("q", query);
   if (role) params.set("role", role);
   if (access) params.set("access", access);
+  if (sort) params.set("sort", sort);
   const search = params.toString();
   return search ? `/admin/users?${search}` : "/admin/users";
 }
@@ -154,7 +157,7 @@ export default async function AdminUsersPage({ searchParams }) {
     prisma.user.count({ where }),
     prisma.user.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy: resultOrderBy(params?.sort, { name: "sortName" }),
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
       select,
@@ -164,6 +167,7 @@ export default async function AdminUsersPage({ searchParams }) {
 
   return (
     <AdminShell activeTab="users">
+      <ResultsSort />
       <div className={dashboardStyles.pageHeader}>
         <div>
           <h1 className={dashboardStyles.pageTitle}>{isAdmin ? "Manage Users" : "Users"}</h1>
@@ -173,7 +177,8 @@ export default async function AdminUsersPage({ searchParams }) {
         </div>
       </div>
 
-      <form method="get" className={styles.toolbar} role="search">
+      <form key={`${query}|${role}|${access}`} method="get" className={styles.toolbar} role="search">
+          <input type="hidden" name="sort" value={params?.sort || "newest"} />
         <div className={styles.field}>
           <label htmlFor="user-search" className={styles.label}>Search</label>
           <input id="user-search" name="q" defaultValue={query} placeholder="Name or email" className={styles.input} />
@@ -316,9 +321,9 @@ export default async function AdminUsersPage({ searchParams }) {
 
       {totalPages > 1 ? (
         <nav className={styles.pagination} aria-label="User results pagination">
-          {page > 1 ? <Link href={pageHref({ page: page - 1, query, role, access })}>Previous</Link> : <span />}
+          {page > 1 ? <Link href={pageHref({ sort: params?.sort, page: page - 1, query, role, access })}>Previous</Link> : <span />}
           <span className={styles.muted}>Page {page} of {totalPages}</span>
-          {page < totalPages ? <Link href={pageHref({ page: page + 1, query, role, access })}>Next</Link> : <span />}
+          {page < totalPages ? <Link href={pageHref({ sort: params?.sort, page: page + 1, query, role, access })}>Next</Link> : <span />}
         </nav>
       ) : null}
     </AdminShell>

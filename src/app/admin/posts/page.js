@@ -1,3 +1,5 @@
+import ResultsSort from "@/components/ResultsSort/ResultsSort";
+import { resultOrderBy } from "@/lib/results-sort";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -21,7 +23,7 @@ import { prisma } from "@/lib/prisma";
 import { isMissingPrismaTableError } from "@/lib/prisma-errors";
 import styles from "@/app/dashboard/dashboard.module.css";
 
-const BUSINESS_HISTORY_STATUSES = ["DENIED", "ACTIVE", "SUSPENDED"];
+const BUSINESS_HISTORY_STATUSES = ["DENIED", "ACTIVE", "SUSPENDED", "ARCHIVED"];
 const EVENT_HISTORY_STATUSES = ["DENIED", "PUBLISHED", "CANCELLED"];
 const PAGE_SIZE = 100;
 
@@ -147,7 +149,7 @@ export default async function AdminPostsPage({ searchParams }) {
               ? { in: BUSINESS_HISTORY_STATUSES }
               : "PENDING",
         },
-        orderBy: { updatedAt: "desc" },
+        orderBy: resultOrderBy(params?.sort, { name: "sortName" }),
         skip,
         take: PAGE_SIZE + 1,
         include: {
@@ -195,7 +197,7 @@ export default async function AdminPostsPage({ searchParams }) {
                     }),
               }),
         },
-        orderBy: { updatedAt: "desc" },
+        orderBy: resultOrderBy(params?.sort, { name: "sortName" }),
         skip,
         take: PAGE_SIZE + 1,
         include: {
@@ -265,6 +267,7 @@ export default async function AdminPostsPage({ searchParams }) {
 
   return (
     <AdminShell activeTab="posts">
+      <ResultsSort />
       <div className={styles.pageHeader}>
         <div>
           <h1 className={styles.pageTitle}>Review Queue</h1>
@@ -290,20 +293,20 @@ export default async function AdminPostsPage({ searchParams }) {
 
       <div className={styles.filterTabs} aria-label="Review queue view">
         <Link
-          href={`/admin/posts?type=${type}&view=queue&page=1`}
+          href={`/admin/posts?type=${type}&view=queue&page=1&sort=${encodeURIComponent(params?.sort || "newest")}`}
           className={`${styles.filterTab} ${view === "queue" ? styles.filterTabActive : ""}`}
         >
           Pending Review
         </Link>
         <Link
-          href={`/admin/posts?type=${type}&view=history&page=1`}
+          href={`/admin/posts?type=${type}&view=history&page=1&sort=${encodeURIComponent(params?.sort || "newest")}`}
           className={`${styles.filterTab} ${view === "history" ? styles.filterTabActive : ""}`}
         >
           Published / Denied History
         </Link>
         {isAdmin ? (
           <Link
-            href="/admin/posts?type=events&view=payments&page=1"
+            href={`/admin/posts?type=events&view=payments&page=1&sort=${encodeURIComponent(params?.sort || "newest")}`}
             className={`${styles.filterTab} ${view === "payments" ? styles.filterTabActive : ""}`}
           >
             Payment Exceptions
@@ -369,7 +372,7 @@ export default async function AdminPostsPage({ searchParams }) {
                 </div>
                 <div className={styles.tableCol} style={{ flex: 1.25 }} data-label="Status">
                   <div className={styles.moderationStack}>
-                    <span className={getModerationBadgeClass(business.status)}>{business.status}</span>
+                    <span className={getModerationBadgeClass(business.status)}>{business.deletedAt ? "DELETED" : business.status}</span>
                     {view === "queue" ? (
                       <ModerationForm
                         entityId={business.id}
@@ -420,7 +423,7 @@ export default async function AdminPostsPage({ searchParams }) {
               const latestPayment = payments[0];
               const ended = Boolean(event.endDate && event.endDate <= new Date());
               const canRestoreAfterDispute = Boolean(
-                !ended &&
+                !event.deletedAt && !ended &&
                 event.status === "CANCELLED" &&
                 event.cancellationReason === "PAYMENT_DISPUTE" &&
                 payments.some(
@@ -554,9 +557,9 @@ export default async function AdminPostsPage({ searchParams }) {
                   <div className={styles.tableCol} style={{ flex: 1.25 }} data-label="Status">
                     <div className={styles.moderationStack}>
                       <span className={getModerationBadgeClass(event.status)}>
-                        {ended ? `${event.status} / ENDED` : event.status}
+                        {event.deletedAt ? "DELETED" : ended ? `${event.status} / ENDED` : event.status}
                       </span>
-                      {view === "queue" ? (
+                      {view === "queue" && !event.deletedAt ? (
                         <EventModerationForm eventId={event.id} canApprove={!ended} />
                       ) : null}
                       {isAdmin && canRestoreAfterDispute ? (
@@ -613,7 +616,7 @@ export default async function AdminPostsPage({ searchParams }) {
                           </form>
                         );
                       }) : null}
-                      {isAdmin && payments.length === 0 ? (
+                      {isAdmin && !event.deletedAt && payments.length === 0 ? (
                         <form action={adminDeleteEventAction}>
                           <input type="hidden" name="id" value={event.id} />
                           <button type="submit" className={styles.deleteButton}>Delete Event</button>
@@ -632,7 +635,7 @@ export default async function AdminPostsPage({ searchParams }) {
         <nav className={styles.filterTabs} aria-label="Review queue pagination">
           {page > 1 ? (
             <Link
-              href={`/admin/posts?type=${type}&view=${view}&page=${page - 1}`}
+              href={`/admin/posts?type=${type}&view=${view}&page=${page - 1}&sort=${encodeURIComponent(params?.sort || "newest")}`}
               className={styles.filterTab}
             >
               Previous
@@ -640,7 +643,7 @@ export default async function AdminPostsPage({ searchParams }) {
           ) : null}
           {hasMore ? (
             <Link
-              href={`/admin/posts?type=${type}&view=${view}&page=${page + 1}`}
+              href={`/admin/posts?type=${type}&view=${view}&page=${page + 1}&sort=${encodeURIComponent(params?.sort || "newest")}`}
               className={styles.filterTab}
             >
               Next

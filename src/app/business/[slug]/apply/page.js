@@ -1,3 +1,4 @@
+import { getPublicBusinessWhere } from "@/lib/listing-visibility";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
@@ -21,7 +22,7 @@ function parseHiringRoles(raw) {
 export async function generateMetadata({ params }) {
   const { slug } = await params;
   const business = await prisma.business.findUnique({
-    where: { slug },
+    where: { slug, ...getPublicBusinessWhere() },
     select: { name: true, status: true, isHiring: true },
   });
 
@@ -39,7 +40,7 @@ export default async function BusinessApplyPage({ params }) {
   const { slug } = await params;
 
   const business = await prisma.business.findUnique({
-    where: { slug },
+    where: { slug, ...getPublicBusinessWhere() },
     select: {
       slug: true,
       name: true,

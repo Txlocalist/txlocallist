@@ -120,6 +120,7 @@ const harness = vi.hoisted(() => {
       events: [],
       payments: [],
       reviews: [],
+      audits: [],
       users: [],
       checkoutSessions: new Map(),
       checkoutByIdempotencyKey: new Map(),
@@ -144,6 +145,7 @@ const harness = vi.hoisted(() => {
       publishedAt: null,
       cancelledAt: null,
       cancellationReason: null,
+      deletedAt: null,
       createdAt: api.now(),
       updatedAt: api.now(),
       ...clone(overrides),
@@ -325,6 +327,7 @@ const harness = vi.hoisted(() => {
         return api.prisma.eventPayment.create({ data: create });
       }),
     },
+    auditLog: { create: vi.fn(async ({ data }) => { api.state.audits.push(clone(data)); return data; }) },
     eventReview: {
       create: vi.fn(async ({ data }) => {
         const record = {
@@ -477,6 +480,8 @@ import {
   syncEventPaymentFromCheckoutSession,
 } from "@/lib/event-payments";
 
+import { isStripeConfigured } from "@/lib/stripe";
+
 function seedCheckoutOwner() {
   harness.addUser();
   return harness.addEvent();
@@ -485,6 +490,7 @@ function seedCheckoutOwner() {
 beforeEach(() => {
   harness.reset();
   vi.clearAllMocks();
+  isStripeConfigured.mockReturnValue(true);
 });
 
 describe("event payment service integration", () => {
@@ -1479,5 +1485,74 @@ describe("event payment service integration", () => {
           "Customer contacted support and the administrator approved the refund.",
       });
     });
+  });
+});
+
+
+describe("owner deletion payment safety", () => {
+  const remove = () => cancelEventPosting("event_1", "ORGANIZER", { deleteForOwnerId: "user_1" });
+  it("checks ownership and records deletion once on retries", async () => {
+    seedCheckoutOwner();
+    await expect(cancelEventPosting("event_1", "ORGANIZER", { deleteForOwnerId: "other" })).rejects.toThrow("Event not found");
+    await remove();
+    const deletedAt = harness.state.events[0].deletedAt;
+    await remove();
+    expect(harness.state.events[0].deletedAt).toEqual(deletedAt);
+    expect(harness.state.audits).toHaveLength(1);
+    expect(harness.stripe.refunds.create).not.toHaveBeenCalled();
+    await expect(createEventCheckoutSession({ eventId: "event_1", userId: "user_1" })).rejects.toThrow();
+  });
+  it("blocks deletion when Stripe is unavailable with an outstanding payment", async () => {
+    seedCheckoutOwner();
+    harness.addPayment();
+    isStripeConfigured.mockReturnValue(false);
+    await expect(remove()).rejects.toThrow("verification is unavailable");
+    expect(harness.state.events[0].deletedAt).toBeNull();
+    expect(harness.state.payments[0].status).toBe("PROCESSING");
+  });
+  it("blocks unverified reservations created after the initial Stripe check", async () => {
+    seedCheckoutOwner();
+    const find = harness.prisma.eventPayment.findMany.getMockImplementation();
+    harness.prisma.eventPayment.findMany.mockImplementationOnce(async (args) => {
+      const result = await find(args);
+      harness.addPayment({ id: "new_reservation", status: "CREATED" });
+      return result;
+    });
+    await expect(remove()).rejects.toThrow("new payment is being prepared");
+    expect(harness.state.events[0].deletedAt).toBeNull();
+  });
+  it("keeps the event when a completed asynchronous payment cannot yet be resolved", async () => {
+    seedCheckoutOwner();
+    const session = harness.addCheckoutSession({ status: "complete", payment_status: "unpaid" });
+    harness.addPayment({ stripeCheckoutSessionId: session.id });
+    await expect(remove()).rejects.toThrow(/processing/);
+    expect(harness.state.events[0].deletedAt).toBeNull();
+    expect(harness.state.audits).toHaveLength(0);
+  });
+  it("expires open checkout before deletion and retains a late paid callback without revival or refund", async () => {
+    seedCheckoutOwner();
+    const session = harness.addCheckoutSession();
+    harness.addPayment({ stripeCheckoutSessionId: session.id });
+    await remove();
+    const deletedAt = harness.state.events[0].deletedAt;
+    Object.assign(harness.state.checkoutSessions.get(session.id), { status: "complete", payment_status: "paid", payment_intent: "pi_late_deleted" });
+    await syncEventPaymentFromCheckoutSession(session.id);
+    expect(harness.state.events[0]).toMatchObject({ deletedAt, status: "CANCELLED" });
+    expect(harness.stripe.refunds.create).not.toHaveBeenCalled();
+  });
+  it("refunds and favorable disputes cannot erase deletion or permit admin restoration", async () => {
+    seedCheckoutOwner();
+    harness.addUser({ id: "admin_1", role: "ADMIN" });
+    harness.addPayment({ status: "PAID", stripePaymentIntentId: "pi_deleted", paidAt: new Date(), chargedAmountCents: 1000 });
+    await remove();
+    const deletedAt = harness.state.events[0].deletedAt;
+    await handleEventChargeDispute({ id: "ch_deleted", payment_intent: "pi_deleted" }, "needs_response", "dp_deleted");
+    await handleEventChargeDisputeClosed({ id: "ch_deleted", payment_intent: "pi_deleted" }, "won", "dp_deleted");
+    await expect(restoreEventAfterFavorableDispute({ eventId: "event_1", adminId: "admin_1" })).rejects.toThrow();
+    await expect(approveEventForPublication({ eventId: "event_1", reviewerId: "admin_1" })).rejects.toThrow();
+    await expect(denyEventForRevision({ eventId: "event_1", reviewerId: "admin_1", comment: "Correction" })).rejects.toThrow();
+    await handleEventRefundUpdated({ id: "re_deleted", payment_intent: "pi_deleted", amount: 1000, status: "succeeded", created: Math.floor(Date.now()/1000) });
+    expect(harness.state.events[0]).toMatchObject({ deletedAt, status: "CANCELLED" });
+    expect(harness.state.payments).toHaveLength(1);
   });
 });

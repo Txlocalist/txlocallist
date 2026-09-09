@@ -1,3 +1,4 @@
+import { getPublicBusinessWhere } from "@/lib/listing-visibility";
 import { TOP_RATED_LOCAL_SLUGS } from "@/lib/directory-demo";
 import { prisma } from "@/lib/prisma";
 
@@ -30,9 +31,8 @@ export async function getTopRatedLocals() {
     const seededBusinesses = await prisma.business.findMany({
       where: {
         slug: { in: TOP_RATED_LOCAL_SLUGS },
-        status: "ACTIVE",
-        publishedAt: { not: null },
-        owner: { deletedAt: null },
+        ...getPublicBusinessWhere(),
+
       },
       include: BUSINESS_CARD_INCLUDE,
     });
@@ -47,9 +47,7 @@ export async function getTopRatedLocals() {
       ? await prisma.business.findMany({
           where: {
             slug: { notIn: TOP_RATED_LOCAL_SLUGS },
-            status: "ACTIVE",
-            publishedAt: { not: null },
-            owner: { deletedAt: null },
+            ...getPublicBusinessWhere(),
           },
           orderBy: { publishedAt: "desc" },
           take: remainingSlots,

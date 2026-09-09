@@ -25,6 +25,7 @@ export default async function SearchPage({ searchParams }) {
   if (params.loc)      qs.set("loc",      params.loc);
   if (params.category) qs.set("category", params.category);
   if (params.page)     qs.set("page",     params.page);
+  for (const key of ["sort", "tab", "jobs", "browse"]) if (params[key]) qs.set(key, params[key]);
 
   const dest = `/results${qs.toString() ? `?${qs.toString()}` : ""}`;
   redirect(dest);

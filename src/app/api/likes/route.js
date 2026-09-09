@@ -1,3 +1,4 @@
+import { getPublicBusinessWhere } from "@/lib/listing-visibility";
 /**
  * PUT /api/likes
  * Body: { businessId: string, liked: boolean }
@@ -37,8 +38,7 @@ export async function PUT(request) {
   const business = await prisma.business.findFirst({
     where: {
       id: businessId.trim(),
-      status: "ACTIVE",
-      publishedAt: { not: null },
+      ...getPublicBusinessWhere(),
     },
     select: { id: true, name: true, slug: true, ownerId: true, owner: { select: { email: true, name: true } } },
   });

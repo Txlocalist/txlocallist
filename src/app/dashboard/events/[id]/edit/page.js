@@ -33,16 +33,19 @@ export default async function EditEventPage({ params }) {
       include: { tags: { select: { name: true } } },
     }),
     prisma.business.findMany({
-      where: { ownerId: session.user.id, status: "ACTIVE" },
+      where: { ownerId: session.user.id, status: "ACTIVE", deletedAt: null },
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),
     getAccountAccess(session.user.id),
   ]);
 
-  if (!event || (event.creatorId !== session.user.id && session.user.role !== "ADMIN")) {
+  if (!event || event.deletedAt || (event.creatorId !== session.user.id && session.user.role !== "ADMIN")) {
     notFound();
   }
+
+  if (["CANCELLED", "DENIED"].includes(event.status)) notFound();
+  if (["SUBSCRIPTION", "LEGACY"].includes(event.postingMethod) && !access?.hasCreatorAccess) redirect("/dashboard/billing");
 
   const category = event.tags
     .map((tag) => fromEventCategoryTagName(tag.name))

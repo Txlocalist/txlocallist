@@ -1,3 +1,4 @@
+import { getPublicBusinessWhere } from "@/lib/listing-visibility";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
@@ -42,7 +43,7 @@ export async function generateStaticParams() {
   }
 }
 
-export const revalidate = 3600; // Revalidate every hour
+export const dynamic = "force-dynamic"; // Revalidate every hour
 
 export default async function CityPage({ params }) {
   const { city: citySlug } = await params;
@@ -51,7 +52,7 @@ export default async function CityPage({ params }) {
     where: { slug: citySlug },
     include: {
       businesses: {
-        where: { status: "ACTIVE", publishedAt: { not: null } },
+        where: getPublicBusinessWhere(),
         include: {
           photos: { take: 1 },
           plan: { select: { slug: true, features: true } },

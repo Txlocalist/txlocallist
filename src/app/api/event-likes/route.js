@@ -1,3 +1,4 @@
+import { getPublicEventAccessWhere } from "@/lib/listing-visibility";
 /**
  * PUT /api/event-likes
  * Body: { eventId: string, liked: boolean }
@@ -35,7 +36,7 @@ export async function PUT(request) {
   }
 
   const event = await prisma.event.findFirst({
-    where: { id: eventId.trim(), status: "PUBLISHED" },
+    where: { id: eventId.trim(), ...getPublicEventAccessWhere() },
     select: { id: true, title: true, creatorId: true, creator: { select: { email: true, name: true } } },
   });
 

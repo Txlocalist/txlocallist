@@ -27,7 +27,7 @@ export async function AdminShell({ children, activeTab = "overview" }) {
     { id: "users", label: "Users", href: "/admin/users", icon: "group" },
     { id: "tags", label: "Tags", href: "/admin/tags", icon: "label" },
     ...(isAdmin
-      ? [{ id: "settings", label: "Admin Tools", href: "/admin/settings", icon: "admin_panel_settings" }]
+      ? [{ id: "cities", label: "Cities", href: "/admin/cities", icon: "location_city" }, { id: "settings", label: "Admin Tools", href: "/admin/settings", icon: "admin_panel_settings" }]
       : []),
   ];
 
@@ -36,6 +36,7 @@ export async function AdminShell({ children, activeTab = "overview" }) {
     posts: "Review Posts",
     users: "Manage Users",
     tags: "Manage Tags",
+    cities: "Manage Cities",
     settings: "Admin Tools",
   };
 

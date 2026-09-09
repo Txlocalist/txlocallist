@@ -1,3 +1,6 @@
+import DeleteListingButton from "@/components/DeleteListingButton/DeleteListingButton";
+import ResultsSort from "@/components/ResultsSort/ResultsSort";
+import { resultOrderBy } from "@/lib/results-sort";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { DashboardLayout } from "../DashboardShell";
@@ -31,8 +34,8 @@ export default async function BusinessesPage({ searchParams }) {
   const submitted = params?.submitted === "1";
 
   // Fetch businesses
-  const where = { ownerId: user.id };
-  if (statusFilter) {
+  const where = { ownerId: user.id, deletedAt: null, status: { not: "ARCHIVED" } };
+  if (statusFilter && ["ACTIVE", "DRAFT", "PENDING", "DENIED", "PAUSED", "SUSPENDED"].includes(statusFilter)) {
     where.status = statusFilter;
   }
 
@@ -48,11 +51,11 @@ export default async function BusinessesPage({ searchParams }) {
         plan: true,
         subscription: true,
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: resultOrderBy(params?.sort, { name: "sortName" }),
     });
 
     allBusinesses = await prisma.business.findMany({
-      where: { ownerId: user.id },
+      where: { ownerId: user.id, deletedAt: null, status: { not: "ARCHIVED" } },
     });
   } catch (error) {
     if (!isMissingPrismaTableError(error)) {
@@ -78,14 +81,14 @@ export default async function BusinessesPage({ searchParams }) {
     { id: "PENDING", label: "Pending", count: statusCounts.PENDING },
     { id: "DENIED", label: "Denied", count: statusCounts.DENIED },
     { id: "PAUSED", label: "Paused", count: statusCounts.PAUSED },
-    { id: "ARCHIVED", label: "Archived", count: statusCounts.ARCHIVED },
+
   ];
 
   return (
     <DashboardLayout activeTab="businesses-live">
       <div className={styles.pageHeader}>
         <div>
-          <h1 className={styles.pageTitle}>Live Businesses</h1>
+          <h1 className={styles.pageTitle}>My Businesses</h1>
           <p className={styles.pageSubtitle}>
             Manage all of the business listings connected to your account.
           </p>
@@ -130,8 +133,8 @@ export default async function BusinessesPage({ searchParams }) {
             key={status.id || "all"}
             href={
               status.id
-                ? `/dashboard/businesses?status=${status.id}`
-                : `/dashboard/businesses`
+                ? `/dashboard/businesses?status=${status.id}&sort=${encodeURIComponent(params?.sort || "newest")}`
+                : `/dashboard/businesses?sort=${encodeURIComponent(params?.sort || "newest")}`
             }
             className={`${styles.filterTab} ${
               statusFilter === status.id ? styles.filterTabActive : ""
@@ -142,6 +145,8 @@ export default async function BusinessesPage({ searchParams }) {
         ))}
       </div>
 
+      <ResultsSort />
+      {!canCreateListing && <p role="status">Membership listings are suspended while your subscription is inactive. You can still delete them.</p>}
       {/* Businesses List */}
       {businesses.length > 0 ? (
         <div className={styles.businessesTable}>
@@ -179,17 +184,17 @@ export default async function BusinessesPage({ searchParams }) {
                 </div>
                 <div className={styles.tableCol} style={{ flex: 1 }}>
                   <span className={styles.planBadge}>
-                    {business.plan.name}
+                    {business.plan?.name || "Free"}
                   </span>
                 </div>
                 <div className={styles.tableCol} style={{ flex: 1 }}>
-                  <span className={styles[`status${business.status}`]}>
-                    {business.status}
+                  <span className={styles[`status${!canCreateListing && business.status === "ACTIVE" ? "SUSPENDED" : business.status}`]}>
+                    {!canCreateListing && business.status === "ACTIVE" ? "SUSPENDED — MEMBERSHIP" : business.status}
                   </span>
                 </div>
                 <div className={styles.tableCol} style={{ flex: 1 }}>
                   <div className={styles.actionButtons}>
-                    {(business.status === "DRAFT" || business.status === "DENIED") && (
+                    {canCreateListing && (business.status === "DRAFT" || business.status === "DENIED") && (
                       <form action={publishBusinessFormAction}>
                         <input type="hidden" name="businessId" value={business.id} />
                         <button type="submit" className={styles.publishButton}>
@@ -197,13 +202,14 @@ export default async function BusinessesPage({ searchParams }) {
                         </button>
                       </form>
                     )}
-                    <Link
+                    {canCreateListing && <Link
                       href={`/dashboard/businesses/${business.id}/edit`}
                       className={styles.actionButton}
                     >
                       Edit
-                    </Link>
-                    {business.status === "ACTIVE" && (
+                    </Link>}
+                    <DeleteListingButton id={business.id} name={business.name} kind="business" />
+                    {canCreateListing && business.status === "ACTIVE" && (
                       <Link
                         href={`/business/${business.slug}`}
                         className={styles.actionButton}

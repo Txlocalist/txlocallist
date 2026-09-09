@@ -15,9 +15,11 @@ export default function LandingPageTemplate({
 }) {
   return (
     <>
-      <a href="#main" className="skip-link">
-        Skip to main content
-      </a>
+      {!homepageQuickLinks && (
+        <a href="#main" className="skip-link">
+          Skip to main content
+        </a>
+      )}
 
       <Navbar />
       <EventLandingHeader />

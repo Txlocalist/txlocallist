@@ -1,17 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import ResultsSort from "@/components/ResultsSort/ResultsSort";
+import { normalizeSort, sortResults } from "@/lib/results-sort";
 import { getBlobImageUrl } from "@/lib/blob";
 
 import styles from "./favorites.module.css";
 
-const SORT_OPTIONS = [
-  { value: "newest", label: "Newest saved" },
-  { value: "oldest", label: "Oldest saved" },
-  { value: "alphabetical", label: "A to Z" },
-];
 
 function formatSavedDate(dateValue) {
   return new Intl.DateTimeFormat("en-US", {
@@ -29,9 +27,19 @@ export function FavoritesDashboard({
   statsLabel = "Saved Businesses",
 }) {
   const [items, setItems] = useState(favorites);
-  const [query, setQuery] = useState("");
-  const [cityFilter, setCityFilter] = useState("all");
-  const [sortBy, setSortBy] = useState("newest");
+  const params = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const query = params.get("q") || "";
+  const cityFilter = params.get("city") || "all";
+  useEffect(() => { setItems(favorites); }, [favorites]);
+  function updateFilters(changes) {
+    const next = new URLSearchParams(params.toString());
+    Object.entries(changes).forEach(([key, value]) => value && value !== "all" ? next.set(key, value) : next.delete(key));
+    next.delete("page");
+    router.push(`${pathname}?${next.toString()}`, { scroll: false });
+  }
+  const sortBy = normalizeSort(params.get("sort"));
   const [pendingBusinessId, setPendingBusinessId] = useState(null);
   const [error, setError] = useState("");
 
@@ -56,21 +64,12 @@ export function FavoritesDashboard({
       return matchesQuery && matchesCity;
     });
 
-    return [...nextItems].sort((left, right) => {
-      if (sortBy === "oldest") {
-        return new Date(left.createdAt) - new Date(right.createdAt);
-      }
-
-      if (sortBy === "alphabetical") {
-        return left.name.localeCompare(right.name);
-      }
-
-      return new Date(right.createdAt) - new Date(left.createdAt);
-    });
+    return sortResults(nextItems, sortBy);
   }, [cityFilter, items, query, sortBy]);
 
   const savedCityCount = cityOptions.length;
-  const latestSave = items[0]?.createdAt ? formatSavedDate(items[0].createdAt) : "No saves yet";
+  const latestSavedAt = items.reduce((latest, item) => Math.max(latest, new Date(item.createdAt).getTime() || 0), 0);
+  const latestSave = latestSavedAt ? formatSavedDate(latestSavedAt) : "No saves yet";
 
   async function handleRemove(itemToRemove) {
     setError("");
@@ -132,7 +131,7 @@ export function FavoritesDashboard({
           <input
             type="search"
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => updateFilters({ q: event.target.value })}
             placeholder="Search by name, city, or category"
             className={styles.filterInput}
           />
@@ -142,7 +141,7 @@ export function FavoritesDashboard({
           <span className={styles.filterLabel}>City</span>
           <select
             value={cityFilter}
-            onChange={(event) => setCityFilter(event.target.value)}
+            onChange={(event) => updateFilters({ city: event.target.value })}
             className={styles.filterSelect}
           >
             <option value="all">All cities</option>
@@ -154,20 +153,7 @@ export function FavoritesDashboard({
           </select>
         </label>
 
-        <label className={styles.filterField}>
-          <span className={styles.filterLabel}>Sort</span>
-          <select
-            value={sortBy}
-            onChange={(event) => setSortBy(event.target.value)}
-            className={styles.filterSelect}
-          >
-            {SORT_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <ResultsSort saved />
       </section>
 
       {error ? <div className={styles.errorBanner}>{error}</div> : null}
@@ -181,9 +167,7 @@ export function FavoritesDashboard({
           <button
             type="button"
             onClick={() => {
-              setQuery("");
-              setCityFilter("all");
-              setSortBy("newest");
+              updateFilters({ q: "", city: "" });
             }}
             className={styles.emptyButton}
           >

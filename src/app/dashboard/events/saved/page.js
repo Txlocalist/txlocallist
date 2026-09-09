@@ -1,3 +1,6 @@
+import ResultsSort from "@/components/ResultsSort/ResultsSort";
+import { resultOrderBy } from "@/lib/results-sort";
+import { getPublicEventAccessWhere } from "@/lib/listing-visibility";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -8,7 +11,8 @@ import { formatEventDateRange, formatEventTime, isEventPast } from "@/lib/event-
 import { prisma } from "@/lib/prisma";
 import { isMissingPrismaTableError } from "@/lib/prisma-errors";
 
-export default async function SavedEventsPage() {
+export default async function SavedEventsPage({ searchParams }) {
+  const params = await searchParams;
   const session = await getCurrentSession();
 
   if (!session?.user) {
@@ -22,9 +26,9 @@ export default async function SavedEventsPage() {
       savedEvents = await prisma.eventFavorite.findMany({
         where: {
           userId: session.user.id,
-          event: { status: "PUBLISHED" },
+          event: { ...getPublicEventAccessWhere() },
         },
-        orderBy: { createdAt: "desc" },
+        orderBy: params?.sort === "name-asc" || params?.sort === "name-desc" ? [{ event: { sortName: params.sort === "name-asc" ? "asc" : "desc" } }, { id: "asc" }] : resultOrderBy(params?.sort),
         select: {
           id: true,
           createdAt: true,
@@ -60,6 +64,7 @@ export default async function SavedEventsPage() {
         </div>
       </div>
 
+      <ResultsSort saved />
       {savedEvents.length > 0 ? (
         <div className={styles.card}>
           <div className={styles.listContainer}>

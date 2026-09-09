@@ -1,3 +1,5 @@
+import ResultsSort from "@/components/ResultsSort/ResultsSort";
+import { resultOrderBy, sortResults } from "@/lib/results-sort";
 import { AdminShell } from "../AdminShell";
 import { requireStaff } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
@@ -5,12 +7,13 @@ import { deleteTagAction } from "@/app/actions/admin";
 import { TagCreateForm } from "../TagCreateForm";
 import styles from "@/app/dashboard/dashboard.module.css";
 
-export default async function AdminTagsPage() {
+export default async function AdminTagsPage({ searchParams }) {
+  const params = await searchParams;
   const staff = await requireStaff();
   const isAdmin = staff.role === "ADMIN";
 
   const tags = await prisma.tag.findMany({
-    orderBy: { name: "asc" },
+    orderBy: resultOrderBy(params?.sort, { fallback: "name-asc" }),
     include: { _count: { select: { businessTags: true } } },
   });
 
@@ -28,6 +31,7 @@ export default async function AdminTagsPage() {
         <TagCreateForm />
       </div>
 
+      <ResultsSort fallback="name-asc" />
       <div className={styles.businessesTable}>
         <div className={styles.tableHeader}>
           <div className={styles.tableCol} style={{ flex: 2 }}>Name</div>
@@ -36,7 +40,7 @@ export default async function AdminTagsPage() {
           <div className={styles.tableCol} style={{ flex: 1 }}>Actions</div>
         </div>
         <div className={styles.tableBody}>
-          {tags.map((tag) => (
+          {sortResults(tags, params?.sort, { fallback: "name-asc" }).map((tag) => (
             <div key={tag.id} className={styles.tableRow}>
               <div className={styles.tableCol} style={{ flex: 2 }}>
                 <p className={styles.businessName}>{tag.name}</p>

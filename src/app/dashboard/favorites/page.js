@@ -1,3 +1,4 @@
+import { getPublicBusinessWhere } from "@/lib/listing-visibility";
 import { redirect } from "next/navigation";
 
 import { DashboardLayout } from "../DashboardShell";
@@ -23,9 +24,7 @@ export default async function FavoritesPage() {
       where: {
         userId: user.id,
         business: {
-          status: "ACTIVE",
-          publishedAt: { not: null },
-          owner: { deletedAt: null },
+          ...getPublicBusinessWhere(),
         },
       },
       orderBy: { createdAt: "desc" },

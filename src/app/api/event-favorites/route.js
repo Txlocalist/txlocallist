@@ -1,3 +1,4 @@
+import { getPublicEventAccessWhere } from "@/lib/listing-visibility";
 /**
  * POST /api/event-favorites
  * Body: { eventId: string }
@@ -29,7 +30,7 @@ export async function POST(request) {
   }
 
   const event = await prisma.event.findFirst({
-    where: { id: eventId, status: "PUBLISHED" },
+    where: { id: eventId, ...getPublicEventAccessWhere() },
     select: { id: true },
   });
 

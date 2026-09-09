@@ -1,3 +1,4 @@
+import { resultOrderBy } from "@/lib/results-sort";
 /**
  * GET /api/events?city=Austin&limit=6
  * Returns published events optionally filtered by city.
@@ -11,22 +12,31 @@ import { isUnavailablePrismaRelationError } from "@/lib/prisma-errors";
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const city  = searchParams.get("city")  ?? "";
-  const limit = Math.min(parseInt(searchParams.get("limit") ?? "6", 10), 20);
+  const limit = Math.min(20, Math.max(1, parseInt(searchParams.get("limit") ?? "6", 10) || 6));
+  const page = Math.max(1, parseInt(searchParams.get("page"), 10) || 1);
+  const sort = searchParams.get("sort");
+  const q = searchParams.get("q")?.trim();
 
   try {
     const user = await getCurrentUser().catch(() => null);
     const where = getPublicEventWhere();
     if (city) {
-      where.city = { contains: city, mode: "insensitive" };
+      const cityName = city.replace(/,?\s+(?:TX|Texas)$/i, "").trim();
+      where.city = { contains: cityName, mode: "insensitive" };
     }
+
+    if (q) where.AND.push({ OR: [{ title: { contains: q, mode: "insensitive" } }, { description: { contains: q, mode: "insensitive" } }] });
+    const total = await prisma.event.count({ where });
 
     const findEvents = (includeLikes) => prisma.event.findMany({
       where,
-      orderBy: [{ startDate: "asc" }, { createdAt: "desc" }],
+      orderBy: resultOrderBy(sort, { name: "sortName", fallback: "upcoming", extras: ["upcoming"] }),
+      skip: (page - 1) * limit,
       take: limit,
       select: {
         id: true,
         title: true,
+        createdAt: true,
         description: true,
         imageUrl: true,
         addressName: true,
@@ -58,6 +68,7 @@ export async function GET(request) {
     }
 
     return NextResponse.json({
+      total, page, pageSize: limit, hasMore: page * limit < total,
       events: events.map((event) => ({
         ...event,
         likesCount: event._count?.likes ?? 0,

@@ -1,3 +1,4 @@
+import { getPublicBusinessWhere } from "@/lib/listing-visibility";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
@@ -27,9 +28,7 @@ export async function generateMetadata({ params }) {
   const business = await prisma.business.findFirst({
     where: {
       slug,
-      status: "ACTIVE",
-      publishedAt: { not: null },
-      owner: { deletedAt: null },
+      ...getPublicBusinessWhere(),
     },
     select: { name: true, description: true, city: { select: { name: true } } },
   });
@@ -86,9 +85,7 @@ export default async function BusinessDetailPage({ params }) {
   const coreBusiness = await prisma.business.findFirst({
     where: {
       slug,
-      status: "ACTIVE",
-      publishedAt: { not: null },
-      owner: { deletedAt: null },
+      ...getPublicBusinessWhere(),
     },
     include: {
       city:        { select: { id: true, name: true, slug: true } },
@@ -271,22 +268,6 @@ export default async function BusinessDetailPage({ params }) {
             </div>
           )}
         </section>
-
-        {/* ── PHOTO GALLERY ── */}
-        {business.photos.length > 0 && (
-          <section className={styles.gallerySection}>
-            <div className={styles.galleryHeader}>
-              <div>
-                <p className={styles.eyebrow}>The Atmosphere</p>
-                <h2 className={styles.gallerySectionTitle}>Photo Gallery</h2>
-              </div>
-              <span className={styles.viewAllBtn}>
-                View All {business.photos.length} Photo{business.photos.length !== 1 ? "s" : ""}
-              </span>
-            </div>
-            <PhotoGallery photos={business.photos} businessName={business.name} />
-          </section>
-        )}
 
         {/* ── BENTO: About + Hours ── */}
         <section className={styles.bentoSection}>
@@ -476,6 +457,22 @@ export default async function BusinessDetailPage({ params }) {
                 </div>
               ))}
             </div>
+          </section>
+        )}
+
+        {/* PHOTO GALLERY */}
+        {business.photos.length > 0 && (
+          <section className={styles.gallerySection}>
+            <div className={styles.galleryHeader}>
+              <div>
+                <p className={styles.eyebrow}>The Atmosphere</p>
+                <h2 className={styles.gallerySectionTitle}>Photo Gallery</h2>
+              </div>
+              <span className={styles.viewAllBtn}>
+                View All {business.photos.length} Photo{business.photos.length !== 1 ? "s" : ""}
+              </span>
+            </div>
+            <PhotoGallery photos={business.photos} businessName={business.name} />
           </section>
         )}
 

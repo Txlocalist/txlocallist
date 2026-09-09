@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
+import { PAID_ACCESS_STATUSES, hasSubscriptionAccess, getSubscriptionAccessWhere } from "@/lib/membership-policy";
 
-export const PAID_ACCESS_STATUSES = Object.freeze(["ACTIVE", "TRIALING"]);
+export { PAID_ACCESS_STATUSES };
 export const STAFF_ROLES = Object.freeze(["MANAGER", "ADMIN"]);
 export const ACCOUNT_ROLES = Object.freeze([
   "USER",
@@ -42,12 +43,8 @@ export function resolveAccountAccess({
 }) {
   if (!user) return null;
 
-  const accountHasStripeAccess =
-    Boolean(user.stripeSubscriptionId) && hasStripeFeatureAccess(user.billingStatus);
-  const activeLegacy = legacySubscriptions.find((subscription) =>
-    Boolean(subscription.stripeSubscriptionId) &&
-    hasStripeFeatureAccess(subscription.status),
-  );
+  const accountHasStripeAccess = hasSubscriptionAccess(user);
+  const activeLegacy = legacySubscriptions.find((subscription) => hasSubscriptionAccess(subscription));
   const hasLegacyStripeAccess = Boolean(activeLegacy);
   const hasStripeAccess = accountHasStripeAccess || hasLegacyStripeAccess;
   const hasComplimentaryAccess = user.role === "COMPLIMENTARY";
@@ -197,12 +194,10 @@ export function deriveUserStatusTags({
   currentPeriodEnd = null,
   cancelAtPeriodEnd = false,
 }) {
-  const hasAccountPaidAccess =
-    Boolean(stripeSubscriptionId) && hasStripeFeatureAccess(billingStatus);
+  const hasAccountPaidAccess = hasSubscriptionAccess({ stripeSubscriptionId, billingStatus, cancelAtPeriodEnd, currentPeriodEnd });
   const activeLegacy = legacySubscriptions.find(
     (subscription) =>
-      Boolean(subscription.stripeSubscriptionId) &&
-      hasStripeFeatureAccess(subscription.status),
+      hasSubscriptionAccess(subscription),
   );
   const hasPaidAccess = hasAccountPaidAccess || Boolean(activeLegacy);
   const tags = [];
@@ -253,16 +248,14 @@ export function getAccessFilterWhere(access) {
   const paidWhere = {
     OR: [
       {
-        billingStatus: { in: PAID_ACCESS_STATUSES },
-        stripeSubscriptionId: { not: null },
+        ...getSubscriptionAccessWhere("billingStatus"),
       },
       {
         ownedBusinesses: {
           some: {
             subscription: {
               is: {
-                status: { in: PAID_ACCESS_STATUSES },
-                stripeSubscriptionId: { not: null },
+                ...getSubscriptionAccessWhere(),
               },
             },
           },

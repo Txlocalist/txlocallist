@@ -1,3 +1,5 @@
+import { resultOrderBy } from "@/lib/results-sort";
+import { getPublicBusinessWhere } from "@/lib/listing-visibility";
 /**
  * GET /api/search?q=keyword&loc=city&category=slug&jobs=1&page=1
  *
@@ -69,9 +71,7 @@ export async function GET(request) {
 
     // Build the where clause
     const where = {
-      status: "ACTIVE", // Only show published listings
-      publishedAt: { not: null },
-      owner: { deletedAt: null },
+      ...getPublicBusinessWhere(),
     };
 
     // Filter by city
@@ -116,16 +116,7 @@ export async function GET(request) {
     // Get total count for pagination
     const total = await prisma.business.count({ where });
 
-    // Build orderBy — popular sorts by saved count, default by tier then date
-    const orderBy = sort === "popular"
-      ? [
-          { favorites: { _count: "desc" } },
-          { publishedAt: "desc" },
-        ]
-      : [
-          { publishedAt: "desc" },
-          { createdAt: "desc" },
-        ];
+    const orderBy = resultOrderBy(sort, { name: "sortName", extras: ["popular"] });
 
     // Fetch results with pagination. Until the manually-applied Like migration
     // lands, preserve public search and report zero likes instead of returning 500.
@@ -151,6 +142,7 @@ export async function GET(request) {
     const transformedResults = results.map((business) => ({
       id: business.id,
       slug: business.slug,
+      createdAt: business.createdAt,
       name: business.name,
       description: business.description,
       city: business.city,

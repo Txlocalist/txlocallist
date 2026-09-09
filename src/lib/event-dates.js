@@ -1,3 +1,4 @@
+import { getPublicEventAccessWhere } from "./listing-visibility";
 export const DEFAULT_EVENT_TIME_ZONE = "America/Chicago";
 export const ALLOWED_EVENT_TIME_ZONES = Object.freeze([
   "America/Chicago",
@@ -224,8 +225,7 @@ export function getPublicEventWhere(now = new Date()) {
   const cutoff = asValidDate(now) || new Date();
 
   return {
-    status: "PUBLISHED",
-    creator: { deletedAt: null },
+    ...getPublicEventAccessWhere(),
     OR: [
       { endDate: { gte: cutoff } },
       { endDate: null, startDate: { gte: cutoff } },

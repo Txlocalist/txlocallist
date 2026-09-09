@@ -110,6 +110,7 @@ enum JobStatus {
 
 model User {
   id                   String              @id @default(cuid())
+  sortName             String              @default(dbgenerated())
   email                String              @unique
   passwordHash         String
   role                 Role                @default(USER)
@@ -154,6 +155,7 @@ model User {
   sessions    Session[]
 
   @@index([email])
+  @@index([sortName, id])
   @@index([role])
   @@index([stripeCustomerId])
   @@index([stripeSubscriptionId])
@@ -253,6 +255,10 @@ model Plan {
 
 model Business {
   id String @id @default(cuid())
+  deletedAt DateTime?
+  sortName String @default(dbgenerated())
+
+  @@index([sortName, id])
 
   // Identity & slug
   slug        String @unique // "cafe-name-austin"
@@ -601,6 +607,10 @@ model BillingMutationFence {
 
 model Event {
   id String @id @default(cuid())
+  deletedAt DateTime?
+  sortName String @default(dbgenerated())
+
+  @@index([sortName, id])
 
   title       String
   description String

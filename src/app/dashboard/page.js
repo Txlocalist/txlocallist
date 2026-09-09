@@ -42,7 +42,7 @@ export default async function DashboardPage() {
 
   try {
     businesses = await prisma.business.findMany({
-      where: { ownerId: user.id },
+      where: { ownerId: user.id, deletedAt: null, status: { not: "ARCHIVED" } },
       include: {
         city: true,
         plan: true,

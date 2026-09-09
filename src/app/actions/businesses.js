@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/auth/session";
 import { getAccountAccess } from "@/lib/account-access";
 import { normalizeBusinessHoursInput } from "@/lib/business-hours";
 import { isEventCategoryTagName } from "@/lib/event-categories.mjs";
+import { getPublicBusinessWhere } from "@/lib/listing-visibility";
 import { prisma } from "@/lib/prisma";
 import { isMissingPrismaTableError, phase3SchemaMessage } from "@/lib/prisma-errors";
 
@@ -337,6 +338,7 @@ export async function publishBusinessAction(businessId) {
     where: { id: businessId },
     select: {
       ownerId: true,
+      deletedAt: true,
       status: true,
       slug: true,
       name: true,
@@ -344,12 +346,16 @@ export async function publishBusinessAction(businessId) {
     },
   });
 
-  if (!business) {
+  if (!business || business.deletedAt) {
     return { success: false, message: "Business not found." };
   }
 
   if (business.ownerId !== user.id && user.role !== "ADMIN") {
     return { success: false, message: "You don't have permission to submit this business." };
+  }
+
+  if (["ARCHIVED", "SUSPENDED"].includes(business.status)) {
+    return { success: false, message: "This listing cannot be submitted." };
   }
 
   if (business.status === "ACTIVE") {
@@ -361,7 +367,7 @@ export async function publishBusinessAction(businessId) {
   }
 
   await prisma.business.update({
-    where: { id: businessId },
+    where: { id: businessId, ...(user.role === "ADMIN" ? {} : { ownerId: user.id }), deletedAt: null, status: { notIn: ["ARCHIVED", "SUSPENDED"] } },
     data: {
       status: "PENDING",
       publishedAt: null,
@@ -388,10 +394,10 @@ export async function pauseBusinessAction(businessId) {
 
   const business = await prisma.business.findUnique({
     where: { id: businessId },
-    select: { ownerId: true, status: true },
+    select: { ownerId: true, status: true, deletedAt: true },
   });
 
-  if (!business) {
+  if (!business || business.deletedAt) {
     return buildErrorState("Business not found.");
   }
 
@@ -404,7 +410,7 @@ export async function pauseBusinessAction(businessId) {
   }
 
   await prisma.business.update({
-    where: { id: businessId },
+    where: { id: businessId, ...(user.role === "ADMIN" ? {} : { ownerId: user.id }), deletedAt: null, status: "ACTIVE" },
     data: { status: "PAUSED" },
   });
 
@@ -418,34 +424,9 @@ export async function pauseBusinessAction(businessId) {
 /**
  * Archive a business listing (soft-delete).
  */
-export async function archiveBusinessAction(businessId) {
-  const user = await requireUser();
-  const access = await getAccountAccess(user.id);
-  if (!access?.hasCreatorAccess) {
-    return buildErrorState("Creator access is required to manage this business.");
-  }
-
-  const business = await prisma.business.findUnique({
-    where: { id: businessId },
-    select: { ownerId: true },
-  });
-
-  if (!business) {
-    return buildErrorState("Business not found.");
-  }
-
-  if (business.ownerId !== user.id && user.role !== "ADMIN") {
-    return buildErrorState("You don't have permission to archive this business.");
-  }
-
-  await prisma.business.update({
-    where: { id: businessId },
-    data: { status: "ARCHIVED" },
-  });
-
-  revalidatePath("/dashboard/businesses");
-
-  return { success: true, message: "Business archived." };
+export async function archiveBusinessAction(businessId, confirmed = false) {
+  const { deleteOwnedBusinessAction } = await import("@/app/actions/listing-deletion");
+  return deleteOwnedBusinessAction({ id: businessId, confirmed });
 }
 
 /**
@@ -668,10 +649,10 @@ export async function updateBusinessAction(businessId, data) {
   // Verify ownership
   const business = await prisma.business.findUnique({
     where: { id: businessId },
-    select: { ownerId: true, slug: true },
+    select: { ownerId: true, slug: true, status: true, deletedAt: true },
   });
 
-  if (!business) {
+  if (!business || business.deletedAt || business.status === "ARCHIVED") {
     return { success: false, message: "Business not found." };
   }
 
@@ -753,7 +734,7 @@ export async function updateBusinessAction(businessId, data) {
   try {
     await prisma.$transaction(async (tx) => {
       await tx.business.update({
-        where: { id: businessId },
+        where: { id: businessId, ...(user.role === "ADMIN" ? {} : { ownerId: user.id }), deletedAt: null, status: { not: "ARCHIVED" } },
         data: {
           name: data.name.trim(),
           description: data.description.trim(),
@@ -865,7 +846,7 @@ export async function submitBusinessApplicationAction(data) {
   }
 
   const business = await prisma.business.findUnique({
-    where: { slug },
+    where: { slug, ...getPublicBusinessWhere() },
     select: {
       id: true,
       status: true,

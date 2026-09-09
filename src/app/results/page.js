@@ -1,7 +1,9 @@
+import { getPublicBusinessWhere } from "@/lib/listing-visibility";
 import { getCurrentUser, getDashboardPath } from "@/lib/auth/session";
 import { getPublicEventWhere } from "@/lib/event-dates";
 import { prisma } from "@/lib/prisma";
 import { isMissingPrismaTableError } from "@/lib/prisma-errors";
+import { mergeCityNames } from "@/lib/cities";
 import ResultsExperience from "./ResultsExperience";
 
 export const metadata = {
@@ -15,6 +17,7 @@ function toBusinessResult(business, extra = {}) {
   return {
     id: business.id,
     slug: business.slug,
+    createdAt: business.createdAt.toISOString(),
     name: business.name,
     description: business.description,
     city: business.city,
@@ -70,15 +73,13 @@ export default async function ResultsPage({ searchParams }) {
   const initialCategory = params?.category ?? "";
   const initialBrowseAll = params?.browse === "all";
   const initialJobsOnly = params?.jobs === "1";
-  const [availableCategories, activeBusinessCities, publishedEventCities] = await Promise.all([
+  const [availableCategories, managedCities, publishedEventCities] = await Promise.all([
     prisma.category.findMany({
       where: {
         businessCategories: {
           some: {
             business: {
-              status: "ACTIVE",
-              publishedAt: { not: null },
-              owner: { deletedAt: null },
+              ...getPublicBusinessWhere(),
             },
           },
         },
@@ -87,14 +88,6 @@ export default async function ResultsPage({ searchParams }) {
       select: { id: true, name: true, slug: true },
     }),
     prisma.city.findMany({
-      where: {
-        businesses: {
-          some: {
-            status: "ACTIVE",
-            publishedAt: { not: null },
-          },
-        },
-      },
       orderBy: { name: "asc" },
       select: { name: true },
     }),
@@ -105,26 +98,9 @@ export default async function ResultsPage({ searchParams }) {
     }),
   ]);
 
-  const cityNameMap = new Map();
-
-  for (const city of activeBusinessCities) {
-    const name = city.name?.trim();
-    if (!name) continue;
-    cityNameMap.set(name.toLowerCase(), name);
-  }
-
-  for (const eventCity of publishedEventCities) {
-    const name = eventCity.city?.trim();
-    if (!name) continue;
-
-    const key = name.toLowerCase();
-    if (!cityNameMap.has(key)) {
-      cityNameMap.set(key, name);
-    }
-  }
-
-  const availableCities = Array.from(cityNameMap.values()).sort((a, b) =>
-    a.localeCompare(b)
+  const availableCities = mergeCityNames(
+    managedCities.map((city) => city.name),
+    publishedEventCities.map((event) => event.city),
   );
 
   const user = await getCurrentUser().catch(() => null);
@@ -139,8 +115,7 @@ export default async function ResultsPage({ searchParams }) {
       where: {
         userId: user.id,
         business: {
-          status: "ACTIVE",
-          publishedAt: { not: null },
+          ...getPublicBusinessWhere(),
         },
       },
       orderBy: { createdAt: "desc" },
