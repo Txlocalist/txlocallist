@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-09T22:01:19.225169+00:00",
+  "generated_at": "2026-09-11T18:55:00.520105+00:00",
   "nodes": {
     "docs_event_posting_launch_one_time_event_posting_launch": {
       "code_fingerprint": "e4934220b53e1cb58d33a5b084f6e869a2fa858f0969d9d733fc8fc76c66ead1",
@@ -12,7 +12,7 @@
           "q": "ok so how should we go about the next phase  to move into launch readiness?"
         }
       ],
-      "score": 0.827789884,
+      "score": 0.79277459,
       "source_file": "docs/event-posting-launch.md",
       "status": "tentative",
       "uses": 1
@@ -28,7 +28,7 @@
           "q": "ok so how should we go about the next phase  to move into launch readiness?"
         }
       ],
-      "score": 0.827789884,
+      "score": 0.79277459,
       "source_file": "scripts/verify-event-posting-readiness.mjs",
       "status": "tentative",
       "uses": 1
@@ -44,7 +44,7 @@
           "q": "Match the About page to the supplied visual reference"
         }
       ],
-      "score": 0.273477799,
+      "score": 0.26190976,
       "source_file": "src/app/about/page.js",
       "status": "tentative",
       "uses": 1
@@ -80,7 +80,7 @@
           "q": "ok so how should we go about the next phase  to move into launch readiness?"
         }
       ],
-      "score": 4.987450961,
+      "score": 4.776483104,
       "source_file": "src/app/actions/admin.js",
       "status": "preferred",
       "uses": 6
@@ -96,7 +96,7 @@
           "q": "when a new event is made the categories say event crategorie? why is it displaying event when these are business categories. can we fix that? seems like there is a bug when a business is created and category is selected and it gets added to the explore page."
         }
       ],
-      "score": 0.996035796,
+      "score": 0.953903746,
       "source_file": "src/app/actions/businesses.js",
       "status": "tentative",
       "uses": 1
@@ -127,7 +127,7 @@
           "q": "Inspect UserRoleControl.jsx and users.module.css for viewport centering and delete dialog accessibility."
         }
       ],
-      "score": 3.253473115,
+      "score": 3.115852063,
       "source_file": "src/app/admin/users/page.js",
       "status": "preferred",
       "uses": 4
@@ -143,7 +143,7 @@
           "q": "Inspect UserRoleControl.jsx and users.module.css for viewport centering and delete dialog accessibility."
         }
       ],
-      "score": 0.754719565,
+      "score": 0.722795127,
       "source_file": "src/app/admin/users/UserRoleControl.jsx",
       "status": "tentative",
       "uses": 1
@@ -179,7 +179,7 @@
           "q": "ehy is it working the loca env and not in the production env?"
         }
       ],
-      "score": 6.585357128,
+      "score": 6.306798263,
       "source_file": "src/app/admin/users/UserRoleControl.jsx",
       "status": "preferred",
       "uses": 8
@@ -200,7 +200,7 @@
           "q": "Diagnose why newly signed-up business landing pages opened from Explore return a server error."
         }
       ],
-      "score": 1.779102215,
+      "score": 1.703846662,
       "source_file": "src/app/business/[slug]/page.js",
       "status": "preferred",
       "uses": 2
@@ -216,7 +216,7 @@
           "q": "when a new event is made the categories say event crategorie? why is it displaying event when these are business categories. can we fix that? seems like there is a bug when a business is created and category is selected and it gets added to the explore page."
         }
       ],
-      "score": 0.996035796,
+      "score": 0.953903746,
       "source_file": "src/app/dashboard/businesses/new/CreateBusinessForm.jsx",
       "status": "tentative",
       "uses": 1
@@ -232,7 +232,7 @@
           "q": "Trace the event detail page implementation, event image fields and fallback behavior, save/favorite counting system, and the equivalent real saved-count flow used on business landing pages."
         }
       ],
-      "score": 0.261570096,
+      "score": 0.25050575,
       "source_file": "src/app/dashboard/events/saved/page.js",
       "status": "tentative",
       "uses": 1
@@ -248,7 +248,7 @@
           "q": "How is the how-it-works page composed, which shared components and routes does it depend on, and what must be preserved during a visual redesign?"
         }
       ],
-      "score": 0.273731866,
+      "score": 0.26215308,
       "source_file": "src/app/how-it-works/page.js",
       "status": "tentative",
       "uses": 1
@@ -264,7 +264,7 @@
           "q": "Inspect graphify-out for context before redesigning the how it works page."
         }
       ],
-      "score": 0.27321479,
+      "score": 0.261657876,
       "source_file": "src/app/layout.js",
       "status": "tentative",
       "uses": 1
@@ -285,7 +285,7 @@
           "q": "Inspect graphify-out for context before redesigning the how it works page."
         }
       ],
-      "score": 0.546946655,
+      "score": 0.523810957,
       "source_file": "src/app/pricing/page.js",
       "status": "preferred",
       "uses": 2
@@ -301,7 +301,7 @@
           "q": "Add a beautiful skeleton loader for the results page that looks like the cards."
         }
       ],
-      "score": 0.509996204,
+      "score": 0.488423499,
       "source_file": "src/app/results/icons.js",
       "status": "tentative",
       "uses": 1
@@ -309,8 +309,18 @@
     "src_app_results_page_resultspage": {
       "code_fingerprint": "d9100a9afa09c56ee88719a6865a4e7abb0dc25e1149471a500d33f0f2b0ded6",
       "label": "ResultsPage()",
-      "last": "2026-07-15T20:13:24.315412+00:00",
+      "last": "2026-09-09T22:19:26.546234+00:00",
       "provenance": [
+        {
+          "date": "2026-09-09T22:19:26.546234+00:00",
+          "outcome": "useful",
+          "q": "Production results still show error 4151966855; repair the missing migration."
+        },
+        {
+          "date": "2026-09-09T22:03:30.919931+00:00",
+          "outcome": "useful",
+          "q": "Why is the live production results page failing with error 4151966855?"
+        },
         {
           "date": "2026-07-15T20:13:24.315412+00:00",
           "outcome": "useful",
@@ -322,10 +332,10 @@
           "q": "Inspect graphify-out for context before redesigning the how it works page."
         }
       ],
-      "score": 0.546946655,
+      "score": 2.439523724,
       "source_file": "src/app/results/page.js",
       "status": "preferred",
-      "uses": 2
+      "uses": 4
     },
     "src_app_results_resultsexperience": {
       "code_fingerprint": "5ecc3099dae25ce2ff2b95ea3c9a56b0550a495af838a44adffaa7888e3ddb9f",
@@ -353,7 +363,7 @@
           "q": "Remove the toggle from the search on the results search bar, and when loading /results without a filter or search load 15 recently added businesses."
         }
       ],
-      "score": 2.905255945,
+      "score": 2.782364387,
       "source_file": "src/app/results/ResultsExperience.jsx",
       "status": "preferred",
       "uses": 4
@@ -369,7 +379,7 @@
           "q": "Inspect graphify-out for context before redesigning the how it works page."
         }
       ],
-      "score": 0.27321479,
+      "score": 0.261657876,
       "source_file": "src/components/Footer/Footer.jsx",
       "status": "tentative",
       "uses": 1
@@ -385,7 +395,7 @@
           "q": "Inspect graphify-out for context before redesigning the how it works page."
         }
       ],
-      "score": 0.27321479,
+      "score": 0.261657876,
       "source_file": "src/components/Navbar/Navbar.jsx",
       "status": "tentative",
       "uses": 1
@@ -401,7 +411,7 @@
           "q": "Remove the toggle from the search on the results search bar, and when loading /results without a filter or search load 15 recently added businesses."
         }
       ],
-      "score": 0.509727079,
+      "score": 0.488165758,
       "source_file": "src/components/SearchBar/SearchBar.jsx",
       "status": "tentative",
       "uses": 1
@@ -417,7 +427,7 @@
           "q": "Inspect graphify-out for context before redesigning the how it works page."
         }
       ],
-      "score": 0.27321479,
+      "score": 0.261657876,
       "source_file": "src/components/StaticPageLayout/StaticPageLayout.jsx",
       "status": "tentative",
       "uses": 1
@@ -438,7 +448,7 @@
           "q": "Review Admin soft-delete design for User accounts and identify correctness gaps or needed deletedAt filters."
         }
       ],
-      "score": 1.644381544,
+      "score": 1.57482464,
       "source_file": "src/lib/auth/session.js",
       "status": "preferred",
       "uses": 2
@@ -454,7 +464,7 @@
           "q": "Can you fix the business landing-page server error?"
         }
       ],
-      "score": 0.889605349,
+      "score": 0.851975278,
       "source_file": "src/lib/auth/session.js",
       "status": "tentative",
       "uses": 1
@@ -470,7 +480,7 @@
           "q": "lets move on to the next safe phase in the sandbox moderation lifecycle"
         }
       ],
-      "score": 0.827649739,
+      "score": 0.792640374,
       "source_file": "src/lib/event-dates.js",
       "status": "tentative",
       "uses": 1
@@ -486,7 +496,7 @@
           "q": "ok so how should we go about the next phase  to move into launch readiness?"
         }
       ],
-      "score": 0.827789884,
+      "score": 0.79277459,
       "source_file": "src/lib/event-disputes.js",
       "status": "tentative",
       "uses": 1
@@ -517,7 +527,7 @@
           "q": "Review Admin soft-delete design for User accounts and identify correctness gaps or needed deletedAt filters."
         }
       ],
-      "score": 3.222431459,
+      "score": 3.086123461,
       "source_file": "src/lib/event-payments.js",
       "status": "preferred",
       "uses": 4
@@ -533,7 +543,7 @@
           "q": "why is one time posting still unavailable?"
         }
       ],
-      "score": 0.830736317,
+      "score": 0.795596391,
       "source_file": "src/lib/event-payments.js",
       "status": "tentative",
       "uses": 1
@@ -549,7 +559,7 @@
           "q": "lets move on to the next phase. i did add the new DB keys and sandbox stripe keys in the the local.env. the only thing i did not add is a webhook. i need to know how we should set that up"
         }
       ],
-      "score": 0.812215642,
+      "score": 0.777859135,
       "source_file": "src/lib/event-payments.js",
       "status": "tentative",
       "uses": 1
@@ -565,7 +575,7 @@
           "q": "lets move on to the next phase. i did add the new DB keys and sandbox stripe keys in the the local.env. the only thing i did not add is a webhook. i need to know how we should set that up"
         }
       ],
-      "score": 0.812215642,
+      "score": 0.777859135,
       "source_file": "src/lib/event-payments.js",
       "status": "tentative",
       "uses": 1
@@ -581,7 +591,7 @@
           "q": "Trace the event detail page implementation, event image fields and fallback behavior, save/favorite counting system, and the equivalent real saved-count flow used on business landing pages."
         }
       ],
-      "score": 0.261570096,
+      "score": 0.25050575,
       "source_file": "src/lib/events.js",
       "status": "tentative",
       "uses": 1
@@ -597,7 +607,7 @@
           "q": "Trace the event detail page implementation, event image fields and fallback behavior, save/favorite counting system, and the equivalent real saved-count flow used on business landing pages."
         }
       ],
-      "score": 0.261570096,
+      "score": 0.25050575,
       "source_file": "src/lib/events.js",
       "status": "tentative",
       "uses": 1
@@ -613,7 +623,7 @@
           "q": "why is one time posting still unavailable?"
         }
       ],
-      "score": 0.830736317,
+      "score": 0.795596391,
       "source_file": "src/lib/pricing.js",
       "status": "tentative",
       "uses": 1
@@ -621,18 +631,28 @@
     "src_lib_prisma": {
       "code_fingerprint": "e5dee2233c7b44ef4e5fd95199ef1c278cc94a0203b763b585e93030a5124b03",
       "label": "prisma.js",
-      "last": "2026-08-28T17:06:56.792063+00:00",
+      "last": "2026-09-09T22:19:26.546234+00:00",
       "provenance": [
+        {
+          "date": "2026-09-09T22:19:26.546234+00:00",
+          "outcome": "useful",
+          "q": "Production results still show error 4151966855; repair the missing migration."
+        },
+        {
+          "date": "2026-09-09T22:03:30.919931+00:00",
+          "outcome": "useful",
+          "q": "Why is the live production results page failing with error 4151966855?"
+        },
         {
           "date": "2026-08-28T17:06:56.792063+00:00",
           "outcome": "useful",
           "q": "i cant sign in can you fix this prisma issue"
         }
       ],
-      "score": 0.754287169,
+      "score": 2.638093789,
       "source_file": "src/lib/prisma.js",
-      "status": "tentative",
-      "uses": 1
+      "status": "preferred",
+      "uses": 3
     },
     "src_lib_role_transitions": {
       "code_fingerprint": "e4e09f581b651db66cd3658e5eb05d3536ce8709a0a825c746bd17420a85cfff",
@@ -665,7 +685,7 @@
           "q": "ehy is it working the loca env and not in the production env?"
         }
       ],
-      "score": 6.585413758,
+      "score": 6.306852498,
       "source_file": "src/lib/role-transitions.js",
       "status": "preferred",
       "uses": 8
@@ -691,7 +711,7 @@
           "q": "ok how can wew make this feature live on the prod site and prod vercel env variables?"
         }
       ],
-      "score": 2.499272519,
+      "score": 2.393553953,
       "source_file": "vercel.json",
       "status": "preferred",
       "uses": 3

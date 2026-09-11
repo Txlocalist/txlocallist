@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { getBlobImageUrl } from "@/lib/blob";
+import DirectoryImage from "@/components/DirectoryImage";
 import { LikeCount } from "@/components/LikeCount";
 
 import "./events-results.css";
@@ -221,13 +221,11 @@ function Logo({ mobile = false }) {
 }
 
 function EventThumb({ event }) {
-  const imageUrl = event.imageUrl ? getBlobImageUrl(event.imageUrl) : "";
+  const imageUrl = event.imageUrl;
   if (imageUrl) {
     return (
       <div className="thumb real-thumb">
-        {/* Blob URLs can be proxied or supplied by users, so this needs a plain image element. */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={imageUrl} alt="" />
+        <DirectoryImage src={imageUrl} alt="" sizes="(max-width: 700px) 100vw, 176px" />
       </div>
     );
   }
@@ -260,12 +258,12 @@ export default function EventsResults({
   const [monthModalOpen, setMonthModalOpen] = useState(false);
 
   useEffect(() => {
-    setQuery(initialFilters.query || "");
-    setCityInput(initialFilters.location || "");
-    setCity(initialFilters.location || "");
-    setDateFilter(initialFilters.date || "");
-    setCategoryFilter(initialFilters.category || "");
-  }, [initialFilters.query, initialFilters.location, initialFilters.date, initialFilters.category]);
+    setQuery(urlParams.get("q") || "");
+    setCityInput(urlParams.get("loc") || "");
+    setCity(urlParams.get("loc") || "");
+    setDateFilter(urlParams.get("date") || "");
+    setCategoryFilter(urlParams.get("category") || "");
+  }, [urlParams]);
 
   const filtered = useMemo(
     () => filterEvents(allEvents, { query, city, category: categoryFilter, date: dateFilter }),
@@ -388,9 +386,8 @@ export default function EventsResults({
     if (nextCity) params.set("loc", nextCity);
     if (nextDate) params.set("date", nextDate);
     if (nextCategory) params.set("category", nextCategory);
-    router.push(params.toString() ? `/events/results?${params.toString()}` : "/events/results", {
-      scroll: false,
-    });
+    // All events are already loaded for the calendar; filtering is local.
+    window.history.pushState(null, "", params.toString() ? `/events/results?${params.toString()}` : "/events/results");
   }
 
   const activeFilterChips = [

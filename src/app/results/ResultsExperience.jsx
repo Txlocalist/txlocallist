@@ -8,7 +8,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import logoImage from "@/app/assets/Tx-Localist-01.png";
 import { LikeCount } from "@/components/LikeCount";
 import SearchBar from "@/components/SearchBar";
-import { getBlobImageUrl } from "@/lib/blob";
+import DirectoryImage from "@/components/DirectoryImage";
 import { formatEventDateRange } from "@/lib/event-dates";
 
 import {
@@ -95,8 +95,7 @@ function BusinessCard({ biz, saved, count, saving, onSave, isLoggedIn }) {
     <article className="gem-card card-stack-effect">
       {biz.image?.url && biz.image.url !== "/placeholder.jpg" ? (
         <Link href={businessHref} className="gem-image-wrapper gem-image-link" aria-label={`View ${biz.name}`}>
-          <img src={getBlobImageUrl(biz.image.url)} alt={biz.name}
-            style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <DirectoryImage src={biz.image.url} alt={biz.name} />
         </Link>
       ) : (
         <div className="gem-image-wrapper gem-image-placeholder" aria-hidden="true">
@@ -136,8 +135,7 @@ function EventCard({ event, isLoggedIn }) {
     <article className="gem-card card-stack-effect">
       {event.imageUrl && (
         <Link href={eventHref} className="gem-image-wrapper gem-image-link" aria-label={`View ${event.title}`}>
-          <img src={getBlobImageUrl(event.imageUrl)} alt={event.title}
-            style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <DirectoryImage src={event.imageUrl} alt={event.title} />
         </Link>
       )}
       <div className="category-tag bg-retro-red text-white">
@@ -172,7 +170,7 @@ function BusinessRow({ biz, saved, count, saving, onSave, isLoggedIn }) {
     <article className="list-item">
       <div className="list-item-thumb">
         {biz.image?.url && biz.image.url !== "/placeholder.jpg"
-          ? <img src={getBlobImageUrl(biz.image.url)} alt={biz.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          ? <DirectoryImage src={biz.image.url} alt={biz.name} sizes="80px" />
           : <span className="material-icons list-item-thumb-icon">storefront</span>
         }
       </div>
@@ -214,7 +212,7 @@ function EventRow({ event, isLoggedIn }) {
     <article className="list-item">
       <div className="list-item-thumb list-item-thumb-event">
         {event.imageUrl
-          ? <img src={getBlobImageUrl(event.imageUrl)} alt={event.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          ? <DirectoryImage src={event.imageUrl} alt={event.title} sizes="80px" />
           : <span className="material-icons list-item-thumb-icon">event</span>
         }
       </div>
@@ -350,6 +348,7 @@ export default function ResultsExperience({
   const [savingIds, setSavingIds] = useState(() => new Set());
 
   const requestVersion = useRef(0);
+  const searchController = useRef(null);
   const [pagination, setPagination] = useState({ businesses: {}, events: {} });
 
   const currentYear = new Date().getFullYear();
@@ -375,7 +374,9 @@ export default function ResultsExperience({
     if (page > 1) params.set("page", String(page));
 
     const queryString = params.toString();
-    router.push(queryString ? "/results?" + queryString : "/results", { scroll: false });
+    // Filters are fetched by the effect below; keep browser history without
+    // also rerunning the server page's categories, cities and favorites queries.
+    window.history.pushState(null, "", queryString ? "/results?" + queryString : "/results");
   }
 
   useEffect(() => {
@@ -393,8 +394,11 @@ export default function ResultsExperience({
     const type = urlParams.get("tab") === "events" ? "events" : "businesses";
     const extras = type === "events" ? ["upcoming"] : mode === "favorites" ? [] : ["popular"];
     const sort = normalizeSort(urlParams.get("sort"), type === "events" ? "upcoming" : mode === "popular" ? "popular" : "newest", extras);
-    runSearch(q, loc, sort, mode, jobs, mode === "new" ? INITIAL_RECENT_BUSINESS_LIMIT : undefined, category, Math.max(1, parseInt(urlParams.get("page"), 10) || 1));
-    return () => { requestVersion.current += 1; };
+    runSearch(q, loc, sort, mode, jobs, mode === "new" ? INITIAL_RECENT_BUSINESS_LIMIT : undefined, category, Math.max(1, parseInt(urlParams.get("page"), 10) || 1), type);
+    return () => {
+      requestVersion.current += 1;
+      searchController.current?.abort();
+    };
     // URL is the source of truth for refresh and browser navigation.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlParams]);
@@ -434,9 +438,13 @@ export default function ResultsExperience({
     nextJobsOnly = false,
     limit,
     category = "",
-    page = 1
+    page = 1,
+    type = "businesses"
   ) {
     const version = ++requestVersion.current;
+    searchController.current?.abort();
+    const controller = new AbortController();
+    searchController.current = controller;
     sort = normalizeSort(sort || activeSort, "newest", ["popular", "upcoming"]);
     setIsSearching(true);
     setHasSearched(true);
@@ -464,16 +472,16 @@ export default function ResultsExperience({
     evtP.set("limit", "12");
 
     try {
-      const [bizRes, evtRes] = await Promise.all([
-        fetch("/api/search?" + bizP).then((r) => r.json()),
-        fetch("/api/events?" + evtP).then((r) => r.ok ? r.json() : { events: [] }).catch(() => ({ events: [] })),
-      ]);
+      const response = await fetch(
+        type === "events" ? "/api/events?" + evtP : "/api/search?" + bizP,
+        { signal: controller.signal }
+      );
+      if (!response.ok) throw new Error("Search request failed");
+      const data = await response.json();
       if (version !== requestVersion.current) return;
-      setPagination({ businesses: bizRes?.data ?? {}, events: evtRes ?? {} });
-      const bizList = bizRes?.data?.results ?? [];
-      const evtList = evtRes?.events ?? [];
-      setBusinesses(bizList);
-      setEvents(evtList);
+      setPagination((current) => ({ ...current, [type]: type === "events" ? data : data?.data ?? {} }));
+      if (type === "events") setEvents(data?.events ?? []);
+      else setBusinesses(data?.data?.results ?? []);
     } catch (_) {
       if (version !== requestVersion.current) return;
       setBusinesses([]);

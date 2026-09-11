@@ -40,7 +40,14 @@ function toBusinessResult(business, extra = {}) {
 function getFavoriteBusinessInclude(userId, includeLikes = true) {
   return {
     business: {
-      include: {
+      select: {
+        id: true,
+        slug: true,
+        createdAt: true,
+        name: true,
+        description: true,
+        phone: true,
+        website: true,
         city: { select: { id: true, name: true, slug: true } },
         plan: { select: { slug: true, features: true } },
         photos: { take: 1, orderBy: { order: "asc" } },
@@ -73,7 +80,7 @@ export default async function ResultsPage({ searchParams }) {
   const initialCategory = params?.category ?? "";
   const initialBrowseAll = params?.browse === "all";
   const initialJobsOnly = params?.jobs === "1";
-  const [availableCategories, managedCities, publishedEventCities] = await Promise.all([
+  const [availableCategories, managedCities, publishedEventCities, user] = await Promise.all([
     prisma.category.findMany({
       where: {
         businessCategories: {
@@ -96,6 +103,7 @@ export default async function ResultsPage({ searchParams }) {
       distinct: ["city"],
       select: { city: true },
     }),
+    getCurrentUser().catch(() => null),
   ]);
 
   const availableCities = mergeCityNames(
@@ -103,7 +111,6 @@ export default async function ResultsPage({ searchParams }) {
     publishedEventCities.map((event) => event.city),
   );
 
-  const user = await getCurrentUser().catch(() => null);
   const dashboardPath = user ? getDashboardPath(user.role) : null;
 
   // Fetch the current user's saved business IDs so the client

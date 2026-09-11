@@ -26,7 +26,6 @@ export async function GET(request) {
     }
 
     if (q) where.AND.push({ OR: [{ title: { contains: q, mode: "insensitive" } }, { description: { contains: q, mode: "insensitive" } }] });
-    const total = await prisma.event.count({ where });
 
     const findEvents = (includeLikes) => prisma.event.findMany({
       where,
@@ -59,13 +58,17 @@ export async function GET(request) {
       },
     });
 
-    let events;
-    try {
-      events = await findEvents(true);
-    } catch (error) {
-      if (!isUnavailablePrismaRelationError(error, "likes")) throw error;
-      events = await findEvents(false);
-    }
+    const [total, events] = await Promise.all([
+      prisma.event.count({ where }),
+      (async () => {
+        try {
+          return await findEvents(true);
+        } catch (error) {
+          if (!isUnavailablePrismaRelationError(error, "likes")) throw error;
+          return findEvents(false);
+        }
+      })(),
+    ]);
 
     return NextResponse.json({
       total, page, pageSize: limit, hasMore: page * limit < total,

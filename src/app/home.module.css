@@ -1124,6 +1124,17 @@
 }
 
 @media (max-width: 700px) {
+  /* Keep the business homepage hero compact and readable below the mobile nav.
+     The full-bleed artwork can crop into an empty-looking color band on narrow
+     viewports, so the existing cream page background takes over instead. */
+  .businessMode .hero {
+    padding: 3.25rem 1.5rem 3rem;
+  }
+
+  .businessMode .heroBg {
+    display: none;
+  }
+
   .quickLinks {
     grid-template-columns: 1fr;
     margin-top: 2rem;

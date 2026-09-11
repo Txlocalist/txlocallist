@@ -32,8 +32,15 @@ import { getBusinessSearchPageSize } from "@/lib/business-search";
 import { prisma } from "@/lib/prisma";
 import { isMissingPrismaTableError } from "@/lib/prisma-errors";
 
-function getBusinessInclude(userId, includeLikes = true) {
+function getBusinessSelect(userId, includeLikes = true) {
   return {
+    id: true,
+    slug: true,
+    createdAt: true,
+    name: true,
+    description: true,
+    phone: true,
+    website: true,
     city: { select: { id: true, name: true, slug: true } },
     plan: { select: { slug: true, features: true } },
     photos: { take: 1, orderBy: { order: "asc" } },
@@ -113,30 +120,29 @@ export async function GET(request) {
       };
     }
 
-    // Get total count for pagination
-    const total = await prisma.business.count({ where });
-
     const orderBy = resultOrderBy(sort, { name: "sortName", extras: ["popular"] });
 
     // Fetch results with pagination. Until the manually-applied Like migration
     // lands, preserve public search and report zero likes instead of returning 500.
     const findBusinesses = (includeLikes) => prisma.business.findMany({
       where,
-      include: getBusinessInclude(user?.id, includeLikes),
+      select: getBusinessSelect(user?.id, includeLikes),
       orderBy,
       skip: (page - 1) * pageSize,
       take: pageSize,
     });
 
-    let results;
-    try {
-      results = await findBusinesses(true);
-    } catch (error) {
-      if (!isMissingPrismaTableError(error)) {
-        throw error;
-      }
-      results = await findBusinesses(false);
-    }
+    const [total, results] = await Promise.all([
+      prisma.business.count({ where }),
+      (async () => {
+        try {
+          return await findBusinesses(true);
+        } catch (error) {
+          if (!isMissingPrismaTableError(error)) throw error;
+          return findBusinesses(false);
+        }
+      })(),
+    ]);
 
     // Transform results for the frontend
     const transformedResults = results.map((business) => ({

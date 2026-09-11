@@ -35,3 +35,11 @@ Retain the new columns during rollback. Once users can delete content, rolling b
 The completion run used a disposable PostgreSQL 16 cluster on loopback port 55439. No application database migration or production deployment was performed.
 
 Verified on September 9, 2026 with Node 22.23.2: 250 unit/integration tests (including 27 PostgreSQL tests), 16 desktop/mobile browser checks, and the production build passed. Lint passed with 11 existing image/hook warnings and no errors.
+
+## Production repair — September 9, 2026
+
+The application was deployed before the listing migration, causing Prisma `P2022` errors on `/results` (digest `4151966855`), `/events/results`, and business search. A read-only staged Vercel build verified the production database target and confirmed that `20260910000000_listing_soft_deletion` was the only pending migration. The matching connection is in `.env`; `.env.local` points to a different development database and takes precedence in ordinary local commands.
+
+Before changing production, a PostgreSQL 17.11 full custom-format backup was created at the git-ignored `.vercel/backups/production-before-results-repair-20260909.dump` and its archive catalog verified. Using the independently verified production connection and Node 22.23.2, `prisma migrate deploy` applied the pending migration at 22:18 UTC. The new deletion columns and generated sorting columns were verified afterward.
+
+Live verification returned HTTP 200 for `/results`, `/events/results`, `/api/search?sort=az`, `/api/search?sort=newest`, and `/api/events`. Business search returned six public listings. The live application remained on release `1f10b3f0ae10`; no application redeployment was needed. The temporary diagnostic deployment was removed after verification.

@@ -60,6 +60,7 @@ test("Explore retains sorting and filters across pagination, refresh, Back and F
   await expect(page.locator(".gem-name")).toHaveText(["Delta", "Echo", "zebra"]);
   expect(new URL(page.url()).searchParams.get("jobs")).toBe("1");
   expect(new URL(page.url()).searchParams.get("category")).toBe("shops");
+  expect(await page.evaluate(() => window.serverNavigations || [])).toEqual([]);
   await page.getByLabel("Sort by").selectOption("name-desc");
   await expect(page.locator(".gem-name")).toHaveText(["zebra", "Echo", "Delta"]);
   expect(new URL(page.url()).searchParams.has("page")).toBe(false);
@@ -75,6 +76,25 @@ test("Explore retains sorting and filters across pagination, refresh, Back and F
   await page.getByLabel("Sort by").selectOption("popular");
   await expect(page.locator(".gem-name")).toHaveText(["Echo", "Delta", "alpha"]);
   expect(new URL(page.url()).searchParams.get("loc")).toBe("Austin");
+});
+
+test("Explore only requests the visible result type", async ({ page }) => {
+  const requests = [];
+  page.on("request", (request) => {
+    const path = new URL(request.url()).pathname;
+    if (["/api/search", "/api/events"].includes(path)) requests.push(path);
+  });
+  await mockResults(page);
+  await page.goto("/results");
+  await expect(page.locator(".gem-name")).toHaveCount(3);
+  expect(requests).toEqual(["/api/search"]);
+  await page.getByLabel("Sort by").selectOption("oldest");
+  await expect(page.locator(".gem-name")).toHaveText(["zebra", "Alpha", "beta"]);
+  expect(requests).toEqual(["/api/search", "/api/search"]);
+  expect(await page.evaluate(() => window.serverNavigations || [])).toEqual([]);
+  requests.length = 0;
+  await page.goto("/results?tab=events");
+  await expect.poll(() => requests).toEqual(["/api/events"]);
 });
 
 test("Explore ignores a slow response from an older sort", async ({ page }) => {
@@ -111,6 +131,7 @@ test("event cards and lists sort independently of chronological calendar dates",
   await expect(page.locator(".list-detail strong")).toHaveText(["Alpha", "alpha", "beta", "Delta", "Echo", "zebra"]);
   await page.getByLabel("Sort by").selectOption("oldest");
   await expect(page.locator(".list-detail strong")).toHaveText(names);
+  expect(await page.evaluate(() => window.serverNavigations || [])).toEqual([]);
   await page.goBack();
   await expect(page.getByLabel("Sort by")).toHaveValue("name-asc");
   await page.getByRole("button", { name: "Cards", exact: true }).click();
