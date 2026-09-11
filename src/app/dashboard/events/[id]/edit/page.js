@@ -8,6 +8,7 @@ import {
   isEventCategoryTagName,
 } from "@/lib/event-categories.mjs";
 import { prisma } from "@/lib/prisma";
+import { getRecurrenceUntilInput } from "@/lib/event-recurrence";
 import {
   EVENT_POST_PRICE_CENTS,
   formatWholeDollarPrice,
@@ -76,6 +77,9 @@ export default async function EditEventPage({ params }) {
       ? formatInTimeZone(event.endDate, timezone, "yyyy-MM-dd'T'HH:mm")
       : "",
     tags: optionalTags,
+    recurrence: event.recurrence,
+    recurrenceUntil: getRecurrenceUntilInput(event),
+    postingMethod: event.postingMethod,
   };
 
   return (

@@ -6,6 +6,8 @@ export const REQUIRED_STRIPE_WEBHOOK_EVENTS = Object.freeze([
   "customer.subscription.created",
   "customer.subscription.updated",
   "customer.subscription.deleted",
+  "invoice.payment_failed",
+  "invoice.paid",
   "charge.refunded",
   "charge.dispute.created",
   "charge.dispute.updated",

@@ -61,7 +61,7 @@ export default async function NewEventPage() {
         <div>
           <h1 className={styles.pageTitle}>Post an Event</h1>
           <p className={styles.pageSubtitle}>
-            One price covers one continuous event lasting up to {EVENT_MAX_CALENDAR_DAYS} calendar days.
+            Post a single event lasting up to {EVENT_MAX_CALENDAR_DAYS} calendar days, or use membership to repeat an event every week.
           </p>
         </div>
       </div>

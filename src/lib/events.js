@@ -1,6 +1,8 @@
 import { formatEventCityLabel, mergeEventCityLabels } from "@/lib/cities";
 import { getPublicEventAccessWhere } from "@/lib/listing-visibility";
 import { prisma } from "@/lib/prisma";
+import { getEventOccurrences, getRecurrenceLabel, isRecurringEvent } from "@/lib/event-recurrence";
+import { fromZonedTime } from "date-fns-tz";
 import { isUnavailablePrismaRelationError } from "@/lib/prisma-errors";
 import {
   fromEventCategoryTagName,
@@ -133,14 +135,25 @@ export function formatShortDateLabel(dateKey) {
   }).format(parsed);
 }
 
-function normalizeEvent(event) {
+function normalizeEvent(event, now = new Date()) {
+  const recurring = isRecurringEvent(event);
+  const occurrences = recurring ? getEventOccurrences(event, { now, limit: 54 }) : [];
+  if (recurring && !occurrences.length) return null;
+  const recurrenceLabel = getRecurrenceLabel(event);
+  if (recurring) event = { ...event, ...occurrences[0] };
   const type = inferEventType(event);
   const timezone = getEventTimeZone(event);
-  const dateKeys = getInclusiveEventDateKeys(
+  const nextDateKeys = getInclusiveEventDateKeys(
     event.startDate,
     event.endDate,
     timezone
   );
+  const occurrenceDates = occurrences.map((occurrence) => ({
+    startDate: occurrence.startDate.toISOString(),
+    endDate: occurrence.endDate.toISOString(),
+    dateKeys: getInclusiveEventDateKeys(occurrence.startDate, occurrence.endDate, timezone),
+  }));
+  const dateKeys = recurring ? unique(occurrenceDates.flatMap((item) => item.dateKeys)) : nextDateKeys;
   const rawTagNames = (event.tags || [])
     .map((tag) => tag.name)
     .filter((tagName) => !isEventCategoryTagName(tagName));
@@ -176,6 +189,10 @@ function normalizeEvent(event) {
     startDate: event.startDate ? event.startDate.toISOString() : null,
     endDate: event.endDate ? event.endDate.toISOString() : null,
     timezone,
+    recurrence: event.recurrence || "NONE",
+    recurrenceUntil: event.recurrenceUntil?.toISOString() ?? null,
+    recurrenceLabel,
+    occurrences: occurrenceDates,
     dateKey: dateKeys[0] || "undated",
     dateKeys,
     dateRangeLabel: formatEventDateRange(event.startDate, event.endDate, timezone),
@@ -208,6 +225,8 @@ export async function getPublishedEvents(userId = null) {
       startDate: true,
       endDate: true,
       timezone: true,
+      recurrence: true,
+      recurrenceUntil: true,
       tags: { select: { name: true, slug: true } },
       business: {
         select: {
@@ -236,7 +255,8 @@ export async function getPublishedEvents(userId = null) {
     events = await findEvents(false);
   }
 
-  return events.map(normalizeEvent);
+  return events.map((event) => normalizeEvent(event)).filter(Boolean)
+    .sort((a, b) => new Date(a.startDate) - new Date(b.startDate) || a.id.localeCompare(b.id));
 }
 
 export function getEventCities(events) {
@@ -342,7 +362,7 @@ export async function getEventsPageData(filters = {}, { userId = null } = {}) {
   };
 }
 
-export async function getEventById(id) {
+export async function getEventById(id, occurrenceDate = null) {
   const event = await prisma.event.findFirst({
     where: { id, ...getPublicEventAccessWhere() },
     select: {
@@ -359,6 +379,8 @@ export async function getEventById(id) {
       startDate: true,
       endDate: true,
       timezone: true,
+      recurrence: true,
+      recurrenceUntil: true,
       tags: { select: { name: true, slug: true } },
       business: {
         select: {
@@ -369,5 +391,14 @@ export async function getEventById(id) {
     },
   });
 
-  return event ? normalizeEvent(event) : null;
+  if (!event) return null;
+  if (occurrenceDate && isRecurringEvent(event)) {
+    if (typeof occurrenceDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(occurrenceDate)) return null;
+    const day = fromZonedTime(`${occurrenceDate}T00:00:00`, event.timezone);
+    if (!Number.isFinite(+day) || formatEventDateKey(day, event.timezone) !== occurrenceDate) return null;
+    const result = normalizeEvent(event, day);
+    const first = result?.occurrences[0];
+    return first?.dateKeys.includes(occurrenceDate) ? result : null;
+  }
+  return normalizeEvent(event);
 }

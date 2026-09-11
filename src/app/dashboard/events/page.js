@@ -12,6 +12,7 @@ import {
 } from "@/app/actions/events";
 import { getCurrentSession } from "@/lib/auth/session";
 import { formatEventDateRange, isEventPast } from "@/lib/event-dates";
+import { getNextEventOccurrence, getRecurrenceLabel, isRecurringEvent } from "@/lib/event-recurrence";
 import { prisma } from "@/lib/prisma";
 import { isMissingPrismaTableError } from "@/lib/prisma-errors";
 import {
@@ -73,6 +74,9 @@ export default async function DashboardEventsPage({ searchParams }) {
         },
       },
     });
+    events = events.map((event) => isRecurringEvent(event)
+      ? { ...event, ...(getNextEventOccurrence(event) || {}), recurrenceLabel: getRecurrenceLabel(event) }
+      : event);
   } catch (error) {
     if (isMissingPrismaTableError(error)) {
       schemaNotice = "The event posting database migration has not been applied yet.";
@@ -195,7 +199,7 @@ export default async function DashboardEventsPage({ searchParams }) {
                     <p className={styles.businessName}>{event.title}</p>
                     {event.business ? <p className={styles.businessMeta}>{event.business.name}</p> : null}
                     <p className={styles.businessMeta}>
-                      {event.postingMethod === "ONE_TIME" ? "One-time post" : "Membership post"}
+                      {event.recurrenceLabel || (event.postingMethod === "ONE_TIME" ? "One-time post" : "Membership post")}
                       {latestPayment?.status ? ` | Payment: ${latestPayment.status}` : ""}
                     </p>
                     {hasUnresolvedRefund ? (

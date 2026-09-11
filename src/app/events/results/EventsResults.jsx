@@ -11,6 +11,7 @@ import { LikeCount } from "@/components/LikeCount";
 import "./events-results.css";
 import ResultsSort from "@/components/ResultsSort/ResultsSort";
 import { normalizeSort, sortResults } from "@/lib/results-sort";
+import { formatEventDateRange } from "@/lib/event-dates";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = [
@@ -115,6 +116,10 @@ function eventOccursOn(event, dateKey) {
 }
 
 function eventIsOngoingOn(event, dateKey) {
+  if (event.recurrence === "WEEKLY") {
+    const occurrence = event.occurrences?.find((item) => item.dateKeys.includes(dateKey));
+    return Boolean(occurrence && occurrence.dateKeys[0] !== dateKey);
+  }
   const [startKey] = eventDateKeys(event);
   return Boolean(dateKey && startKey && dateKey !== startKey && eventOccursOn(event, dateKey));
 }
@@ -536,11 +541,16 @@ export default function EventsResults({
   }
 
   function renderEventCard(event, index) {
+    const occurrence = selectedDate && event.occurrences?.find((item) => item.dateKeys.includes(selectedDate));
+    if (occurrence) event = {
+      ...event, ...occurrence, dateKey: occurrence.dateKeys[0],
+      shortDateRangeLabel: formatEventDateRange(occurrence.startDate, occurrence.endDate, event.timezone, { compact: true }),
+    };
     const isSaved = savedIds.has(event.id);
     return (
       <article key={event.id} className="event-card">
         <Link
-          href={`/events/${event.id}`}
+          href={`/events/${event.id}${occurrence ? `?date=${occurrence.dateKeys[0]}` : ""}`}
           className="event-card-link"
           aria-label={`View ${event.title}`}
         />
@@ -561,6 +571,7 @@ export default function EventsResults({
             <small>{event.venue}</small>
           </h2>
           <div className="card-meta">
+            {event.recurrenceLabel ? `${event.recurrenceLabel} · ` : ""}
             {eventDateKeys(event).length > 1 ? `${event.shortDateRangeLabel} · ` : ""}
             {event.venue} &middot; {event.cityLabel}
           </div>
@@ -800,7 +811,7 @@ export default function EventsResults({
                       <div key={date} className="day-group">
                         <h3>{date === "sorted" ? "Events" : fmtLong(date)}</h3>
                         {items.map((event) => (
-                          <Link key={event.id} className="list-row" href={`/events/${event.id}`}>
+                          <Link key={event.id} className="list-row" href={`/events/${event.id}${selectedDate && event.recurrenceLabel ? `?date=${selectedDate}` : ""}`}>
                             <div className="list-time">{eventTimeLabelOn(event, date)}</div>
                             <div className="list-detail">
                               <strong>{event.title}</strong>
@@ -888,7 +899,7 @@ export default function EventsResults({
                           <div key={label} className="agenda-group">
                             <h4>{label}</h4>
                             {items.map((event) => (
-                              <Link key={event.id} className="agenda-item" href={`/events/${event.id}`}>
+                              <Link key={event.id} className="agenda-item" href={`/events/${event.id}${selectedDate && event.recurrenceLabel ? `?date=${selectedDate}` : ""}`}>
                                 <div className="agenda-time">{eventTimeLabelOn(event, selectedDate)}</div>
                                 <div className="agenda-detail">
                                   <strong>{event.title}</strong>

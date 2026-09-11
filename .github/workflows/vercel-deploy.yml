@@ -5,16 +5,39 @@ env:
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
 
 jobs:
   Deploy-Production:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 30
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Refuse a superseded release
+        env:
+          RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          git fetch origin main --depth=1
+          test "$(git rev-parse origin/main)" = "$RELEASE_SHA" || { echo "A newer main commit exists; let its CI deploy it."; exit 1; }
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -24,38 +47,7 @@ jobs:
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
-      - name: Pull Vercel Environment Information
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Pull Environment Variables for Prisma
-        run: vercel env pull .env --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Validate Database Environment Variables
-        shell: bash
-        run: |
-          if ! grep -q '^DATABASE_URL=' .env && ! grep -q '^DATABASE_URL_UNPOOLED=' .env; then
-            echo "Missing DATABASE_URL and DATABASE_URL_UNPOOLED in Vercel production environment variables."
-            exit 1
-          fi
-
-      - name: Expose Database Variables to GitHub Actions
-        shell: bash
-        run: |
-          if grep -q '^DATABASE_URL_UNPOOLED=' .env; then
-            grep '^DATABASE_URL_UNPOOLED=' .env >> "$GITHUB_ENV"
-          fi
-          if grep -q '^DATABASE_URL=' .env; then
-            grep '^DATABASE_URL=' .env >> "$GITHUB_ENV"
-          fi
-
-      - name: Install project dependencies
-        run: npm ci
-
-      - name: Seed homepage directory listings
-        run: npm run db:seed-local-businesses
-
-      - name: Build Project Artifacts
-        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Deploy Project Artifacts to Vercel
-        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+      # Protected production secrets stay on Vercel. Its buildCommand runs the
+      # read-only release gate before building/promoting; migrations are separate.
+      - name: Build and deploy on Vercel
+        run: vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }}

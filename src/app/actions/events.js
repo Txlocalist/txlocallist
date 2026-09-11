@@ -28,6 +28,8 @@ import {
 } from "@/lib/event-payments";
 import { isEventPostingEnabled } from "@/lib/pricing";
 import { prisma } from "@/lib/prisma";
+import { isEventPast } from "@/lib/event-dates";
+import { isRecurringEvent, validateEventRecurrence } from "@/lib/event-recurrence";
 
 function getTextValue(formData, key) {
   return formData.get(key)?.toString().trim() ?? "";
@@ -54,6 +56,7 @@ function isSafeEventUrl(value) {
 function revalidateEventPaths(eventId = null) {
   revalidatePath("/events");
   revalidatePath("/events/results");
+  revalidatePath("/results");
   revalidatePath("/dashboard/events");
   revalidatePath("/admin/events");
   revalidatePath("/admin/posts");
@@ -78,6 +81,8 @@ async function getValidatedEventInput(formData, user, existingEvent = null) {
     timezone: getTextValue(formData, "timezone"),
     eventUrl: getTextValue(formData, "eventUrl"),
     tagsRaw: getTextValue(formData, "tags"),
+    recurrence: getTextValue(formData, "recurrence") || "NONE",
+    recurrenceUntil: getTextValue(formData, "recurrenceUntil"),
   };
   const fieldErrors = {};
 
@@ -99,6 +104,7 @@ async function getValidatedEventInput(formData, user, existingEvent = null) {
       startDate: values.startDateRaw,
       endDate: values.endDateRaw,
       timeZone: values.timezone,
+      allowPast: isRecurringEvent(existingEvent) && values.recurrence === "WEEKLY",
     });
   } catch (error) {
     const message = error instanceof EventDateValidationError
@@ -106,6 +112,15 @@ async function getValidatedEventInput(formData, user, existingEvent = null) {
       : "Enter a valid event date range.";
     fieldErrors.startDate = message;
     fieldErrors.endDate = message;
+  }
+
+  let recurrence = { recurrence: "NONE", recurrenceUntil: null };
+  if (schedule) {
+    try {
+      recurrence = validateEventRecurrence({ recurrence: values.recurrence, until: values.recurrenceUntil, schedule });
+    } catch (error) {
+      fieldErrors.recurrence = error.message;
+    }
   }
 
   let business = null;
@@ -169,6 +184,7 @@ async function getValidatedEventInput(formData, user, existingEvent = null) {
   return {
     values,
     schedule,
+    recurrence,
     business,
     imageUpload,
     imageChanged,
@@ -228,6 +244,10 @@ export async function createEventAction(prevState, formData) {
       ? "SUBSCRIPTION"
       : "ONE_TIME";
 
+  if (input.recurrence.recurrence === "WEEKLY" && postingMethod === "ONE_TIME") {
+    return { error: "Recurring events require membership and a linked active business.", fieldErrors: { recurrence: "Use a membership-covered business to repeat this event." } };
+  }
+
   if (postingMethod === "ONE_TIME" && !isEventPostingEnabled()) {
     return {
       error: "One-time event posting is not available yet. Please try again later.",
@@ -255,6 +275,7 @@ export async function createEventAction(prevState, formData) {
           startDate: input.schedule.startDate,
           endDate: input.schedule.endDate,
           timezone: input.schedule.timezone,
+          ...input.recurrence,
           eventUrl: input.values.eventUrl || null,
           postingMethod,
           status: postingMethod === "ONE_TIME" ? "DRAFT" : "PENDING",
@@ -350,7 +371,7 @@ export async function resubmitEventAction(formData) {
     event.status !== "DRAFT" ||
     event.reviews[0]?.decision !== "DENIED" ||
     !event.endDate ||
-    event.endDate <= new Date()
+    isEventPast(event)
   ) {
     redirect("/dashboard/events?resubmit=invalid");
   }
@@ -408,7 +429,7 @@ export async function updateEventAction(prevState, formData) {
     return { error: "Event not found.", fieldErrors: {} };
   }
 
-  if (["CANCELLED", "DENIED"].includes(event.status) || (event.endDate && event.endDate <= new Date())) {
+  if (["CANCELLED", "DENIED"].includes(event.status) || isEventPast(event)) {
     return {
       error: "Ended, canceled, or denied events cannot be reused. Create a new event post instead.",
       fieldErrors: {},
@@ -417,6 +438,10 @@ export async function updateEventAction(prevState, formData) {
 
   const input = await getValidatedEventInput(formData, user, event);
   if (input.error) return input;
+
+  if (input.recurrence.recurrence === "WEEKLY" && event.postingMethod === "ONE_TIME") {
+    return { error: "One-time event payments do not cover a recurring series. Create a membership event instead.", fieldErrors: { recurrence: "Recurring events require a membership post." } };
+  }
 
   if (["SUBSCRIPTION", "LEGACY"].includes(event.postingMethod) && !isStaffRole(user.role)) {
     const billingState = await getAccountAccess(user.id).catch(() => null);
@@ -499,6 +524,7 @@ export async function updateEventAction(prevState, formData) {
           startDate: input.schedule.startDate,
           endDate: input.schedule.endDate,
           timezone: input.schedule.timezone,
+          ...input.recurrence,
           eventUrl: input.values.eventUrl || null,
           status: event.status === "PUBLISHED" ? "PENDING" : event.status,
           publishedAt: event.publishedAt,
@@ -568,10 +594,10 @@ export async function deleteEventAction(formData) {
 
   const event = await prisma.event.findUnique({
     where: { id: eventId },
-    select: { id: true, creatorId: true, endDate: true, deletedAt: true },
+    select: { id: true, creatorId: true, startDate: true, endDate: true, timezone: true, recurrence: true, recurrenceUntil: true, deletedAt: true },
   });
   if (!event || event.deletedAt || (event.creatorId !== user.id && user.role !== "ADMIN")) return;
-  if (event.endDate && event.endDate <= new Date()) return;
+  if (isEventPast(event)) return;
 
   try {
     await cancelEventPosting(eventId);

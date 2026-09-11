@@ -5,6 +5,7 @@ const handlers = vi.hoisted(() => ({
   handleStripeSubscriptionWebhook: vi.fn(),
   releaseAccountCheckoutFence: vi.fn(),
   syncSubscriptionFromCheckoutSessionId: vi.fn(),
+  syncSubscriptionFromStripeSubscriptionId: vi.fn(),
   handleEventChargeDispute: vi.fn(),
   handleEventChargeDisputeClosed: vi.fn(),
   handleEventChargeRefunded: vi.fn(),
@@ -18,6 +19,7 @@ const handlers = vi.hoisted(() => ({
 vi.mock("@/lib/billing", () => ({
   handleStripeSubscriptionWebhook: handlers.handleStripeSubscriptionWebhook,
   releaseAccountCheckoutFence: handlers.releaseAccountCheckoutFence,
+  syncSubscriptionFromStripeSubscriptionId: handlers.syncSubscriptionFromStripeSubscriptionId,
   syncSubscriptionFromCheckoutSessionId:
     handlers.syncSubscriptionFromCheckoutSessionId,
 }));
@@ -89,6 +91,11 @@ afterEach(() => {
 });
 
 describe("POST /api/stripe/webhook", () => {
+  test.each(["invoice.payment_failed", "invoice.paid"])("reconciles current subscription state for %s", async (type) => {
+    const response = await POST(requestFor(stripeEvent(type, { parent: { subscription_details: { subscription: "sub_recurring" } } })));
+    expect(response.status).toBe(200);
+    expect(handlers.syncSubscriptionFromStripeSubscriptionId).toHaveBeenCalledWith("sub_recurring", { enforcementKey: `evt_${type.replaceAll(".", "_")}` });
+  });
   test("fails closed when the signing secret is absent", async () => {
     vi.stubEnv("STRIPE_WEBHOOK_SECRET", "");
 

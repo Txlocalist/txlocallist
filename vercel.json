@@ -1,4 +1,6 @@
 {
+  "buildCommand": "npm run build:vercel",
+  "git": { "deploymentEnabled": { "main": false } },
   "crons": [
     {
       "path": "/api/event-images/cleanup",

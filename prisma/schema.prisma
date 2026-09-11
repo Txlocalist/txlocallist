@@ -642,6 +642,8 @@ model Event {
   endDate   DateTime?
   timezone  String    @default("America/Chicago")
   eventUrl  String?
+  recurrence String @default("NONE") // NONE or WEEKLY, anchored to startDate's local weekday/time
+  recurrenceUntil DateTime? // End instant of the final occurrence; null repeats indefinitely
 
   status             EventStatus              @default(PENDING)
   postingMethod      EventPostingMethod       @default(LEGACY)
@@ -661,6 +663,7 @@ model Event {
   @@index([businessId])
   @@index([status, createdAt])
   @@index([status, endDate])
+  @@index([recurrence, recurrenceUntil])
   @@index([postingMethod])
 }
 

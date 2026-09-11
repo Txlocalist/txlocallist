@@ -39,14 +39,17 @@ vi.mock("@/lib/auth/session", () => ({
 
 import { deleteOwnedBusinessAction, deleteOwnedEventAction } from "@/app/actions/listing-deletion";
 import { publishBusinessAction, updateBusinessAction } from "@/app/actions/businesses";
-import { updateEventAction, resubmitEventAction } from "@/app/actions/events";
+import { createEventAction, updateEventAction, resubmitEventAction } from "@/app/actions/events";
+import { approveEventForPublication } from "@/lib/event-payments";
+import { getNextEventOccurrence } from "@/lib/event-recurrence";
+import { getPublicEventWhere } from "@/lib/event-dates";
 import { activateBusinessAction, updatePostModerationStatusAction } from "@/app/actions/admin";
 import { createCityAction } from "@/app/actions/cities";
 import { getAccountAccess } from "@/lib/account-access";
 import { syncStripeSubscriptionObject } from "@/lib/billing";
 import { getPublicBusinessWhere, getPublicEventAccessWhere, getOwnedEventWhere } from "@/lib/listing-visibility";
 import { resultOrderBy } from "@/lib/results-sort";
-import { getEventsPageData } from "@/lib/events";
+import { getEventsPageData, getEventById } from "@/lib/events";
 import { GET as searchBusinesses } from "@/app/api/search/route";
 import { GET as searchEvents } from "@/app/api/events/route";
 
@@ -173,6 +176,90 @@ describe.skipIf(!db)("listing management against PostgreSQL", () => {
     expect((await publishBusinessAction(business.id)).success).toBe(false);
     expect((await updateEventAction(null, eventInput())).error).toContain("membership");
     expect((await deleteOwnedEventAction({ id: event.id, confirmed: true })).success).toBe(true);
+  });
+
+  it("creates a weekly membership series, reviews it, edits it after its first week, and stops repeating", async () => {
+    const input = eventInput();
+    input.set("businessId", business.id);
+    input.set("recurrence", "WEEKLY");
+    await expect(createEventAction(null, input)).rejects.toThrow("created=1");
+    const series = await db.event.findFirst({ where: { creatorId: owner.id, recurrence: "WEEKLY" } });
+    expect(series).toMatchObject({ postingMethod: "SUBSCRIPTION", status: "PENDING" });
+    // The first occurrence has passed, but the series is still valid for review.
+    await db.event.update({ where: { id: series.id }, data: { startDate: new Date("2026-01-02T01:00:00Z"), endDate: new Date("2026-01-02T03:00:00Z") } });
+    await approveEventForPublication({ eventId: series.id, reviewerId: admin.id });
+    const detail = await getEventById(series.id);
+    expect(detail.recurrenceLabel).toBe("Every Thursday");
+    expect(new Date(detail.endDate) >= new Date()).toBe(true);
+    expect(detail.occurrences).toHaveLength(54);
+    expect(new Set(detail.dateKeys).size).toBe(detail.dateKeys.length);
+    const laterOccurrence = detail.occurrences[3];
+    expect((await getEventById(series.id, laterOccurrence.dateKeys[0])).startDate).toBe(laterOccurrence.startDate);
+    expect(await getEventById(series.id, "2030-02-30")).toBeNull();
+    expect(await getEventById(series.id, "2030-01-11")).toBeNull(); // Friday, not Thursday
+
+    input.set("eventId", series.id);
+    input.set("startDate", "2026-01-01T19:00");
+    input.set("endDate", "2026-01-01T21:00");
+    await expect(updateEventAction(null, input)).rejects.toThrow("updated=1");
+    expect((await db.event.findUnique({ where: { id: series.id } })).status).toBe("PENDING");
+
+    input.set("recurrence", "NONE");
+    input.set("startDate", "2030-01-10T19:00");
+    input.set("endDate", "2030-01-10T21:00");
+    await expect(updateEventAction(null, input)).rejects.toThrow("updated=1");
+    expect(await db.event.findUnique({ where: { id: series.id } })).toMatchObject({ recurrence: "NONE", recurrenceUntil: null });
+  });
+
+  it.each(["PAST_DUE", "UNPAID", "CANCELED", "INCOMPLETE", "PAUSED"])("hides weekly events everywhere when membership is %s and restores on recovery", async (billingStatus) => {
+    await db.event.update({ where: { id: event.id }, data: { recurrence: "WEEKLY", startDate: new Date("2026-01-02T01:00Z"), endDate: new Date("2026-01-02T03:00Z") } });
+    expect(await db.event.findFirst({ where: { id: event.id, ...getPublicEventWhere() } })).not.toBeNull();
+    await db.user.update({ where: { id: owner.id }, data: { billingStatus } });
+    expect(await publicEvent()).toBeNull();
+    expect(await getEventById(event.id)).toBeNull();
+    expect((await getEventsPageData({ location: city.name })).allEvents.some((item) => item.id === event.id)).toBe(false);
+    const response = await searchEvents(new Request(`http://localhost/api/events?city=${encodeURIComponent(city.name)}`));
+    expect((await response.json()).events.some((item) => item.id === event.id)).toBe(false);
+    expect((await db.event.findUnique({ where: { id: event.id } })).status).toBe("PUBLISHED");
+    await db.user.update({ where: { id: owner.id }, data: { billingStatus: "ACTIVE" } });
+    expect(await getEventById(event.id)).not.toBeNull();
+  });
+
+  it("removes weekly results at the paid cancellation boundary", async () => {
+    await db.event.update({ where: { id: event.id }, data: { recurrence: "WEEKLY" } });
+    await db.user.update({ where: { id: owner.id }, data: { cancelAtPeriodEnd: true, currentPeriodEnd: new Date(Date.now() + 86400000) } });
+    expect(await publicEvent()).not.toBeNull();
+    await db.user.update({ where: { id: owner.id }, data: { currentPeriodEnd: new Date(Date.now() - 1000) } });
+    expect(await publicEvent()).toBeNull();
+  });
+
+  it("paginates next recurring dates alongside single events without duplicates or missing rows", async () => {
+    const title = id();
+    const recurring = await db.event.update({ where: { id: event.id }, data: { title, recurrence: "WEEKLY", startDate: new Date("2026-01-02T01:00Z"), endDate: new Date("2026-01-02T03:00Z") } });
+    const next = getNextEventOccurrence(recurring);
+    const expected = [event.id];
+    for (let index = 1; index <= 6; index++) {
+      const single = await db.event.create({ data: { title, creatorId: owner.id, businessId: business.id, imageUrl: "", description: "Pagination fixture", addressName: "Town Hall", address: "123 Main St", zipCode: "78701", city: city.name, state: "TX", status: "PUBLISHED", postingMethod: "SUBSCRIPTION", startDate: new Date(+next.startDate + index * 86400000), endDate: new Date(+next.endDate + index * 86400000) } });
+      expected.push(single.id);
+    }
+    const actual = [];
+    for (let page = 1; page <= 4; page++) {
+      const response = await searchEvents(new Request(`http://localhost/api/events?q=${title}&sort=upcoming&limit=2&page=${page}`));
+      const data = await response.json();
+      expect(data.total).toBe(7);
+      expect(data.hasMore).toBe(page < 4);
+      actual.push(...data.events.map((item) => item.id));
+    }
+    expect(actual).toEqual(expected);
+  });
+
+  it("rejects recurring one-time purchases at the action and database boundaries", async () => {
+    const input = eventInput();
+    input.set("recurrence", "WEEKLY");
+    expect((await createEventAction(null, input)).error).toContain("membership");
+    await db.event.update({ where: { id: event.id }, data: { postingMethod: "ONE_TIME" } });
+    expect((await updateEventAction(null, input)).error).toContain("One-time");
+    await expect(db.event.update({ where: { id: event.id }, data: { recurrence: "WEEKLY" } })).rejects.toThrow();
   });
 
   it.each(["USER", "COMPLIMENTARY", "MANAGER", "ADMIN"])("allows entitled %s owner edits and legacy events without a business link", async (role) => {

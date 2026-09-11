@@ -2,6 +2,7 @@ import {
   handleStripeSubscriptionWebhook,
   releaseAccountCheckoutFence,
   syncSubscriptionFromCheckoutSessionId,
+  syncSubscriptionFromStripeSubscriptionId,
 } from "@/lib/billing";
 import {
   handleEventChargeDispute,
@@ -129,6 +130,16 @@ export async function POST(request) {
         case "customer.subscription.deleted":
           await handleStripeSubscriptionWebhook(object, stripeEvent.id);
           break;
+
+        case "invoice.payment_failed":
+        case "invoice.paid": {
+          // Resolve current Stripe state, not a potentially delayed invoice's
+          // status, so an old failure cannot hide a recovered subscription.
+          const subscription = object.parent?.subscription_details?.subscription ?? object.subscription;
+          const subscriptionId = typeof subscription === "string" ? subscription : subscription?.id;
+          if (subscriptionId) await syncSubscriptionFromStripeSubscriptionId(subscriptionId, { enforcementKey: stripeEvent.id });
+          break;
+        }
 
         case "charge.refunded":
           await handleEventChargeRefunded(object);

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 
 import { createEventAction, updateEventAction } from "@/app/actions/events";
 import { PhotoUploader } from "@/components/PhotoUploader";
@@ -31,15 +31,26 @@ export function CreateEventForm({
 }) {
   const action = mode === "edit" ? updateEventAction : createEventAction;
   const [state, formAction, isPending] = useActionState(action, INITIAL_STATE);
+  const formRef = useRef(null);
+  useEffect(() => {
+    // Successful actions redirect. Returned validation errors must preserve the draft.
+    // React resets during commit, when its delegated event handlers are disabled.
+    const form = formRef.current;
+    const preserveDraft = (event) => event.preventDefault();
+    form.addEventListener("reset", preserveDraft);
+    return () => form.removeEventListener("reset", preserveDraft);
+  }, []);
   const [photos, setPhotos] = useState(
     initialEvent?.imageUrl
       ? [{ url: initialEvent.imageUrl, name: `${initialEvent.title} cover image` }]
       : [],
   );
   const [description, setDescription] = useState(initialEvent?.description ?? "");
+  const [recurrence, setRecurrence] = useState(initialEvent?.recurrence ?? "NONE");
   const isEditing = mode === "edit";
   const fieldErrors = state?.fieldErrors ?? {};
   const hasCoveredBusiness = hasMembership && businesses.length > 0;
+  const canRepeat = (isStaff || hasCoveredBusiness) && initialEvent?.postingMethod !== "ONE_TIME";
   const defaultBusinessId = initialEvent?.businessId ?? (
     !isEditing && hasCoveredBusiness ? businesses[0].id : ""
   );
@@ -55,7 +66,7 @@ export function CreateEventForm({
         : `Standalone event posts cost ${eventPostPrice} once. Secure Stripe Checkout starts before admin review.`;
 
   return (
-    <form action={formAction} className={styles.form}>
+    <form ref={formRef} action={formAction} className={styles.form}>
       {initialEvent?.id ? <input type="hidden" name="eventId" value={initialEvent.id} /> : null}
 
       {state?.error ? (
@@ -158,7 +169,7 @@ export function CreateEventForm({
 
         <div className={styles.formRow}>
           <div className={styles.formGroup}>
-            <label className={styles.label} htmlFor="startDate">Start Date &amp; Time *</label>
+            <label className={styles.label} htmlFor="startDate">{recurrence === "WEEKLY" ? "First Occurrence Start *" : "Start Date & Time *"}</label>
             <input
               id="startDate"
               name="startDate"
@@ -171,7 +182,7 @@ export function CreateEventForm({
             <FieldError id="startDate-error" message={fieldErrors.startDate} />
           </div>
           <div className={styles.formGroup}>
-            <label className={styles.label} htmlFor="endDate">End Date &amp; Time *</label>
+            <label className={styles.label} htmlFor="endDate">{recurrence === "WEEKLY" ? "First Occurrence End *" : "End Date & Time *"}</label>
             <input
               id="endDate"
               name="endDate"
@@ -183,6 +194,26 @@ export function CreateEventForm({
             />
             <FieldError id="endDate-error" message={fieldErrors.endDate} />
           </div>
+        </div>
+
+        <div className={styles.formGroup}>
+          <label className={styles.label} htmlFor="recurrence">Repeat</label>
+          <select id="recurrence" name="recurrence" className={styles.select}
+            value={recurrence} onChange={(event) => setRecurrence(event.target.value)}
+            {...errorAttributes(fieldErrors, "recurrence")}>
+            <option value="NONE">Does not repeat</option>
+            <option value="WEEKLY" disabled={!canRepeat}>Every week</option>
+          </select>
+          <FieldError id="recurrence-error" message={fieldErrors.recurrence} />
+          <p className={styles.helpText}>
+            {canRepeat ? "Repeats on the first occurrence’s weekday at the same local time, including daylight-saving changes." : "Weekly events require membership and a linked active business. One-time payments cover one event only."}
+          </p>
+          {recurrence === "WEEKLY" ? <>
+            <label className={styles.label} htmlFor="recurrenceUntil">Last Occurrence (optional)</label>
+            <input id="recurrenceUntil" name="recurrenceUntil" type="date" className={styles.input}
+              defaultValue={initialEvent?.recurrenceUntil ?? ""} />
+            <p className={styles.helpText}>Leave blank to keep repeating, or choose the same weekday as the first occurrence. Editing changes the whole series and sends it back to review. Failed payments hide the event; a canceled membership hides it when paid access ends.</p>
+          </> : null}
         </div>
 
         <div className={styles.formGroup}>

@@ -23,6 +23,9 @@ export function getPublicEventAccessWhere() {
     deletedAt: null,
     creator: { deletedAt: null },
     AND: [{ OR: [
+      { recurrence: "NONE" },
+      { recurrence: "WEEKLY", postingMethod: { not: "ONE_TIME" }, creator: getCreatorAccessWhere() },
+    ] }, { OR: [
       { postingMethod: { in: ["ONE_TIME", "ADMIN"] } },
       { creator: getCreatorAccessWhere(), OR: [
         { businessId: null },

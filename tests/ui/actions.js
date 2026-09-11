@@ -16,3 +16,8 @@ export async function createCityAction(previous, data) {
 export async function createBusinessFromFormAction() { return { success: true, data: { id: "fixture" } }; }
 export async function publishBusinessAction() { return { success: true }; }
 export async function updateBusinessAction() { return { success: true }; }
+export async function createEventAction(previous, data) {
+  window.eventSubmissions = [...(window.eventSubmissions || []), Object.fromEntries(data)];
+  return { error: window.eventSubmissionError || "", fieldErrors: {} };
+}
+export const updateEventAction = createEventAction;

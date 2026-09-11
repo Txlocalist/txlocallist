@@ -8,6 +8,7 @@ import { DashboardLayout } from "../../DashboardShell";
 import styles from "../../dashboard.module.css";
 import { getCurrentSession } from "@/lib/auth/session";
 import { formatEventDateRange, formatEventTime, isEventPast } from "@/lib/event-dates";
+import { getNextEventOccurrence, isRecurringEvent } from "@/lib/event-recurrence";
 import { prisma } from "@/lib/prisma";
 import { isMissingPrismaTableError } from "@/lib/prisma-errors";
 
@@ -41,6 +42,8 @@ export default async function SavedEventsPage({ searchParams }) {
               addressName: true,
               startDate: true,
               endDate: true,
+              recurrence: true,
+              recurrenceUntil: true,
               timezone: true,
             },
           },
@@ -69,6 +72,7 @@ export default async function SavedEventsPage({ searchParams }) {
         <div className={styles.card}>
           <div className={styles.listContainer}>
             {savedEvents.map(({ id, event }) => {
+              if (isRecurringEvent(event)) event = { ...event, ...(getNextEventOccurrence(event) || {}) };
               const cityLabel = [event.city, event.state].filter(Boolean).join(", ");
 
               return (

@@ -1,0 +1,13 @@
+.env*
+.vercel
+.git
+.github
+.next
+node_modules
+graphify-out
+tests
+test-results
+playwright-report
+coverage
+docs
+*.dump

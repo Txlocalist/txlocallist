@@ -26,6 +26,7 @@ const EMPTY_ITEMS = [];
 const numberFormatter = new Intl.NumberFormat("en-US");
 
 function eventDateLabel(event) {
+  if (event.recurrenceLabel) return event.recurrenceLabel;
   if (!event.startDate) return "EVENT";
   return formatEventDateRange(
     event.startDate,

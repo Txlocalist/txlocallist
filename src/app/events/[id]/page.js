@@ -15,9 +15,9 @@ import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata({ params, searchParams }) {
   const resolvedParams = await params;
-  const event = await getEventById(resolvedParams.id);
+  const event = await getEventById(resolvedParams.id, (await searchParams)?.date);
 
   if (!event) {
     return {
@@ -39,10 +39,11 @@ export async function generateMetadata({ params }) {
   };
 }
 
-export default async function EventDetailPage({ params }) {
+export default async function EventDetailPage({ params, searchParams }) {
   const resolvedParams = await params;
+  const occurrenceDate = (await searchParams)?.date;
   const [event, user] = await Promise.all([
-    getEventById(resolvedParams.id),
+    getEventById(resolvedParams.id, occurrenceDate),
     getCurrentUser().catch(() => null),
   ]);
 
@@ -129,7 +130,7 @@ export default async function EventDetailPage({ params }) {
       ? "https://schema.org/EventCompleted"
       : "https://schema.org/EventScheduled",
     eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
-    url: `${siteUrl}/events/${event.id}`,
+    url: `${siteUrl}/events/${event.id}${occurrenceDate && event.recurrenceLabel ? `?date=${event.dateKey}` : ""}`,
     ...(structuredImageUrl ? { image: [structuredImageUrl] } : {}),
     location: {
       "@type": "Place",
@@ -228,6 +229,7 @@ export default async function EventDetailPage({ params }) {
               </div>
               <div>
                 <h2>Date &amp; Time</h2>
+                {event.recurrenceLabel ? <p className={styles.infoAccent}>{event.recurrenceLabel} · {occurrenceDate ? "Selected occurrence" : "Next occurrence"}</p> : null}
                 <p className={styles.infoPrimary}>{event.dateRangeLabel}</p>
                 <p className={styles.infoAccent}>{event.timeLabel}</p>
                 {event.isPast ? (

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getBlobImageUrl } from "@/lib/blob";
 import { formatEventDateRange, getPublicEventWhere } from "@/lib/event-dates";
 import { prisma } from "@/lib/prisma";
+import { getNextEventOccurrence, isRecurringEvent, getRecurrenceLabel } from "@/lib/event-recurrence";
 import { isMissingPrismaTableError } from "@/lib/prisma-errors";
 import styles from "./events.module.css";
 
@@ -19,7 +20,7 @@ export async function EventsSection({ city = "" }) {
       where.city = { contains: city, mode: "insensitive" };
     }
 
-    events = await prisma.event.findMany({
+    const findEvents = (overrides = {}) => prisma.event.findMany({
       where,
       orderBy: [{ startDate: "asc" }, { createdAt: "desc" }],
       take: 6,
@@ -27,7 +28,17 @@ export async function EventsSection({ city = "" }) {
         tags: { select: { name: true } },
         business: { select: { name: true, slug: true } },
       },
+      ...overrides,
     });
+    const [singles, recurring] = await Promise.all([
+      findEvents({ where: { ...where, recurrence: "NONE" } }),
+      findEvents({ where: { ...where, recurrence: "WEEKLY" }, take: undefined }),
+    ]);
+    events = [...singles, ...recurring].map((event) => {
+      if (!isRecurringEvent(event)) return event;
+      const next = getNextEventOccurrence(event);
+      return next ? { ...event, ...next, recurrenceLabel: getRecurrenceLabel(event) } : null;
+    }).filter(Boolean).sort((a, b) => a.startDate - b.startDate).slice(0, 6);
   } catch (err) {
     // If the table doesn't exist yet, silently hide the section
     if (isMissingPrismaTableError(err)) return null;
@@ -62,6 +73,7 @@ export async function EventsSection({ city = "" }) {
             <div className={styles.cardBody}>
               {event.startDate && (
                 <p className={styles.cardDate}>
+                  {event.recurrenceLabel ? `${event.recurrenceLabel} · ` : ""}
                   {formatEventDateRange(
                     event.startDate,
                     event.endDate,

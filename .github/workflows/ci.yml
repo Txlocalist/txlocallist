@@ -105,6 +105,22 @@ jobs:
       - name: Run unit and integration tests
         run: npm test
 
+      - name: Create isolated listing-test database
+        env:
+          PGPASSWORD: postgres
+        run: createdb --host=127.0.0.1 --port=5432 --username=postgres txlocalist_listing_test
+
+      - name: Verify listing and recurrence database behavior
+        env:
+          LISTING_TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/txlocalist_listing_test
+        run: npm run test:listings:db
+
+      - name: Install browser for desktop and mobile component checks
+        run: npx playwright install --with-deps chromium
+
+      - name: Verify listing and recurrence browser behavior
+        run: npm run test:listings:ui
+
       - name: Build production artifact
         run: npm run build
 

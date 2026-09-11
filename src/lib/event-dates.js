@@ -1,4 +1,5 @@
 import { getPublicEventAccessWhere } from "./listing-visibility";
+import { getNextEventOccurrence, isRecurringEvent } from "./event-recurrence";
 export const DEFAULT_EVENT_TIME_ZONE = "America/Chicago";
 export const ALLOWED_EVENT_TIME_ZONES = Object.freeze([
   "America/Chicago",
@@ -212,6 +213,7 @@ export function formatEventDateRange(
 }
 
 export function isEventPast(event, now = new Date()) {
+  if (isRecurringEvent(event)) return !getNextEventOccurrence(event, now);
   const comparisonDate = asValidDate(now) || new Date();
   const end = asValidDate(event?.endDate) || asValidDate(event?.startDate);
   return Boolean(end && end < comparisonDate);
@@ -227,6 +229,7 @@ export function getPublicEventWhere(now = new Date()) {
   return {
     ...getPublicEventAccessWhere(),
     OR: [
+      { recurrence: "WEEKLY", OR: [{ recurrenceUntil: null }, { recurrenceUntil: { gte: cutoff } }] },
       { endDate: { gte: cutoff } },
       { endDate: null, startDate: { gte: cutoff } },
     ],

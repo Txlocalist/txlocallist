@@ -12,6 +12,7 @@ import {
   shouldKeepSettledPaymentForCancelledEvent,
 } from "@/lib/event-payment-policy";
 import { prisma } from "@/lib/prisma";
+import { isEventPast } from "@/lib/event-dates";
 import {
   BILLING_CURRENCY,
   EVENT_POST_CHECKOUT_DISCLOSURE,
@@ -1428,7 +1429,7 @@ export async function approveEventForPublication({
     if (event.status !== "PENDING") {
       throw new Error("Only a pending event can be approved.");
     }
-    if (!event.endDate || event.endDate <= new Date()) {
+    if (!event.endDate || isEventPast(event)) {
       throw new Error("An event that has already ended cannot be published.");
     }
     if (event.postingMethod === "ONE_TIME" && event.payments.length === 0) {
@@ -1439,7 +1440,7 @@ export async function approveEventForPublication({
       where: {
         id: eventId,
         status: "PENDING",
-        endDate: { gt: new Date() },
+        updatedAt: event.updatedAt,
         creator: { deletedAt: null },
         deletedAt: null,
       },

@@ -107,6 +107,7 @@ export function validateOrganizerEventDateRange({
   timeZone,
   now = new Date(),
   maxDays = MAX_EVENT_CALENDAR_DAYS,
+  allowPast = false,
 }) {
   const startDate = parseOrganizerDateTimeLocal(startDateValue, timeZone);
   const endDate = parseOrganizerDateTimeLocal(endDateValue, timeZone);
@@ -124,7 +125,7 @@ export function validateOrganizerEventDateRange({
     );
   }
 
-  if (endDate <= comparisonDate) {
+  if (!allowPast && endDate <= comparisonDate) {
     throwDateError(
       "EVENT_END_NOT_FUTURE",
       "The event must end in the future."
