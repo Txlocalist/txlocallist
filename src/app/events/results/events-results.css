@@ -28,10 +28,8 @@
     &{
       font-family:var(--font-sans), Arial, Helvetica, sans-serif;
       color:var(--text);
-      background:
-        radial-gradient(circle at top left, rgba(55,179,177,.12), transparent 25%),
-        radial-gradient(circle at top right, rgba(241,136,36,.16), transparent 20%),
-        linear-gradient(180deg,#090705 0%, #100c09 30%, #0c0907 100%);
+      /* Keep the canvas dark regardless of how many results extend the page. */
+      background:#0d0a08;
       min-height:100vh;
       overflow-x:hidden;
     }
@@ -122,6 +120,8 @@
 
     /* Mobile sidebar */
     .mobile-top{display:none; position:sticky; top:0; z-index:30; background:rgba(10,8,6,.94); backdrop-filter:blur(10px); border-bottom:1px solid rgba(245,231,198,.12); padding:12px 14px; grid-template-columns:minmax(0,1fr) 46px; align-items:center}
+    /* A filtered ancestor would constrain the menu's fixed backdrop to the header. */
+    .mobile-top:has(button[aria-expanded="true"]){backdrop-filter:none;z-index:60}
     .mobile-brand{font-family:Georgia,serif;font-style:italic;font-size:28px;font-weight:900;letter-spacing:0;color:var(--paper);text-shadow:1px 1px 0 #8f4a39,3px 3px 0 var(--orange)}
     .mobile-top .brand-image{justify-self:start}
     .mobile-top>:last-child{justify-self:end}
@@ -371,6 +371,9 @@
       .sidebar{display:none}
       .mobile-top{display:grid}
       .main{padding:18px 18px 100px}
+      /* Date selections open their event list in a modal on mobile, so the
+         duplicate daily-schedule panel only adds an empty section below it. */
+      .planner > .panel:nth-child(2){display:none}
       .search-bar{grid-template-columns:1fr 1fr; border-radius:28px}
       .field:nth-child(1){grid-column:1/-1;border-right:0;border-bottom:1px solid rgba(47,36,29,.12)}
       .field:nth-child(2){border-right:1px solid rgba(47,36,29,.12)}

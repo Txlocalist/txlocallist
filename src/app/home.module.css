@@ -41,6 +41,10 @@
   .hero {
     padding: 6rem 1.5rem;
   }
+
+  .homepageHero {
+    padding-top: 3rem;
+  }
 }
 
 .heroBg {

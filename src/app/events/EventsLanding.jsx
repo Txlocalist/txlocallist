@@ -7,6 +7,7 @@ import { useMemo } from "react";
 import DirectoryImage from "@/components/DirectoryImage";
 import EventSearchBar from "@/components/EventSearchBar/EventSearchBar";
 import { LikeCount } from "@/components/LikeCount";
+import NavbarMobileMenu from "@/components/Navbar/NavbarMobileMenu";
 
 import "./events-landing.css";
 
@@ -147,21 +148,21 @@ export default function EventsLanding({
             <Link href={isLoggedIn ? dashboardPath : "/login"} className="login-btn">
               {isLoggedIn ? "Dashboard" : "Login"}
             </Link>
-            <details className="mobile-nav-menu">
-              <summary aria-label="Open navigation menu">
-                <span className="material-icons" aria-hidden="true">menu</span>
-              </summary>
-              <nav aria-label="Mobile event navigation">
-                <Link href="/">Home</Link>
-                <Link href="/results">Businesses</Link>
-                <Link href="/events">Events</Link>
-                <Link href="/about">About</Link>
-                <Link href="/post-your-business">Add Listing</Link>
-                <Link href={isLoggedIn ? dashboardPath : "/login"}>
-                  {isLoggedIn ? "Dashboard" : "Login"}
-                </Link>
-              </nav>
-            </details>
+            <div className="mobile-nav-menu">
+              <NavbarMobileMenu
+                theme="dark"
+                links={[
+                  { href: "/", label: "Home" },
+                  { href: "/results", label: "Businesses" },
+                  { href: "/events", label: "Events" },
+                  { href: "/about", label: "About" },
+                  { href: "/post-your-business", label: "Add Listing" },
+                ]}
+                activeHref="/events"
+                pillHref={isLoggedIn ? dashboardPath : "/login"}
+                pillLabel={isLoggedIn ? "Dashboard" : "Login"}
+              />
+            </div>
           </div>
         </header>
 

@@ -154,7 +154,7 @@ export default async function EventDetailPage({ params, searchParams }) {
 
   return (
     <div className={styles.page}>
-      <Navbar logoSrc="/Dark-mode-logo.svg" />
+      <Navbar logoSrc="/Dark-mode-logo.svg" mobileMenuTheme="dark" />
 
       <script
         type="application/ld+json"

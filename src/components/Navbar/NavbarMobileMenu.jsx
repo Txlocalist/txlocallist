@@ -5,7 +5,7 @@ import { useEffect, useId, useState } from "react";
 
 import styles from "./Navbar.module.css";
 
-export default function NavbarMobileMenu({ links, pillHref, pillLabel, activeHref }) {
+export default function NavbarMobileMenu({ links, pillHref, pillLabel, activeHref, theme = "light" }) {
   const [open, setOpen] = useState(false);
   const menuId = useId();
 
@@ -25,7 +25,7 @@ export default function NavbarMobileMenu({ links, pillHref, pillLabel, activeHre
   }
 
   return (
-    <div className={styles.mobileMenuWrap}>
+    <div className={`${styles.mobileMenuWrap} ${theme === "dark" ? styles.darkMenu : ""}`}>
       <button
         type="button"
         className={styles.menuButton}

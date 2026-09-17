@@ -230,6 +230,38 @@
   box-shadow: 4px 4px 0 var(--retro-brown);
 }
 
+/* Shared menu geometry; event pages only change the palette. */
+.darkMenu .menuButton {
+  background: #191510;
+  border-color: #807259;
+  color: #fff3d4;
+  box-shadow: 4px 4px 0 #070605;
+}
+
+.darkMenu .mobileMenuPanel {
+  border-color: #807259;
+  background: linear-gradient(180deg, #211c16 0%, #100e0b 100%);
+  box-shadow: 7px 7px 0 #070605;
+}
+
+.darkMenu .mobileMenuPanel .mobileMenuLink {
+  color: #fff3d4;
+}
+
+.darkMenu .mobileMenuPanel .mobileMenuLink:hover,
+.darkMenu .mobileMenuPanel .mobileMenuLink:focus-visible {
+  background: rgba(245, 230, 197, 0.1);
+}
+
+.darkMenu .mobileMenuPanel .mobileMenuLinkActive {
+  background: rgba(255, 141, 36, 0.14);
+  color: #ffaf69;
+}
+
+.darkMenu .mobileMenuPanel .mobileMenuCta {
+  box-shadow: 4px 4px 0 #070605;
+}
+
 @media (min-width: 900px) {
   .mobileMenuWrap {
     display: none;

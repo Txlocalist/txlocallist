@@ -690,6 +690,7 @@ export default function EventsResults({
       <div className="mobile-top">
         <Logo mobile />
         <NavbarMobileMenu
+          theme="dark"
           links={PRIMARY_NAV_LINKS}
           pillHref={isLoggedIn ? dashboardPath : "/login"}
           pillLabel={isLoggedIn ? "Dashboard" : "Login"}

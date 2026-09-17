@@ -244,7 +244,7 @@ export default function HomeExperience({
       id="main"
       className={`${styles.homeMain} ${isEvents ? styles.eventsMode : styles.businessMode}`}
     >
-      <section className={styles.hero}>
+      <section className={`${styles.hero} ${homepageQuickLinks ? styles.homepageHero : ""}`}>
         <div className={styles.heroBg} aria-hidden="true">
           <Image
             src={heroBackgroundArt}

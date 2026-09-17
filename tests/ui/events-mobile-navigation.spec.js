@@ -9,7 +9,7 @@ test("events landing keeps the account action in a right-side hamburger menu", a
 
   await expect(page.locator(".site-header > .nav > .login-btn")).toBeHidden();
 
-  const menuButton = page.locator(".mobile-nav-menu summary");
+  const menuButton = page.getByRole("button", { name: "Open navigation menu" });
   const brand = page.locator(".site-header .brand-logo");
   const menuBox = await menuButton.boundingBox();
   const brandBox = await brand.boundingBox();
@@ -21,7 +21,7 @@ test("events landing keeps the account action in a right-side hamburger menu", a
   await expect(brand).toHaveCSS("transform", "none");
 
   await menuButton.click();
-  await expect(page.locator(".mobile-nav-menu nav").getByRole("link", { name: "Dashboard", exact: true })).toBeVisible();
+  await expect(page.locator(".mobile-nav-menu").getByRole("link", { name: "Dashboard", exact: true })).toBeVisible();
 });
 
 test("event results opens the primary site navigation from the right-side hamburger", async ({ page }) => {
@@ -41,12 +41,47 @@ test("event results opens the primary site navigation from the right-side hambur
   await expect(primaryMenu).toBeVisible();
   const homeLink = page.getByRole("link", { name: "Home", exact: true });
   await expect(homeLink).toBeVisible();
-  await expect(homeLink).toHaveCSS("color", "rgb(45, 36, 30)");
+  await expect(homeLink).toHaveCSS("color", "rgb(255, 243, 212)");
   await expect(page.getByRole("link", { name: "Events", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Dashboard", exact: true })).toBeVisible();
   await expect(page.locator(".sidebar")).toBeHidden();
   await expect(page.getByRole("button", { name: "All Events", exact: true })).toBeHidden();
 });
+
+for (const width of [320, 390, 768]) {
+  test(`events menus match business menu dimensions with a dark palette at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    let reference;
+    for (const route of ["/results", "/events", "/events/results"]) {
+      await page.goto(route);
+      const trigger = page.getByRole("button", { name: "Open navigation menu", exact: true });
+      await trigger.click();
+      const panel = page.locator("[class*=mobileMenuPanel]");
+      const dimensions = await panel.evaluate(element => {
+        const style = getComputedStyle(element);
+        const box = element.getBoundingClientRect();
+        const link = element.querySelector("a");
+        return { width: box.width, height: box.height, padding: style.padding, gap: style.gap, radius: style.borderRadius, border: style.borderWidth, fontSize: getComputedStyle(link).fontSize };
+      });
+      if (route === "/results") reference = dimensions;
+      else {
+        expect(dimensions).toEqual(reference);
+        await expect(panel.getByRole("link", { name: "Home", exact: true })).toHaveCSS("color", "rgb(255, 243, 212)");
+        await expect(panel.getByRole("link", { name: "Events", exact: true })).toHaveAttribute("aria-current", "page");
+        await expect(panel).toHaveCSS("background-image", "linear-gradient(rgb(33, 28, 22) 0%, rgb(16, 14, 11) 100%)");
+      }
+      await expect(panel.getByRole("link", { name: "Dashboard", exact: true })).toHaveCSS("color", "rgb(255, 255, 255)");
+      // The backdrop must cover the viewport, including the fixed mobile dock.
+      expect(await page.evaluate(() => document.elementFromPoint(5, 895)?.getAttribute("aria-label"))).toBe("Dismiss navigation menu");
+      await page.screenshot({ path: `test-results/menu-${route.replaceAll("/", "-")}-${width}.png` });
+      await page.keyboard.press("Escape");
+      await expect(panel).toHaveCount(0);
+      await trigger.click();
+      await page.getByRole("button", { name: "Dismiss navigation menu", exact: true }).click({ position: { x: 5, y: 800 } });
+      await expect(panel).toHaveCount(0);
+    }
+  });
+}
 
 test("business results aligns its mobile logo to the left", async ({ page }) => {
   await page.goto("/results");

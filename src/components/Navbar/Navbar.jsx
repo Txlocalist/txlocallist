@@ -21,6 +21,7 @@ export default async function Navbar({
   links = DEFAULT_LINKS,
   logoSrc = "/Main-Logo.svg",
   activeHref,
+  mobileMenuTheme = "light",
 }) {
   const user = await getCurrentUser().catch(() => null);
 
@@ -60,6 +61,7 @@ export default async function Navbar({
       </div>
 
       <NavbarMobileMenu
+        theme={mobileMenuTheme}
         links={links}
         pillHref={pillHref}
         pillLabel={pillLabel}
