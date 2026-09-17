@@ -134,6 +134,11 @@ test("event cards and lists sort independently of chronological calendar dates",
   expect(await page.evaluate(() => window.serverNavigations || [])).toEqual([]);
   await page.goBack();
   await expect(page.getByLabel("Sort by")).toHaveValue("name-asc");
+  await expect(page.locator(".list-detail strong")).toHaveText(["Alpha", "alpha", "beta", "Delta", "Echo", "zebra"]);
+  await page.goForward();
+  await expect(page.getByLabel("Sort by")).toHaveValue("oldest");
+  await expect(page.locator(".list-detail strong")).toHaveText(names);
+  await page.goBack();
   await page.getByRole("button", { name: "Cards", exact: true }).click();
   const dates = await page.locator(".desktop-grid .day-cell:not(.dim) .day-number").allTextContents();
   // Calendar grid order is fixed by date regardless of card/list ordering.
@@ -142,6 +147,35 @@ test("event cards and lists sort independently of chronological calendar dates",
   await page.screenshot({ path: `test-results/listing-events-${info.project.name}.png`, fullPage: true });
   await page.getByLabel("Sort by").selectOption("upcoming");
   await expect(page.locator(".card-title")).toHaveText(names.map((name) => `${name}Town Hall`));
+});
+
+test("event search and filters restore with Back, Forward and reload", async ({ page }) => {
+  await page.goto("/events/results?sort=name-asc&q=Alpha&loc=Austin%2C+TX&category=Community&date=2030-01-11");
+  const search = page.getByRole("form", { name: "Search local events" });
+  await expect(page.locator(".card-title")).toHaveText(["AlphaTown Hall"]);
+  await search.getByRole("searchbox").fill("Echo");
+  await search.getByPlaceholder("City", { exact: true }).fill("");
+  await search.getByRole("button", { name: /Jan 11/ }).click();
+  await page.getByRole("button", { name: "All Dates", exact: true }).filter({ visible: true }).click();
+  await search.getByRole("button", { name: "Search", exact: true }).click();
+  await page.getByRole("button", { name: "Remove Community", exact: true }).click();
+  await expect(page.locator(".card-title")).toHaveText(["EchoTown Hall"]);
+  await page.goBack();
+  await expect(page.getByRole("button", { name: "Remove Community", exact: true })).toBeVisible();
+  await page.goBack();
+  await expect(search.getByRole("searchbox")).toHaveValue("Alpha");
+  await expect(search.getByPlaceholder("City", { exact: true })).toHaveValue("Austin, TX");
+  await expect(search.getByRole("button", { name: /Jan 11/ })).toBeVisible();
+  await expect(page.locator(".card-title")).toHaveText(["AlphaTown Hall"]);
+  await page.goForward();
+  await expect(search.getByRole("searchbox")).toHaveValue("Echo");
+  await expect(search.getByPlaceholder("City", { exact: true })).toHaveValue("");
+  await expect(search.getByRole("button", { name: /All Dates/ })).toBeVisible();
+  await expect(page.locator(".card-title")).toHaveText(["EchoTown Hall"]);
+  await page.reload();
+  await expect(search.getByRole("searchbox")).toHaveValue("Echo");
+  await expect(page.locator(".card-title")).toHaveText(["EchoTown Hall"]);
+  expect(await page.evaluate(() => window.serverNavigations || [])).toEqual([]);
 });
 
 test("new city appears in both Explore lists and business create/edit dropdowns", async ({ page }, info) => {
@@ -158,11 +192,15 @@ test("new city appears in both Explore lists and business create/edit dropdowns"
   await page.goto("/edit-business");
   await expect(page.locator("#cityId option").filter({ hasText: "Test Empty Town" })).toHaveCount(1);
   await page.goto("/results");
-  const cityTrigger = info.project.name === "mobile" ? page.locator(".mobile-bottom-nav button").filter({ hasText: "CITIES" }) : page.locator(".nav-link-btn").filter({ hasText: "CITIES" });
+  const cityTrigger = info.project.name === "mobile" ? page.locator(".mobile-bottom-nav button").filter({ hasText: "FILTERS" }) : page.locator(".nav-link-btn").filter({ hasText: "CITIES" });
   await cityTrigger.click();
   await expect(page.getByRole("button", { name: /Test Empty Town/ })).toBeVisible();
   await page.goto("/events/results");
-  if (info.project.name === "mobile") await page.getByRole("button", { name: "Open navigation" }).click();
+  if (info.project.name === "mobile") {
+    await page.locator(".bottom-nav").getByRole("button", { name: /Filters/i }).click();
+  } else {
+    await page.locator(".sidebar").getByRole("button", { name: /Cities/i }).click();
+  }
   await expect(page.getByRole("button", { name: /Test Empty Town/ })).toBeVisible();
 });
 

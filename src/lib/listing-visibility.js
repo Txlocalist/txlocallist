@@ -2,9 +2,9 @@ import { getSubscriptionAccessWhere } from "./membership-policy";
 
 // Billing visibility is separate from moderation: payment recovery must never
 // approve a draft, override an admin suspension, or revive deleted content.
-export function getCreatorAccessWhere() {
+export function getCreatorAccessWhere({ includeSoftDeletion = true } = {}) {
   return {
-    deletedAt: null,
+    ...(includeSoftDeletion ? { deletedAt: null } : {}),
     OR: [
       { role: { in: ["COMPLIMENTARY", "MANAGER", "ADMIN"] } },
       getSubscriptionAccessWhere("billingStatus"),
@@ -13,25 +13,56 @@ export function getCreatorAccessWhere() {
   };
 }
 
-export function getPublicBusinessWhere() {
-  return { deletedAt: null, status: "ACTIVE", publishedAt: { not: null }, owner: getCreatorAccessWhere() };
+export function getPublicBusinessWhere({ includeSoftDeletion = true } = {}) {
+  return {
+    ...(includeSoftDeletion ? { deletedAt: null } : {}),
+    status: "ACTIVE",
+    publishedAt: { not: null },
+    owner: getCreatorAccessWhere({ includeSoftDeletion }),
+  };
 }
 
-export function getPublicEventAccessWhere() {
+export function getPublicEventAccessWhere({
+  includeRecurrence = true,
+  includeSoftDeletion = true,
+} = {}) {
+  const creatorAccess = getCreatorAccessWhere({ includeSoftDeletion });
+
   return {
     status: "PUBLISHED",
-    deletedAt: null,
-    creator: { deletedAt: null },
-    AND: [{ OR: [
-      { recurrence: "NONE" },
-      { recurrence: "WEEKLY", postingMethod: { not: "ONE_TIME" }, creator: getCreatorAccessWhere() },
-    ] }, { OR: [
-      { postingMethod: { in: ["ONE_TIME", "ADMIN"] } },
-      { creator: getCreatorAccessWhere(), OR: [
-        { businessId: null },
-        { business: { is: getPublicBusinessWhere() } },
-      ] },
-    ] }],
+    ...(includeSoftDeletion
+      ? { deletedAt: null, creator: { deletedAt: null } }
+      : {}),
+    AND: [
+      ...(includeRecurrence
+        ? [{
+            OR: [
+              { recurrence: "NONE" },
+              {
+                recurrence: "WEEKLY",
+                postingMethod: { not: "ONE_TIME" },
+                creator: creatorAccess,
+              },
+            ],
+          }]
+        : []),
+      {
+        OR: [
+          { postingMethod: { in: ["ONE_TIME", "ADMIN"] } },
+          {
+            creator: creatorAccess,
+            OR: [
+              { businessId: null },
+              {
+                business: {
+                  is: getPublicBusinessWhere({ includeSoftDeletion }),
+                },
+              },
+            ],
+          },
+        ],
+      },
+    ],
   };
 }
 

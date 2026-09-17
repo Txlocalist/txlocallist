@@ -6,7 +6,7 @@ import styles from "./overview.module.css";
 import { getAccountAccess } from "@/lib/account-access";
 import { prisma } from "@/lib/prisma";
 import { getCurrentSession } from "@/lib/auth/session";
-import { isMissingPrismaTableError, phase3SchemaMessage } from "@/lib/prisma-errors";
+import { isMissingPrismaTableError } from "@/lib/prisma-errors";
 
 function titleCase(value) {
   return value
@@ -38,7 +38,6 @@ export default async function DashboardPage() {
   }
 
   let businesses = [];
-  let schemaNotice = null;
 
   try {
     businesses = await prisma.business.findMany({
@@ -57,7 +56,7 @@ export default async function DashboardPage() {
       throw error;
     }
 
-    schemaNotice = phase3SchemaMessage;
+    console.warn("Dashboard listings are unavailable because the database schema is incomplete.");
   }
 
   const stats = {
@@ -75,9 +74,7 @@ export default async function DashboardPage() {
   const subtitle =
     businesses.length > 0
       ? `Your profile is shining bright. You currently have ${stats.active} active listing${stats.active === 1 ? "" : "s"}, ${stats.draft} draft${stats.draft === 1 ? "" : "s"}, and ${stats.paidPlans} paid plan${stats.paidPlans === 1 ? "" : "s"} in motion.`
-      : canCreateListing
-        ? "Your dashboard is ready. Start with your first listing and build a stronger local presence across the directory."
-        : "Your dashboard is ready. Upgrade your account in billing first, then create your first listing.";
+      : null;
 
   return (
     <DashboardLayout activeTab="overview">
@@ -85,7 +82,6 @@ export default async function DashboardPage() {
         canCreateListing={canCreateListing}
         greetingName={greetingName}
         recentBusinesses={recentBusinesses}
-        schemaNotice={schemaNotice}
         stats={stats}
         subtitle={subtitle}
       />
@@ -102,17 +98,6 @@ export default async function DashboardPage() {
           </p>
         </div>
       </div>
-
-      {schemaNotice && (
-        <div className={styles.card}>
-          <div className={styles.emptyState}>
-            <h2 className={styles.emptyStateTitle}>Database Setup Needed</h2>
-            <p className={styles.emptyStateDescription}>
-              {schemaNotice} Run the Phase 3 Prisma schema sync, then refresh the dashboard.
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* Stats Grid */}
       <div className={styles.statsGrid}>

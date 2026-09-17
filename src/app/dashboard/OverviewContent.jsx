@@ -6,7 +6,6 @@ export function OverviewContent({
   canCreateListing,
   greetingName,
   recentBusinesses,
-  schemaNotice,
   stats,
   subtitle,
 }) {
@@ -16,15 +15,9 @@ export function OverviewContent({
         <div className={styles.heroIntro}>
           <p className={styles.eyebrow}>Dashboard Overview</p>
           <h1 className={styles.title}>Howdy, {greetingName}</h1>
-          <p className={styles.subtitle}>{subtitle}</p>
+          {subtitle ? <p className={styles.subtitle}>{subtitle}</p> : null}
         </div>
       </section>
-
-      {schemaNotice && (
-        <div className={styles.emptyPanel}>
-          {schemaNotice} Run the Phase 3 Prisma schema sync, then refresh the dashboard.
-        </div>
-      )}
 
       <section className={styles.metricsGrid}>
         <MetricCard

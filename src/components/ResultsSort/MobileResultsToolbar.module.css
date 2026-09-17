@@ -1,0 +1,93 @@
+.filterButton, .viewIcon, .mobilePagination { display: none; }
+
+@media (max-width: 768px) {
+  .toolbar.toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 6px;
+    width: 100%;
+    min-width: 0;
+  }
+  .toolbar > label {
+    position: relative;
+    flex: 1 1 0;
+    min-width: 0;
+    margin: 0;
+  }
+  .toolbar > label > span {
+    position: absolute;
+    top: 5px;
+    left: 9px;
+    color: #665245;
+    font-size: 9px;
+    line-height: 1;
+    pointer-events: none;
+  }
+  .toolbar > label > select {
+    width: 100%;
+    min-width: 0;
+    height: 44px;
+    padding: 14px 16px 2px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 10px;
+  }
+  .toolbar .filterButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    min-height: 44px;
+    padding: 0 10px;
+    border: 2px solid currentColor;
+    border-radius: 10px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .toolbar .viewSwitch {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 0;
+    height: 44px;
+    padding: 2px;
+    border-radius: 999px;
+  }
+  .toolbar .viewSwitch button {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 36px;
+    padding: 0;
+    border-radius: 999px;
+  }
+  .toolbar .viewIcon { display: inline-flex; font-size: 19px; }
+  .viewLabel, .desktopPagination, .desktopOnly { display: none !important; }
+  .mobilePagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin: 24px 0;
+    color: inherit;
+    font-size: 13px;
+  }
+  .mobilePagination button {
+    min-height: 44px;
+    padding: 9px 13px;
+    border: 1px solid currentColor;
+    border-radius: 10px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .mobilePagination button:disabled { opacity: 0.4; cursor: default; }
+  .mobilePagination button:focus-visible, .filterButton:focus-visible { outline: 3px solid #37b3b1; outline-offset: 3px; }
+}

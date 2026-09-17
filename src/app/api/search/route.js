@@ -76,73 +76,82 @@ export async function GET(request) {
     const page     = Math.max(1, parseInt(searchParams.get("page")) || 1);
     const pageSize = getBusinessSearchPageSize(searchParams.get("limit"));
 
-    // Build the where clause
-    const where = {
-      ...getPublicBusinessWhere(),
-    };
-
-    // Filter by city
-    // Strip common state suffixes like ", TX" / ", tx" / " TX" before matching
-    // so "Austin, TX" and "Austin, tx" resolve the same as "Austin".
-    if (loc) {
-      const cityOnly = loc
-        .replace(/,?\s+[a-zA-Z]{2}$/, "") // strip ", TX" or " TX" at the end
-        .trim();
-      where.city = {
-        OR: [
-          { slug: cityOnly.toLowerCase().replace(/\s+/g, "-") },
-          { name: { mode: "insensitive", contains: cityOnly } },
-        ],
+    function buildWhere(includeSoftDeletion) {
+      const where = {
+        ...getPublicBusinessWhere({ includeSoftDeletion }),
       };
+
+      // Strip common state suffixes so "Austin, TX" resolves as "Austin".
+      if (loc) {
+        const cityOnly = loc.replace(/,?\s+[a-zA-Z]{2}$/, "").trim();
+        where.city = {
+          OR: [
+            { slug: cityOnly.toLowerCase().replace(/\s+/g, "-") },
+            { name: { mode: "insensitive", contains: cityOnly } },
+          ],
+        };
+      }
+
+      if (q) {
+        where.OR = [
+          { name: { mode: "insensitive", contains: q } },
+          { description: { mode: "insensitive", contains: q } },
+          { tags: { some: { tag: { name: { mode: "insensitive", contains: q } } } } },
+        ];
+      }
+
+      if (category) {
+        where.categories = {
+          some: {
+            category: { slug: category.toLowerCase().replace(/\s+/g, "-") },
+          },
+        };
+      }
+
+      if (jobsOnly) {
+        where.jobs = {
+          some: { status: "ACTIVE" },
+        };
+      }
+
+      return where;
     }
 
-    // Filter by keyword (search in name, description, tags)
-    if (q) {
-      where.OR = [
-        { name: { mode: "insensitive", contains: q } },
-        { description: { mode: "insensitive", contains: q } },
-        { tags: { some: { tag: { name: { mode: "insensitive", contains: q } } } } },
-      ];
-    }
+    // Keep search usable while additive Like and soft-delete migrations are
+    // rolling out. The final profile targets the legacy schema exclusively.
+    const profiles = [
+      { includeLikes: true, includeSoftDeletion: true, includeSortName: true },
+      { includeLikes: false, includeSoftDeletion: true, includeSortName: true },
+      { includeLikes: false, includeSoftDeletion: false, includeSortName: false },
+    ];
 
-    // Filter by category
-    if (category) {
-      where.categories = {
-        some: {
-          category: { slug: category.toLowerCase().replace(/\s+/g, "-") },
-        },
-      };
-    }
+    let total = 0;
+    let results = [];
+    for (const [index, profile] of profiles.entries()) {
+      const where = buildWhere(profile.includeSoftDeletion);
+      const orderBy = resultOrderBy(sort, {
+        name: profile.includeSortName ? "sortName" : "name",
+        extras: ["popular"],
+      });
 
-    if (jobsOnly) {
-      where.jobs = {
-        some: { status: "ACTIVE" },
-      };
-    }
-
-    const orderBy = resultOrderBy(sort, { name: "sortName", extras: ["popular"] });
-
-    // Fetch results with pagination. Until the manually-applied Like migration
-    // lands, preserve public search and report zero likes instead of returning 500.
-    const findBusinesses = (includeLikes) => prisma.business.findMany({
-      where,
-      select: getBusinessSelect(user?.id, includeLikes),
-      orderBy,
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    });
-
-    const [total, results] = await Promise.all([
-      prisma.business.count({ where }),
-      (async () => {
-        try {
-          return await findBusinesses(true);
-        } catch (error) {
-          if (!isMissingPrismaTableError(error)) throw error;
-          return findBusinesses(false);
+      try {
+        [total, results] = await Promise.all([
+          prisma.business.count({ where }),
+          prisma.business.findMany({
+            where,
+            select: getBusinessSelect(user?.id, profile.includeLikes),
+            orderBy,
+            skip: (page - 1) * pageSize,
+            take: pageSize,
+          }),
+        ]);
+        break;
+      } catch (error) {
+        if (!isMissingPrismaTableError(error) || index === profiles.length - 1) {
+          throw error;
         }
-      })(),
-    ]);
+      }
+    }
 
     // Transform results for the frontend
     const transformedResults = results.map((business) => ({

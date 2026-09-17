@@ -9,6 +9,7 @@ import logoImage from "@/app/assets/Tx-Localist-01.png";
 import { LikeCount } from "@/components/LikeCount";
 import SearchBar from "@/components/SearchBar";
 import DirectoryImage from "@/components/DirectoryImage";
+import NavbarMobileMenu from "@/components/Navbar/NavbarMobileMenu";
 import { formatEventDateRange } from "@/lib/event-dates";
 
 import {
@@ -18,11 +19,19 @@ import {
   ShareIcon,
 } from "./icons";
 import ResultsSort from "@/components/ResultsSort/ResultsSort";
+import toolbarStyles from "@/components/ResultsSort/MobileResultsToolbar.module.css";
 import { normalizeSort, sortResults } from "@/lib/results-sort";
 import ResultsCardSkeleton from "./ResultsCardSkeleton";
 
 const INITIAL_RECENT_BUSINESS_LIMIT = 15;
 const EMPTY_ITEMS = [];
+const PRIMARY_NAV_LINKS = [
+  { href: "/", label: "Home" },
+  { href: "/results", label: "Businesses" },
+  { href: "/events", label: "Events" },
+  { href: "/about", label: "About" },
+  { href: "/post-your-business", label: "Add Listing" },
+];
 const numberFormatter = new Intl.NumberFormat("en-US");
 
 function eventDateLabel(event) {
@@ -334,7 +343,8 @@ export default function ResultsExperience({
   const [viewMode,         setViewMode]         = useState("card"); // "card" | "list"
   const [showCities,       setShowCities]       = useState(false);
   const [showCategories,   setShowCategories]   = useState(false);
-  const [showMobileCities, setShowMobileCities] = useState(false);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const mobileFiltersRef = useRef(null);
   const [activeSort,       setActiveSort]       = useState(normalizeSort(urlParams.get("sort"), activeTab === "events" ? "upcoming" : "newest", ["popular", "upcoming"])); // "" | "popular"
   const [activeBrowseTab,  setActiveBrowseTab]  = useState(
     initialJobsOnly ? "jobs" : initialBrowseAll ? "all" : initialQuery || initialLocation ? "search" : ""
@@ -353,6 +363,26 @@ export default function ResultsExperience({
   const [pagination, setPagination] = useState({ businesses: {}, events: {} });
 
   const currentYear = new Date().getFullYear();
+
+  useEffect(() => {
+    const dialog = mobileFiltersRef.current;
+    if (!showMobileFilters) {
+      dialog?.close();
+      return;
+    }
+    dialog?.showModal();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, [showMobileFilters]);
+
+  function applyBusinessFilter(filters) {
+    replaceResultsUrl({
+      type: "businesses",
+      browse: activeBrowseTab === "favorites" ? "favorites" : activeBrowseTab === "popular" ? "popular" : "all",
+      ...filters,
+    });
+  }
   function replaceResultsUrl({
     query = urlParams.get("q") || "",
     location = urlParams.get("loc") || "",
@@ -691,6 +721,17 @@ export default function ResultsExperience({
   }
 
   /* Results panel (tab + view-mode aware) */
+  function ResultsPagination({ className }) {
+    if (activeBrowseTab === "favorites") return null;
+    return (
+      <nav className={className} aria-label="Results pages">
+        <button type="button" disabled={isSearching || !(pagination[activeTab]?.page > 1)} onClick={() => replaceResultsUrl({ query: lastSearch.q, location: lastSearch.loc, category: selectedCategory, type: activeTab, jobs: jobsOnly, browse: activeBrowseTab, page: pagination[activeTab].page - 1 })}>Previous</button>
+        <span aria-live="polite">Page {pagination[activeTab]?.page || 1}</span>
+        <button type="button" disabled={isSearching || !pagination[activeTab]?.hasMore} onClick={() => replaceResultsUrl({ query: lastSearch.q, location: lastSearch.loc, category: selectedCategory, type: activeTab, jobs: jobsOnly, browse: activeBrowseTab, page: (pagination[activeTab]?.page || 1) + 1 })}>Next</button>
+      </nav>
+    );
+  }
+
   function ResultsPanel() {
     if (isSearching) {
       return <ResultsCardSkeleton />;
@@ -941,6 +982,12 @@ export default function ResultsExperience({
                 <Image src={logoImage} alt="Texas Localist" width={260} height={160}
                   sizes="(max-width: 768px) 220px, 260px" className="mobile-logo-image" priority />
               </Link>
+              <NavbarMobileMenu
+                links={PRIMARY_NAV_LINKS}
+                pillHref={user ? dashboardPath || "/dashboard" : "/login"}
+                pillLabel={user ? "Dashboard" : "Login"}
+                activeHref="/results"
+              />
             </div>
             <SearchBar
               action="/results"
@@ -993,14 +1040,11 @@ export default function ResultsExperience({
                 </span>
 
                 {/* Right: view toggle + clear */}
-                <div className="results-header-right">
+                <div className={`results-header-right ${toolbarStyles.toolbar}`}>
                   <ResultsSort value={activeSort} events={activeTab === "events"} popular={activeTab === "businesses" && activeBrowseTab !== "favorites"} saved={activeBrowseTab === "favorites"} onChange={(sort) => replaceResultsUrl({ query: lastSearch.q, location: lastSearch.loc, category: selectedCategory, type: activeTab, jobs: jobsOnly, browse: activeBrowseTab, sort })} />
-                  {activeBrowseTab !== "favorites" && <div className="results-pages" role="group" aria-label="Results pages">
-                    <button type="button" disabled={isSearching || !(pagination[activeTab]?.page > 1)} onClick={() => replaceResultsUrl({ query: lastSearch.q, location: lastSearch.loc, category: selectedCategory, type: activeTab, jobs: jobsOnly, browse: activeBrowseTab, page: pagination[activeTab].page - 1 })}>Previous</button>
-                    <span aria-live="polite"> Page {pagination[activeTab]?.page || 1} </span>
-                    <button type="button" disabled={isSearching || !pagination[activeTab]?.hasMore} onClick={() => replaceResultsUrl({ query: lastSearch.q, location: lastSearch.loc, category: selectedCategory, type: activeTab, jobs: jobsOnly, browse: activeBrowseTab, page: (pagination[activeTab]?.page || 1) + 1 })}>Next</button>
-                  </div>}
-                  <div className="view-toggle" role="group" aria-label="View mode">
+                  <ResultsPagination className={`results-pages ${toolbarStyles.desktopPagination}`} />
+                  <button className={toolbarStyles.filterButton} type="button" aria-haspopup="dialog" aria-expanded={showMobileFilters} aria-controls="business-filters" onClick={() => setShowMobileFilters(true)}>Filters</button>
+                  <div className={`view-toggle ${toolbarStyles.viewSwitch}`} role="group" aria-label="View mode">
                     {[
                       { mode: "card", icon: "grid_view",  label: "Card view" },
                       { mode: "list", icon: "view_list",  label: "List view" },
@@ -1017,7 +1061,7 @@ export default function ResultsExperience({
                       </button>
                     ))}
                   </div>
-                  <button type="button" onClick={clearSearch} className="font-accent clear-btn">
+                  <button type="button" onClick={clearSearch} className={`font-accent clear-btn ${toolbarStyles.desktopOnly}`}>
                     CLEAR
                   </button>
                 </div>
@@ -1037,6 +1081,7 @@ export default function ResultsExperience({
               )}
 
               <ResultsPanel />
+              <ResultsPagination className={toolbarStyles.mobilePagination} />
 
               <div className="results-trust-strip card-stack-effect">
                 <div className="results-trust-copy">
@@ -1090,10 +1135,13 @@ export default function ResultsExperience({
         <button
           type="button"
           className="font-accent mobile-nav-item"
-          onClick={() => setShowMobileCities(true)}
+          onClick={() => setShowMobileFilters(true)}
+          aria-haspopup="dialog"
+          aria-expanded={showMobileFilters}
+          aria-controls="business-filters"
         >
-          <span className="material-icons">location_city</span>
-          <span>CITIES</span>
+          <span className="material-icons" aria-hidden="true">tune</span>
+          <span>FILTERS</span>
         </button>
         <button
           type="button"
@@ -1112,45 +1160,63 @@ export default function ResultsExperience({
         </Link>
       </nav>
 
-      {/* ── Mobile city picker sheet ── */}
-      {showMobileCities && (
-        <div className="mobile-city-overlay" onClick={() => setShowMobileCities(false)}>
-          <div className="mobile-city-sheet" onClick={(e) => e.stopPropagation()}>
-            <div className="mobile-city-header">
-              <span className="font-accent">PICK A CITY</span>
-              <button
-                type="button"
-                className="mobile-city-close"
-                onClick={() => setShowMobileCities(false)}
-              >
-                <span className="material-icons">close</span>
-              </button>
+      <dialog
+        ref={mobileFiltersRef}
+        id="business-filters"
+        className="business-filter-dialog"
+        aria-labelledby="business-filter-title"
+        onCancel={() => setShowMobileFilters(false)}
+        onClose={() => setShowMobileFilters(false)}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) setShowMobileFilters(false);
+        }}
+      >
+        <div className="business-filter-sheet">
+          <div className="business-filter-header">
+            <div>
+              <h2 id="business-filter-title" className="font-accent">Business Filters</h2>
+              <p>Choose a city or category to find your local favorites.</p>
             </div>
-            <div className="mobile-city-grid">
-              {availableCities.length > 0 ? (
-                availableCities.map((city) => (
-                  <button
-                    key={city}
-                    type="button"
-                    className="font-accent mobile-city-btn"
-                    onClick={() => {
-                      setShowMobileCities(false);
-                      replaceResultsUrl({ location: city, type: activeTab });
-
-                    }}
-                  >
-                    {city}
-                  </button>
-                ))
-              ) : (
-                <div className="font-accent city-option" aria-disabled>
-                  No cities available
-                </div>
-              )}
-            </div>
+            <button type="button" className="business-filter-close" aria-label="Close business filters" onClick={() => setShowMobileFilters(false)}>
+              <span className="material-icons" aria-hidden="true">close</span>
+            </button>
           </div>
+          <div className="business-filter-content">
+            <button className="business-filter-reset" type="button" onClick={() => applyBusinessFilter({ query: "", location: "", category: "", jobs: false, browse: "all", sort: "newest" })}>
+              <span className="material-icons" aria-hidden="true">storefront</span>
+              <span><strong>All Businesses</strong><small>Clear every filter</small></span>
+            </button>
+            <fieldset className="business-filter-group">
+              <legend>City</legend>
+              <div className="business-filter-options">
+                {["", ...availableCities].map((city) => (
+                  <button key={city} type="button" className="business-filter-option" aria-pressed={lastSearch.loc.replace(/,?\s+(?:TX|Texas)$/i, "").trim() === city} onClick={() => applyBusinessFilter({ location: city })}>
+                    {city || "All Cities"}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+            <fieldset className="business-filter-group">
+              <legend>Category</legend>
+              <div className="business-filter-options">
+                {[{ slug: "", name: "All Categories" }, ...availableCategories].map((category) => (
+                  <button key={category.slug} type="button" className="business-filter-option" aria-pressed={selectedCategory === category.slug} onClick={() => applyBusinessFilter({ category: category.slug })}>
+                    {category.name}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+            <fieldset className="business-filter-group">
+              <legend>Hiring</legend>
+              <div className="business-filter-options">
+                <button type="button" className="business-filter-option" aria-pressed={!jobsOnly} onClick={() => applyBusinessFilter({ jobs: false })}>Any Business</button>
+                <button type="button" className="business-filter-option" aria-pressed={jobsOnly} onClick={() => applyBusinessFilter({ jobs: true })}>Hiring Now</button>
+              </div>
+            </fieldset>
+          </div>
+          <button type="button" className="business-filter-done font-accent" onClick={() => setShowMobileFilters(false)}>Show Results</button>
         </div>
-      )}
+      </dialog>
     </div>
   );
 }

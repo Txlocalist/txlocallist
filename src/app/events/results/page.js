@@ -1,5 +1,7 @@
+import { Suspense } from "react";
+
 import EventsResults from "./EventsResults";
-import { getCurrentUser } from "@/lib/auth/session";
+import { getCurrentUser, getDashboardPath } from "@/lib/auth/session";
 import { getEventsPageData } from "@/lib/events";
 
 export const metadata = {
@@ -15,18 +17,21 @@ export default async function EventResultsPage({ searchParams }) {
     category: params?.category ?? "",
     date: params?.date ?? "",
     sort: params?.sort ?? "upcoming",
+    saved: params?.saved === "1",
   };
   const user = await getCurrentUser().catch(() => null);
   const data = await getEventsPageData(filters, { userId: user?.id });
 
   return (
-    <EventsResults
-      events={data.filteredEvents}
-      allEvents={data.allEvents}
-      cities={data.cities}
-      categories={data.categories}
-      initialFilters={filters}
-      isLoggedIn={Boolean(user)}
-    />
+    <Suspense fallback={null}>
+      <EventsResults
+        events={data.filteredEvents}
+        allEvents={data.allEvents}
+        cities={data.cities}
+        categories={data.categories}
+        isLoggedIn={Boolean(user)}
+        dashboardPath={user ? getDashboardPath(user.role) : "/dashboard"}
+      />
+    </Suspense>
   );
 }

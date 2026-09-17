@@ -1,6 +1,6 @@
 import { getPublicBusinessWhere } from "@/lib/listing-visibility";
 import { getCurrentUser, getDashboardPath } from "@/lib/auth/session";
-import { getPublicEventWhere } from "@/lib/event-dates";
+import { getPublishedEventCityNames } from "@/lib/events";
 import { prisma } from "@/lib/prisma";
 import { isMissingPrismaTableError } from "@/lib/prisma-errors";
 import { mergeCityNames } from "@/lib/cities";
@@ -73,6 +73,29 @@ function getFavoriteBusinessInclude(userId, includeLikes = true) {
   };
 }
 
+async function getAvailableCategories() {
+  const findCategories = (includeSoftDeletion) => prisma.category.findMany({
+    where: {
+      businessCategories: {
+        some: {
+          business: {
+            ...getPublicBusinessWhere({ includeSoftDeletion }),
+          },
+        },
+      },
+    },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true, slug: true },
+  });
+
+  try {
+    return await findCategories(true);
+  } catch (error) {
+    if (!isMissingPrismaTableError(error)) throw error;
+    return findCategories(false);
+  }
+}
+
 export default async function ResultsPage({ searchParams }) {
   const params = await searchParams;
   const q   = params?.q   ?? "";
@@ -81,34 +104,18 @@ export default async function ResultsPage({ searchParams }) {
   const initialBrowseAll = params?.browse === "all";
   const initialJobsOnly = params?.jobs === "1";
   const [availableCategories, managedCities, publishedEventCities, user] = await Promise.all([
-    prisma.category.findMany({
-      where: {
-        businessCategories: {
-          some: {
-            business: {
-              ...getPublicBusinessWhere(),
-            },
-          },
-        },
-      },
-      orderBy: { name: "asc" },
-      select: { id: true, name: true, slug: true },
-    }),
+    getAvailableCategories(),
     prisma.city.findMany({
       orderBy: { name: "asc" },
       select: { name: true },
     }),
-    prisma.event.findMany({
-      where: getPublicEventWhere(),
-      distinct: ["city"],
-      select: { city: true },
-    }),
+    getPublishedEventCityNames(),
     getCurrentUser().catch(() => null),
   ]);
 
   const availableCities = mergeCityNames(
     managedCities.map((city) => city.name),
-    publishedEventCities.map((event) => event.city),
+    publishedEventCities,
   );
 
   const dashboardPath = user ? getDashboardPath(user.role) : null;
@@ -118,25 +125,32 @@ export default async function ResultsPage({ searchParams }) {
   let savedIds = [];
   let favoriteBusinesses = [];
   if (user) {
-    const findFavorites = (includeLikes) => prisma.favorite.findMany({
+    const findFavorites = ({ includeLikes, includeSoftDeletion }) => prisma.favorite.findMany({
       where: {
         userId: user.id,
         business: {
-          ...getPublicBusinessWhere(),
+          ...getPublicBusinessWhere({ includeSoftDeletion }),
         },
       },
       orderBy: { createdAt: "desc" },
       include: getFavoriteBusinessInclude(user.id, includeLikes),
     });
 
-    let favorites;
-    try {
-      favorites = await findFavorites(true);
-    } catch (error) {
-      if (!isMissingPrismaTableError(error)) {
-        throw error;
+    const profiles = [
+      { includeLikes: true, includeSoftDeletion: true },
+      { includeLikes: false, includeSoftDeletion: true },
+      { includeLikes: false, includeSoftDeletion: false },
+    ];
+    let favorites = null;
+    for (const [index, profile] of profiles.entries()) {
+      try {
+        favorites = await findFavorites(profile);
+        break;
+      } catch (error) {
+        if (!isMissingPrismaTableError(error) || index === profiles.length - 1) {
+          throw error;
+        }
       }
-      favorites = await findFavorites(false);
     }
     savedIds = favorites.map((f) => f.businessId);
     favoriteBusinesses = favorites

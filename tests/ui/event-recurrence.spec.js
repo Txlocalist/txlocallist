@@ -43,3 +43,42 @@ test("calendar shows the selected weekly occurrence and links to its date", asyn
   await expect(page.locator(".card-meta")).toContainText("Every Thursday");
   await expect(page.locator(".event-card-link")).toHaveAttribute("href", "/events/0?date=2030-01-17");
 });
+
+test("calendar dates open a scrollable day dialog", async ({ page }, info) => {
+  await page.goto("/events/results");
+  if (info.project.name === "mobile") {
+    await page.locator(".bottom-nav").getByRole("button", { name: /Calendar/i }).click();
+    await page.locator('.month-sheet button[aria-label*="January 10"]').click();
+  } else {
+    await page.locator('.desktop-grid button[aria-label*="January 10"]').click();
+  }
+
+  const dialog = page.getByRole("dialog", { name: /Events on Thu, January 10/i });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText("zebra", { exact: true })).toBeVisible();
+});
+
+test("mobile saved view persists a save and filters the event cards", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.route("**/api/event-favorites", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ saved: true, count: 1 }),
+    });
+  });
+  await page.goto("/events/results");
+
+  const firstCard = page.locator(".event-card").first();
+  await firstCard.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(firstCard.getByRole("button", { name: "Saved", exact: true })).toBeVisible();
+
+  await page.locator(".bottom-nav").getByRole("button", { name: /Saved/i }).click();
+  await expect(page.locator(".event-card")).toHaveCount(1);
+  await page.goBack();
+  await expect(page.locator(".event-card")).toHaveCount(6);
+  await expect(page.getByRole("button", { name: "Remove Saved Events" })).toHaveCount(0);
+  await page.goForward();
+  await expect(page.locator(".event-card")).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "Remove Saved Events" })).toBeVisible();
+});

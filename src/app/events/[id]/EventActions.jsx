@@ -94,6 +94,7 @@ export default function EventActions({
         <LikeCount
           count={initialLikesCount}
           size="eventHero"
+          className={styles.likeButton}
           targetType="event"
           targetId={eventId}
           targetName={event.title}

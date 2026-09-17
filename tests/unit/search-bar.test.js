@@ -7,6 +7,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 import SearchBar from "@/components/SearchBar/SearchBar";
+import EventSearchBar from "@/components/EventSearchBar/EventSearchBar";
 
 describe("SearchBar type selector", () => {
   beforeEach(() => {
@@ -32,5 +33,19 @@ describe("SearchBar type selector", () => {
     expect(html).not.toContain("Local Businesses");
     expect(html).not.toContain("Local Events");
     expect(html).toContain("Search");
+  });
+
+  it("uses the shared event date picker without the removed local-events pill", () => {
+    const html = renderToStaticMarkup(
+      createElement(EventSearchBar, {
+        initialLocation: "Austin, TX",
+        initialDate: "next-7-days",
+      })
+    );
+
+    expect(html).toContain("Next 7 Days");
+    expect(html).toContain("All Dates");
+    expect(html).toContain("Austin, TX");
+    expect(html).not.toContain("Local Events");
   });
 });

@@ -223,13 +223,21 @@ export function isPubliclyDiscoverableEvent(event, now = new Date()) {
   return event?.status === "PUBLISHED" && !isEventPast(event, now);
 }
 
-export function getPublicEventWhere(now = new Date()) {
+export function getPublicEventWhere(
+  now = new Date(),
+  { includeRecurrence = true, includeSoftDeletion = true } = {}
+) {
   const cutoff = asValidDate(now) || new Date();
 
   return {
-    ...getPublicEventAccessWhere(),
+    ...getPublicEventAccessWhere({ includeRecurrence, includeSoftDeletion }),
     OR: [
-      { recurrence: "WEEKLY", OR: [{ recurrenceUntil: null }, { recurrenceUntil: { gte: cutoff } }] },
+      ...(includeRecurrence
+        ? [{
+            recurrence: "WEEKLY",
+            OR: [{ recurrenceUntil: null }, { recurrenceUntil: { gte: cutoff } }],
+          }]
+        : []),
       { endDate: { gte: cutoff } },
       { endDate: null, startDate: { gte: cutoff } },
     ],

@@ -2,15 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useMemo } from "react";
 
-import { getBlobImageUrl } from "@/lib/blob";
+import DirectoryImage from "@/components/DirectoryImage";
+import EventSearchBar from "@/components/EventSearchBar/EventSearchBar";
 import { LikeCount } from "@/components/LikeCount";
 
 import "./events-landing.css";
 
-const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const FEATURED_CATEGORIES = [
   "Live Music",
   "Food & Drink",
@@ -18,28 +17,6 @@ const FEATURED_CATEGORIES = [
   "Outdoor",
   "Free Events",
 ];
-
-function pad(n) {
-  return String(n).padStart(2, "0");
-}
-
-function iso(date) {
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-}
-
-function nice(date) {
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-}
-
-function sameDay(a, b) {
-  return (
-    a &&
-    b &&
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-}
 
 function dateFromKey(key) {
   if (!key || key === "undated") return null;
@@ -84,8 +61,6 @@ function Logo({ compact = false }) {
 }
 
 function EventCard({ event, index, isLoggedIn }) {
-  const imageUrl = event.imageUrl ? getBlobImageUrl(event.imageUrl) : "";
-
   return (
     <article className="event-card">
       <div className="event-top">
@@ -98,9 +73,9 @@ function EventCard({ event, index, isLoggedIn }) {
           <span className="day">{eventDay(event)}</span>
           <span className="time">{event.timeLabel}</span>
         </div>
-        {imageUrl ? (
+        {event.imageUrl ? (
           <div className="event-photo real-photo">
-            <img src={imageUrl} alt="" />
+            <DirectoryImage src={event.imageUrl} alt="" sizes="(max-width: 560px) 100vw, (max-width: 1050px) 50vw, 25vw" />
           </div>
         ) : (
           <div className={`event-photo ${photoTone(event)}`} />
@@ -153,121 +128,10 @@ export default function EventsLanding({
   cities = [],
   categories = [],
   isLoggedIn = false,
+  dashboardPath = "/dashboard",
 }) {
-  const router = useRouter();
-  const popoverRef = useRef(null);
-  const dateWrapRef = useRef(null);
-
-  const [query, setQuery] = useState("");
-  const [city, setCity] = useState(() => cities[0] || "Austin, TX");
-  const [dateLabel, setDateLabel] = useState("This Weekend");
-  const [dateValue, setDateValue] = useState("this-weekend");
-  const [activePreset, setActivePreset] = useState("this-weekend");
-  const [popoverOpen, setPopoverOpen] = useState(false);
-
-  const [today] = useState(() => new Date());
-  const [viewDate, setViewDate] = useState(() => {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), 1);
-  });
-  const [selectedDate, setSelectedDate] = useState(null);
-
-  useEffect(() => {
-    if (!popoverOpen) return undefined;
-    function onClick(event) {
-      if (
-        !popoverRef.current?.contains(event.target) &&
-        !dateWrapRef.current?.contains(event.target)
-      ) {
-        setPopoverOpen(false);
-      }
-    }
-    function onKey(event) {
-      if (event.key === "Escape") setPopoverOpen(false);
-    }
-    document.addEventListener("click", onClick);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("click", onClick);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [popoverOpen]);
-
-  const calendarCells = useMemo(() => {
-    if (!viewDate) return [];
-    const year = viewDate.getFullYear();
-    const month = viewDate.getMonth();
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const cells = [];
-    for (let i = 0; i < firstDay; i += 1) cells.push({ key: `blank-${i}`, blank: true });
-    for (let day = 1; day <= daysInMonth; day += 1) {
-      const current = new Date(year, month, day);
-      cells.push({
-        key: iso(current),
-        day,
-        date: current,
-        isToday: sameDay(current, today),
-        isSelected: sameDay(current, selectedDate),
-      });
-    }
-    return cells;
-  }, [viewDate, today, selectedDate]);
-
   const trendingEvents = useMemo(() => events.slice(0, 4), [events]);
   const activeCategories = categories.length ? categories : FEATURED_CATEGORIES;
-  const calMonthLabel = viewDate
-    ? viewDate.toLocaleDateString(undefined, { month: "long", year: "numeric" })
-    : "";
-
-  function applyPreset(preset, label, value) {
-    setActivePreset(preset);
-    setDateLabel(label);
-    setDateValue(value);
-  }
-
-  function handleQuickDate(preset) {
-    if (!today) return;
-    const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1);
-    if (preset === "today") {
-      setSelectedDate(today);
-      applyPreset(preset, "Today", iso(today));
-      setPopoverOpen(false);
-    } else if (preset === "tomorrow") {
-      setSelectedDate(tomorrow);
-      applyPreset(preset, "Tomorrow", iso(tomorrow));
-      setPopoverOpen(false);
-    } else if (preset === "this-weekend") {
-      setSelectedDate(null);
-      applyPreset(preset, "This Weekend", "this-weekend");
-      setPopoverOpen(false);
-    } else if (preset === "custom") {
-      setActivePreset("custom");
-      setPopoverOpen(true);
-    }
-  }
-
-  function handleDayClick(cell) {
-    setSelectedDate(cell.date);
-    applyPreset("custom", nice(cell.date), iso(cell.date));
-    setPopoverOpen(false);
-  }
-
-  function shiftMonth(delta) {
-    setViewDate((prev) =>
-      prev ? new Date(prev.getFullYear(), prev.getMonth() + delta, 1) : prev
-    );
-  }
-
-  function handleSubmit(event) {
-    event.preventDefault();
-    const params = new URLSearchParams();
-    if (query.trim()) params.set("q", query.trim());
-    if (city.trim()) params.set("loc", city.trim());
-    if (dateValue) params.set("date", dateValue);
-    router.push(`/events/results?${params.toString()}`);
-  }
 
   return (
     <div className="events-landing">
@@ -276,13 +140,28 @@ export default function EventsLanding({
           <div className="container nav">
             <Logo />
             <nav className="nav-links" aria-label="Main navigation">
-              <Link href="/results">Explore</Link>
+              <Link href="/results">Businesses</Link>
               <Link href="/about">About</Link>
               <Link href="/post-your-business">Add Listing</Link>
             </nav>
-            <Link href="/login" className="login-btn">
-              Login
+            <Link href={isLoggedIn ? dashboardPath : "/login"} className="login-btn">
+              {isLoggedIn ? "Dashboard" : "Login"}
             </Link>
+            <details className="mobile-nav-menu">
+              <summary aria-label="Open navigation menu">
+                <span className="material-icons" aria-hidden="true">menu</span>
+              </summary>
+              <nav aria-label="Mobile event navigation">
+                <Link href="/">Home</Link>
+                <Link href="/results">Businesses</Link>
+                <Link href="/events">Events</Link>
+                <Link href="/about">About</Link>
+                <Link href="/post-your-business">Add Listing</Link>
+                <Link href={isLoggedIn ? dashboardPath : "/login"}>
+                  {isLoggedIn ? "Dashboard" : "Login"}
+                </Link>
+              </nav>
+            </details>
           </div>
         </header>
 
@@ -313,105 +192,10 @@ export default function EventsLanding({
                 without the noise.
               </p>
 
-              <form className="search-shell" onSubmit={handleSubmit} aria-label="Search local events">
-                <label className="search-field">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
-                    <circle cx="10" cy="10" r="7" />
-                    <path d="m15 15 5 5" />
-                  </svg>
-                  <input
-                    type="search"
-                    placeholder="Search bands, venues, festivals..."
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                  />
-                </label>
-                <label className="search-field">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
-                    <path d="M12 21s7-6.1 7-12a7 7 0 1 0-14 0c0 5.9 7 12 7 12z" />
-                    <circle cx="12" cy="9" r="2.5" />
-                  </svg>
-                  <input aria-label="City" value={city} onChange={(event) => setCity(event.target.value)} />
-                </label>
-                <div className="search-field date-wrap" ref={dateWrapRef}>
-                  <span className="event-mode-pill">
-                    <b>□</b> Local Events
-                  </span>
-                  <button
-                    className="date-trigger"
-                    type="button"
-                    aria-haspopup="dialog"
-                    aria-expanded={popoverOpen}
-                    onClick={() => setPopoverOpen((open) => !open)}
-                  >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
-                      <rect x="4" y="5" width="16" height="15" rx="2" />
-                      <path d="M8 3v4M16 3v4M4 10h16" />
-                    </svg>
-                    <span>{dateLabel}</span>
-                  </button>
-                  <div
-                    className={`date-popover${popoverOpen ? " open" : ""}`}
-                    role="dialog"
-                    aria-label="Choose event date"
-                    ref={popoverRef}
-                  >
-                    <div className="quick-dates" aria-label="Quick date choices">
-                      {[
-                        { preset: "today", label: "Today" },
-                        { preset: "tomorrow", label: "Tomorrow" },
-                        { preset: "this-weekend", label: "This Weekend" },
-                        { preset: "custom", label: "Pick a Date" },
-                      ].map(({ preset, label }) => (
-                        <button
-                          key={preset}
-                          type="button"
-                          className={`quick-date${activePreset === preset ? " active" : ""}`}
-                          onClick={() => handleQuickDate(preset)}
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="mini-cal">
-                      <div className="cal-head">
-                        <button type="button" className="cal-nav" aria-label="Previous month" onClick={() => shiftMonth(-1)}>
-                          &lsaquo;
-                        </button>
-                        <span>{calMonthLabel}</span>
-                        <button type="button" className="cal-nav" aria-label="Next month" onClick={() => shiftMonth(1)}>
-                          &rsaquo;
-                        </button>
-                      </div>
-                      <div className="cal-grid">
-                        {DAY_NAMES.map((name) => (
-                          <div key={name} className="cal-day-name">
-                            {name}
-                          </div>
-                        ))}
-                        {calendarCells.map((cell) =>
-                          cell.blank ? (
-                            <button key={cell.key} type="button" className="cal-day muted" tabIndex={-1} />
-                          ) : (
-                            <button
-                              key={cell.key}
-                              type="button"
-                              className={`cal-day${cell.isToday ? " today" : ""}${cell.isSelected ? " selected" : ""}`}
-                              onClick={() => handleDayClick(cell)}
-                            >
-                              {cell.day}
-                            </button>
-                          )
-                        )}
-                      </div>
-                    </div>
-                    <p className="date-note">Choose a quick window or pick an exact date.</p>
-                  </div>
-                </div>
-                <button className="search-btn" type="submit">
-                  Search
-                </button>
-              </form>
+              <EventSearchBar
+                initialLocation={cities[0] || "Austin, TX"}
+                initialDate="this-weekend"
+              />
 
               <div className="chips" aria-label="Popular event filters">
                 {["Live Music", "This Weekend", "Free Events", "Outdoor", "Markets", "Family Friendly", "Nightlife"].map((chip) => {

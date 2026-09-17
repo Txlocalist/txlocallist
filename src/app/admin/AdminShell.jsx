@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import { logoutAction } from "@/app/actions/auth";
 import styles from "@/app/dashboard/DashboardShell.module.css";
+import DashboardFrame from "@/app/dashboard/DashboardFrame";
 import { getCurrentSession } from "@/lib/auth/session";
 import { isStaffRole } from "@/lib/account-access";
 
@@ -42,9 +43,7 @@ export async function AdminShell({ children, activeTab = "overview" }) {
 
   const userInitial = user?.email?.trim()?.charAt(0)?.toUpperCase() || "A";
 
-  return (
-    <div className={styles.dashboardWrapper}>
-      <div className={styles.dashboardContainer}>
+  const navigation = (
         <aside className={styles.sidebar}>
           <div className={styles.sidebarHeader}>
             <Link href="/" className={styles.brandLink}>
@@ -66,7 +65,8 @@ export async function AdminShell({ children, activeTab = "overview" }) {
           </div>
 
           <Link href="/dashboard" className={styles.sidebarCta}>
-            {"<-"} User Dashboard
+            <span className="material-icons" aria-hidden="true">dashboard</span>
+            User Dashboard
           </Link>
 
           <nav className={styles.sidebarNav}>
@@ -74,6 +74,7 @@ export async function AdminShell({ children, activeTab = "overview" }) {
               <Link
                 key={tab.id}
                 href={tab.href}
+                aria-current={activeTab === tab.id ? "page" : undefined}
                 className={`${styles.navLink} ${activeTab === tab.id ? styles.navLinkActive : ""}`}
               >
                 <span className={`material-icons ${styles.navLinkIcon}`} aria-hidden="true">
@@ -103,13 +104,8 @@ export async function AdminShell({ children, activeTab = "overview" }) {
             </div>
           </div>
         </aside>
-
-        <section className={styles.mainPane}>
-          <header className={styles.topbar}>
-            <div>
-              <p className={styles.topbarTitle}>{sectionTitles[activeTab] || "Admin"}</p>
-            </div>
-
+  );
+  const account = (
             <div className={styles.topbarActions}>
               <div
                 className={styles.profilePill}
@@ -151,11 +147,11 @@ export async function AdminShell({ children, activeTab = "overview" }) {
                 </button>
               </form>
             </div>
-          </header>
+  );
 
-          <main className={styles.mainContent}>{children}</main>
-        </section>
-      </div>
-    </div>
+  return (
+    <DashboardFrame title={sectionTitles[activeTab] || "Admin"} navigation={navigation} account={account} menuLabel={isAdmin ? "Admin navigation" : "Manager navigation"}>
+      {children}
+    </DashboardFrame>
   );
 }

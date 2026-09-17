@@ -1,5 +1,5 @@
 import EventsLanding from "./EventsLanding";
-import { getCurrentUser } from "@/lib/auth/session";
+import { getCurrentUser, getDashboardPath } from "@/lib/auth/session";
 import { getEventsPageData } from "@/lib/events";
 
 // Live event data — render per-request instead of prerendering at build,
@@ -24,6 +24,7 @@ export default async function EventsPage() {
       cities={cities}
       categories={categories}
       isLoggedIn={Boolean(user)}
+      dashboardPath={user ? getDashboardPath(user.role) : "/dashboard"}
     />
   );
 }

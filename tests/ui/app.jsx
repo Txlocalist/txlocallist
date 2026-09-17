@@ -2,6 +2,10 @@ import { createRoot } from "react-dom/client";
 import { usePathname, useSearchParams } from "next/navigation";
 import DeleteListingButton from "@/components/DeleteListingButton/DeleteListingButton";
 import ResultsExperience from "@/app/results/ResultsExperience";
+import DashboardFrame from "@/app/dashboard/DashboardFrame";
+import dashboardStyles from "@/app/dashboard/DashboardShell.module.css";
+import Link from "next/link";
+import EventsLanding from "@/app/events/EventsLanding";
 import EventsResults from "@/app/events/results/EventsResults";
 import { CreateEventForm } from "@/app/dashboard/events/new/CreateEventForm";
 import { FavoritesDashboard } from "@/app/dashboard/favorites/FavoritesDashboard";
@@ -21,13 +25,32 @@ function App() {
     occurrences: ["10", "17", "24"].map((day) => ({ startDate: `2030-01-${day}T16:00:00Z`, endDate: `2030-01-${day}T18:00:00Z`, dateKeys: [`2030-01-${day}`] })),
   }] : events;
   const cities = ["Austin", "Dallas", localStorage.getItem("fixtureCity") || "Empty Town"];
+  const resultEvents = localStorage.getItem("fixturePagedEvents")
+    ? Array.from({ length: 25 }, (_, index) => ({ ...calendarEvents[index % calendarEvents.length], id: String(index), title: `Event ${String(index).padStart(2, "0")}` }))
+    : calendarEvents;
+  if (path === "/dashboard-shell") {
+    const admin = params.has("admin");
+    return <DashboardFrame
+      title={admin ? "Admin Overview" : "Dashboard"}
+      menuLabel={admin ? "Admin navigation" : "Dashboard navigation"}
+      navigation={<aside className={dashboardStyles.sidebar}>
+        <Link href={admin ? "/dashboard-shell" : "/dashboard-shell?admin=1"} className={dashboardStyles.sidebarCta}>{admin ? "User Dashboard" : "Admin Dashboard"}</Link>
+        <nav className={dashboardStyles.sidebarNav}>
+          <Link href="/dashboard-shell" className={dashboardStyles.navLink}>Overview</Link>
+          {admin ? ["Posts", "Users", "Tags", "Cities", "Admin Tools"].map((label) => <Link key={label} href="/dashboard-shell?admin=1" className={dashboardStyles.navLink}>{label}</Link>) : ["Posts", "Businesses", "Account"].map((label) => <details open key={label} className={dashboardStyles.navSection}><summary className={dashboardStyles.navSectionSummary}>{label}</summary><div className={dashboardStyles.navSectionItems}>{["View", "Create", "Saved"].map((action) => <Link key={action} href="/dashboard-shell" className={dashboardStyles.navLink}>{action} {label}</Link>)}</div></details>)}
+        </nav>
+      </aside>}
+      account={<div className={dashboardStyles.topbarActions}><div className={dashboardStyles.profilePill}><span className={dashboardStyles.profileAvatar}>T</span><div className={dashboardStyles.profileText}><span className={dashboardStyles.profileEmail}>localist@example.com</span><span className={dashboardStyles.profileRole}>{admin ? "ADMIN" : "USER"}</span></div></div><button type="button" className={dashboardStyles.logoutButton}>Log out</button></div>}
+    ><h1>{admin ? "Admin Overview" : "Your local hub"}</h1><p>Your dashboard content starts here.</p><button type="button">Page action</button></DashboardFrame>;
+  }
   if (path === "/event-form" || path === "/event-form-edit") return <main style={{ maxWidth: 850, margin: "auto", padding: 24 }}><CreateEventForm
     businesses={[{ id: "fixture-business", name: "Town Hall" }]} hasMembership={!params.has("oneTime")} oneTimePostingEnabled eventPostPrice="$10"
     mode={path.endsWith("edit") ? "edit" : "create"}
     initialEvent={{ title: "Weekly Open Mic", description: "Join your neighbors for live music every Thursday night.", category: "Live Music", address: "123 Main Street", city: "Austin", zipCode: "78701", businessId: "fixture-business", startDate: "2030-01-10T19:00", endDate: "2030-01-10T22:00", timezone: "America/Chicago", ...(path.endsWith("edit") ? { id: "fixture-event", postingMethod: params.has("oneTime") ? "ONE_TIME" : "SUBSCRIPTION", recurrence: params.has("oneTime") ? "NONE" : "WEEKLY", recurrenceUntil: "2030-02-07" } : {}) }}
   /></main>;
-  if (path === "/results") return <ResultsExperience availableCities={cities} availableCategories={[]} initialFavoriteBusinesses={favorites.map((item) => ({ ...item, savedAt: item.createdAt, slug: item.businessSlug, city: { name: item.cityName }, activeJobCount: 1 }))} user={{ id: "fixture" }} />;
-  if (path === "/events/results") return <EventsResults events={calendarEvents} cities={cities.map((city) => `${city}, TX`)} categories={["Community"]} initialFilters={{ query: params.get("q"), location: params.get("loc"), category: params.get("category"), date: params.get("date"), sort: params.get("sort") }} />;
+  if (path === "/results") return <ResultsExperience availableCities={cities} availableCategories={[{ id: "shops", name: "Shops", slug: "shops" }]} initialFavoriteBusinesses={favorites.map((item) => ({ ...item, savedAt: item.createdAt, slug: item.businessSlug, city: { name: item.cityName }, activeJobCount: 1 }))} user={{ id: "fixture" }} dashboardPath="/dashboard" />;
+  if (path === "/events") return <EventsLanding events={calendarEvents} cities={cities.map((city) => `${city}, TX`)} categories={["Community", "Live Music", "Markets"]} isLoggedIn dashboardPath="/dashboard" />;
+  if (path === "/events/results") return <EventsResults events={resultEvents} allEvents={resultEvents} cities={cities.map((city) => `${city}, TX`)} categories={["Community"]} isLoggedIn dashboardPath="/dashboard" />;
   if (path === "/saved") return <main style={{ padding: 20 }}><FavoritesDashboard favorites={favorites} /></main>;
   if (path === "/city") return <main style={{ maxWidth: 720, padding: 24, margin: "auto" }}><h1>Add a Texas city</h1><CityCreateForm /></main>;
   if (path === "/new-business") return <main style={{ maxWidth: 900, padding: 20, margin: "auto" }}><CreateBusinessForm cities={cities.map((name) => ({ id: name, name }))} categories={[]} tags={[]} /></main>;

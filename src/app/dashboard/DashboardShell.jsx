@@ -11,6 +11,7 @@ import {
 } from "@/lib/pricing";
 
 import styles from "./DashboardShell.module.css";
+import DashboardFrame from "./DashboardFrame";
 
 /**
  * Dashboard wrapper layout with a Figma-inspired sidebar shell.
@@ -114,9 +115,7 @@ export async function DashboardLayout({ children, activeTab = "overview" }) {
   const userInitial = user?.email?.trim()?.charAt(0)?.toUpperCase() || "T";
   const userLabel = user?.email || "User account";
 
-  return (
-    <div className={styles.dashboardWrapper}>
-      <div className={styles.dashboardContainer}>
+  const navigation = (
         <aside className={styles.sidebar}>
           <div className={styles.sidebarHeader}>
             <Link href="/" className={styles.brandLink}>
@@ -137,7 +136,18 @@ export async function DashboardLayout({ children, activeTab = "overview" }) {
             </Link>
           </div>
 
+          {user?.role === "ADMIN" ? (
+            <Link href="/admin" className={styles.sidebarCta}>
+              <span className="material-icons" aria-hidden="true">admin_panel_settings</span>
+              Admin Dashboard
+            </Link>
+          ) : null}
+
           <nav className={styles.sidebarNav}>
+            <Link href="/dashboard" className={`${styles.navLink} ${activeTab === "overview" ? styles.navLinkActive : ""}`} aria-current={activeTab === "overview" ? "page" : undefined}>
+              <span className={`material-icons ${styles.navLinkIcon}`} aria-hidden="true">dashboard</span>
+              <span>Overview</span>
+            </Link>
             {navSections.map((section) => (
               <details
                 key={section.title}
@@ -162,6 +172,7 @@ export async function DashboardLayout({ children, activeTab = "overview" }) {
                     <Link
                       key={item.id}
                       href={item.href}
+                      aria-current={activeTab === item.id ? "page" : undefined}
                       className={`${styles.navLink} ${activeTab === item.id ? styles.navLinkActive : ""}`}
                     >
                       <span className={`material-icons ${styles.navLinkIcon}`} aria-hidden="true">
@@ -188,20 +199,9 @@ export async function DashboardLayout({ children, activeTab = "overview" }) {
             </div>
           </div>
         </aside>
-
-        <section className={styles.mainPane}>
-          <header className={styles.topbar}>
-            <div>
-              <p className={styles.topbarTitle}>{sectionTitles[activeTab] || "Dashboard"}</p>
-            </div>
-
+  );
+  const account = (
             <div className={styles.topbarActions}>
-              <button type="button" className={styles.notificationButton} aria-label="Notifications">
-                <span className="material-icons" aria-hidden="true">
-                  notifications_none
-                </span>
-              </button>
-
               <div className={styles.profilePill}>
                 <div className={styles.profileAvatar}>{userInitial}</div>
                 <div className={styles.profileText}>
@@ -219,11 +219,11 @@ export async function DashboardLayout({ children, activeTab = "overview" }) {
                 </button>
               </form>
             </div>
-          </header>
+  );
 
-          <main className={styles.mainContent}>{children}</main>
-        </section>
-      </div>
-    </div>
+  return (
+    <DashboardFrame title={sectionTitles[activeTab] || "Dashboard"} navigation={navigation} account={account}>
+      {children}
+    </DashboardFrame>
   );
 }

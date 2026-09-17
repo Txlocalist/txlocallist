@@ -2,18 +2,29 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import DirectoryImage from "@/components/DirectoryImage";
+import EventSearchBar from "@/components/EventSearchBar/EventSearchBar";
 import { LikeCount } from "@/components/LikeCount";
+import NavbarMobileMenu from "@/components/Navbar/NavbarMobileMenu";
 
 import "./events-results.css";
 import ResultsSort from "@/components/ResultsSort/ResultsSort";
+import toolbarStyles from "@/components/ResultsSort/MobileResultsToolbar.module.css";
 import { normalizeSort, sortResults } from "@/lib/results-sort";
 import { formatEventDateRange } from "@/lib/event-dates";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MOBILE_PAGE_SIZE = 12;
+function subscribeMobileViewport(callback) {
+  const query = window.matchMedia("(max-width: 768px)");
+  query.addEventListener("change", callback);
+  return () => query.removeEventListener("change", callback);
+}
+const getMobileViewport = () => window.matchMedia("(max-width: 768px)").matches;
+const getServerViewport = () => false;
 const MONTHS = [
   "January",
   "February",
@@ -33,6 +44,13 @@ const DATE_FILTERS = [
   { value: "this-weekend", label: "This Weekend" },
   { value: "next-7-days", label: "Next 7 Days" },
   { value: "", label: "All Dates" },
+];
+const PRIMARY_NAV_LINKS = [
+  { href: "/", label: "Home" },
+  { href: "/results", label: "Businesses" },
+  { href: "/events", label: "Events" },
+  { href: "/about", label: "About" },
+  { href: "/post-your-business", label: "Add Listing" },
 ];
 const CATEGORY_COLORS = [
   "#37b3b1",
@@ -242,37 +260,40 @@ export default function EventsResults({
   allEvents = events,
   cities = [],
   categories = [],
-  initialFilters = {},
   isLoggedIn = false,
+  dashboardPath = "/dashboard",
 }) {
   const router = useRouter();
-  const urlParams = useSearchParams();
-  const leftColumnRef = useRef(null);
+  const searchParams = useSearchParams();
+  const isMobile = useSyncExternalStore(subscribeMobileViewport, getMobileViewport, getServerViewport);
 
   const [view, setView] = useState("cards");
-  const sort = normalizeSort(urlParams.get("sort"), "upcoming", ["upcoming"]);
-  const [query, setQuery] = useState(initialFilters.query || "");
-  const [cityInput, setCityInput] = useState(initialFilters.location || "");
-  const [city, setCity] = useState(initialFilters.location || "");
-  const [dateFilter, setDateFilter] = useState(initialFilters.date || "");
-  const [categoryFilter, setCategoryFilter] = useState(initialFilters.category || "");
-  const [savedIds, setSavedIds] = useState(() => new Set());
-  const [accordions, setAccordions] = useState({ citiesNav: true, catsNav: false });
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Native history updates and Back/Forward must restore both controls and results.
+  // Keep committed filters in the URL; search-field drafts live in EventSearchBar.
+  const sort = normalizeSort(searchParams.get("sort"), "upcoming", ["upcoming"]);
+  const query = searchParams.get("q") || "";
+  const city = searchParams.get("loc") || "";
+  const dateFilter = searchParams.get("date") || "";
+  const categoryFilter = searchParams.get("category") || "";
+  const savedOnly = searchParams.get("saved") === "1";
+  const [savedIds, setSavedIds] = useState(
+    () => new Set(allEvents.filter((event) => event.isSaved).map((event) => event.id))
+  );
+  const [savingIds, setSavingIds] = useState(() => new Set());
+  const [accordions, setAccordions] = useState({ citiesNav: false, catsNav: false });
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [monthModalOpen, setMonthModalOpen] = useState(false);
+  const [dayModalDate, setDayModalDate] = useState("");
 
-  useEffect(() => {
-    setQuery(urlParams.get("q") || "");
-    setCityInput(urlParams.get("loc") || "");
-    setCity(urlParams.get("loc") || "");
-    setDateFilter(urlParams.get("date") || "");
-    setCategoryFilter(urlParams.get("category") || "");
-  }, [urlParams]);
-
-  const filtered = useMemo(
+  const matchingEvents = useMemo(
     () => filterEvents(allEvents, { query, city, category: categoryFilter, date: dateFilter }),
     [allEvents, query, city, categoryFilter, dateFilter]
+  );
+  const filtered = useMemo(
+    () => savedOnly
+      ? matchingEvents.filter((event) => savedIds.has(event.id))
+      : matchingEvents,
+    [matchingEvents, savedIds, savedOnly]
   );
 
   const firstVisibleDate = firstSelectableEventDate(filtered, dateFilter);
@@ -285,9 +306,9 @@ export default function EventsResults({
   useEffect(() => {
     function onKey(event) {
       if (event.key === "Escape") {
-        setSidebarOpen(false);
         setDrawerOpen(false);
         setMonthModalOpen(false);
+        setDayModalDate("");
       }
     }
     window.addEventListener("keydown", onKey);
@@ -298,6 +319,12 @@ export default function EventsResults({
     () => sortResults(selectedDate ? filtered.filter((event) => eventOccursOn(event, selectedDate)) : filtered, sort, { extras: ["upcoming"] }),
     [filtered, selectedDate, sort]
   );
+
+  const pageCount = Math.max(1, Math.ceil(visible.length / MOBILE_PAGE_SIZE));
+  const currentPage = Math.min(pageCount, Math.max(1, parseInt(searchParams.get("page"), 10) || 1));
+  const pageEvents = useMemo(() => isMobile
+    ? visible.slice((currentPage - 1) * MOBILE_PAGE_SIZE, currentPage * MOBILE_PAGE_SIZE)
+    : visible, [visible, currentPage, isMobile]);
 
   const calendarCounts = useMemo(() => {
     const counts = {};
@@ -368,29 +395,33 @@ export default function EventsResults({
   }, [agendaForSelected, selectedDate]);
 
   const listGroups = useMemo(() => {
-    if (sort !== "upcoming") return visible.length ? [["sorted", visible]] : [];
+    if (sort !== "upcoming") return pageEvents.length ? [["sorted", pageEvents]] : [];
     const grouped = {};
-    visible.forEach((event) => {
+    pageEvents.forEach((event) => {
       const key = selectedDate || event.dateKey || "undated";
       (grouped[key] ||= []).push(event);
     });
     return Object.entries(grouped);
-  }, [visible, selectedDate, sort]);
+  }, [pageEvents, selectedDate, sort]);
 
   const selectedDateObj = dateObj(selectedDate);
   const monthTitle = `${MONTHS[month.getMonth()]} ${month.getFullYear()}`;
 
   function updateUrl(next = {}) {
     const params = new URLSearchParams();
-    params.set("sort", next.sort ?? sort);
+    const nextSort = next.sort ?? sort;
     const nextQuery = next.query ?? query;
     const nextCity = next.city ?? city;
     const nextDate = next.date ?? dateFilter;
     const nextCategory = next.category ?? categoryFilter;
+    const nextSaved = next.saved ?? savedOnly;
+    if (nextSort && nextSort !== "upcoming") params.set("sort", nextSort);
     if (nextQuery) params.set("q", nextQuery);
     if (nextCity) params.set("loc", nextCity);
     if (nextDate) params.set("date", nextDate);
     if (nextCategory) params.set("category", nextCategory);
+    if (nextSaved) params.set("saved", "1");
+    if (next.page > 1) params.set("page", String(next.page));
     // All events are already loaded for the calendar; filtering is local.
     window.history.pushState(null, "", params.toString() ? `/events/results?${params.toString()}` : "/events/results");
   }
@@ -401,8 +432,6 @@ export default function EventsResults({
           key: "city",
           label: city,
           clear: () => {
-            setCity("");
-            setCityInput("");
             updateUrl({ city: "" });
           },
         }
@@ -412,7 +441,6 @@ export default function EventsResults({
           key: "date",
           label: DATE_FILTERS.find((item) => item.value === dateFilter)?.label || dateFilter,
           clear: () => {
-            setDateFilter("");
             updateUrl({ date: "" });
           },
         }
@@ -422,36 +450,41 @@ export default function EventsResults({
           key: "category",
           label: categoryFilter,
           clear: () => {
-            setCategoryFilter("");
             updateUrl({ category: "" });
+          },
+        }
+      : null,
+    savedOnly
+      ? {
+          key: "saved",
+          label: "Saved Events",
+          clear: () => {
+            updateUrl({ saved: false });
           },
         }
       : null,
   ].filter(Boolean);
 
-  function handleSearchSubmit(event) {
-    event.preventDefault();
-    setCity(cityInput.trim());
-    updateUrl({ city: cityInput.trim() });
+  function handleSearchSubmit(values) {
+    updateUrl({
+      query: values.query,
+      city: values.location,
+      date: values.date,
+      saved: false,
+    });
   }
 
   function selectCity(value) {
-    setCity(value);
-    setCityInput(value);
     updateUrl({ city: value });
-    if (window.innerWidth <= 980) setSidebarOpen(false);
   }
 
   function selectCategory(value) {
-    setCategoryFilter(value);
     updateUrl({ category: value });
-    if (window.innerWidth <= 980) setSidebarOpen(false);
   }
 
   function selectDay(key) {
     updateUrl({ date: key });
-    leftColumnRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    if (window.innerWidth <= 980) setMonthModalOpen(false);
+    setDayModalDate(key);
   }
 
   function shiftMonth(delta) {
@@ -461,33 +494,79 @@ export default function EventsResults({
   function goToday() {
     const today = dateObj(todayKey()) || new Date();
     setMonth(new Date(today.getFullYear(), today.getMonth(), 1));
-    updateUrl({ date: keyFromDate(today) });
+    selectDay(keyFromDate(today));
   }
 
-  function toggleSave(id) {
-    setSavedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
+  async function toggleSave(id) {
+    if (!isLoggedIn) {
+      router.push(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+      return;
+    }
+
+    const wasSaved = savedIds.has(id);
+    setSavingIds((current) => new Set(current).add(id));
+    setSavedIds((current) => {
+      const next = new Set(current);
+      if (wasSaved) next.delete(id);
       else next.add(id);
       return next;
     });
+
+    try {
+      const response = await fetch("/api/event-favorites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eventId: id }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Unable to update saved events.");
+      setSavedIds((current) => {
+        const next = new Set(current);
+        if (data.saved) next.add(id);
+        else next.delete(id);
+        return next;
+      });
+      router.refresh();
+    } catch {
+      setSavedIds((current) => {
+        const next = new Set(current);
+        if (wasSaved) next.add(id);
+        else next.delete(id);
+        return next;
+      });
+    } finally {
+      setSavingIds((current) => {
+        const next = new Set(current);
+        next.delete(id);
+        return next;
+      });
+    }
+  }
+
+  function openSavedEvents() {
+    if (!isLoggedIn) {
+      router.push("/login?next=/events/results?saved=1");
+      return;
+    }
+    setView("cards");
+    updateUrl({ saved: true });
   }
 
   function handleBottomNav(action) {
-    if (action === "events") setView("cards");
-    if (action === "calendar") setView("calendar");
+    if (action === "businesses") router.push("/results");
+    if (action === "calendar") setMonthModalOpen(true);
     if (action === "filters") setDrawerOpen(true);
-    if (action === "saved") setView("cards");
-    if (action === "login") router.push("/login");
+    if (action === "saved") openSavedEvents();
+    if (action === "account") router.push(isLoggedIn ? dashboardPath : "/login");
   }
 
-  function showAllEvents() {
-    updateUrl({ date: "" });
-    setView("list");
-    if (typeof window !== "undefined" && window.innerWidth <= 980) {
-      setSidebarOpen(false);
-    }
+  function clearAllFilters() {
+    setView("cards");
+    updateUrl({ query: "", city: "", date: "", category: "", saved: false });
+    setDrawerOpen(false);
   }
+
+  const dayModalEvents = dayModalDate ? calendarCounts[dayModalDate] || [] : [];
 
   function renderCalendarGrid(keyPrefix) {
     return (
@@ -592,8 +671,13 @@ export default function EventsResults({
               initialLiked={Boolean(event.isLiked)}
               isLoggedIn={isLoggedIn}
             />
-            <button className={`tiny-btn${isSaved ? " saved" : ""}`} onClick={() => toggleSave(event.id)}>
-              {isSaved ? "Saved" : "Save"}
+            <button
+              className={`tiny-btn${isSaved ? " saved" : ""}`}
+              onClick={() => toggleSave(event.id)}
+              disabled={savingIds.has(event.id)}
+              aria-pressed={isSaved}
+            >
+              {savingIds.has(event.id) ? "Saving" : isSaved ? "Saved" : "Save"}
             </button>
           </div>
         </div>
@@ -604,24 +688,30 @@ export default function EventsResults({
   return (
     <div className={`events-results view-${view}`}>
       <div className="mobile-top">
-        <button className="menu-btn" onClick={() => setSidebarOpen(true)} aria-label="Open navigation">
-          ☰
-        </button>
         <Logo mobile />
-        <button className="menu-btn" onClick={() => setDrawerOpen(true)} aria-label="Open filters">
-          ◇
-        </button>
+        <NavbarMobileMenu
+          links={PRIMARY_NAV_LINKS}
+          pillHref={isLoggedIn ? dashboardPath : "/login"}
+          pillLabel={isLoggedIn ? "Dashboard" : "Login"}
+          activeHref="/events"
+        />
       </div>
 
-      <div className={`sidebar-overlay${sidebarOpen ? " show" : ""}`} onClick={() => setSidebarOpen(false)} />
-
       <div className="app">
-        <aside className={`sidebar${sidebarOpen ? " open" : ""}`}>
+        <aside className="sidebar">
           <Logo />
 
           <div className="nav-stack">
-            <button className="nav-item active" type="button" onClick={showAllEvents}>
-              <span className="icon-bubble">□</span>
+            <Link className="nav-item" href="/">
+              <span className="icon-bubble"><span className="material-icons" aria-hidden="true">home</span></span>
+              <span className="grow">Home</span>
+            </Link>
+            <Link className="nav-item" href="/results">
+              <span className="icon-bubble"><span className="material-icons" aria-hidden="true">storefront</span></span>
+              <span className="grow">Businesses</span>
+            </Link>
+            <button className={`nav-item${!savedOnly ? " active" : ""}`} type="button" onClick={clearAllFilters}>
+              <span className="icon-bubble"><span className="material-icons" aria-hidden="true">event</span></span>
               <span className="grow">All Events</span>
             </button>
 
@@ -677,21 +767,16 @@ export default function EventsResults({
               <span className="icon-bubble">+</span>
               <span className="grow">Add Listing</span>
             </Link>
-            <Link className="login-btn" href="/login">
-              Login
+            <Link className="login-btn" href={isLoggedIn ? dashboardPath : "/login"}>
+              {isLoggedIn ? "Dashboard" : "Login"}
             </Link>
           </div>
 
           <div className="side-divider" />
 
-          <button className="browse-item" onClick={() => { setDateFilter(""); updateUrl({ date: "" }); }}>
-            <span className="browse-bubble bubble-new">NEW</span> <span>All Dates</span>
-          </button>
-          <button className="browse-item" onClick={() => { setDateFilter("next-7-days"); updateUrl({ date: "next-7-days" }); }}>
-            <span className="browse-bubble bubble-save">*</span> <span>Next 7 Days</span>
-          </button>
-          <button className="browse-item" onClick={() => setView("cards")}>
-            <span className="browse-bubble bubble-fav">♥</span> <span>Saved View</span>
+          <button className={`browse-item${savedOnly ? " active" : ""}`} onClick={openSavedEvents}>
+            <span className="browse-bubble bubble-fav"><span className="material-icons" aria-hidden="true">bookmark</span></span>
+            <span>Saved Events</span>
           </button>
 
           <div className="side-footer">
@@ -703,55 +788,24 @@ export default function EventsResults({
 
         <main className="main">
           <div className="container">
-            <form className="search-bar" onSubmit={handleSearchSubmit}>
-              <label className="field">
-                Search
-                <input
-                  type="text"
-                  placeholder="Search artists, venues, festivals or towns..."
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                />
-              </label>
-              <label className="field">
-                City
-                <input type="text" value={cityInput} onChange={(event) => setCityInput(event.target.value)} />
-              </label>
-              <label className="field">
-                Date
-                <select
-                  value={dateFilter}
-                  onChange={(event) => {
-                    setDateFilter(event.target.value);
-                    updateUrl({ date: event.target.value });
-                  }}
-                >
-                  {DATE_FILTERS.map((filter) => (
-                    <option key={filter.value || "all"} value={filter.value}>
-                      {filter.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <button className="search-btn" type="submit">
-                Search
-              </button>
-            </form>
+            <EventSearchBar
+              key={`${query}|${city}|${dateFilter}`}
+              initialQuery={query}
+              initialLocation={city}
+              initialDate={dateFilter}
+              onSearch={handleSearchSubmit}
+            />
 
             <div className="top-actions">
-              <div>
-                <div className="eyebrow">Events &amp; Live Music</div>
-                <h1 className="headline">
-                  Find what&apos;s <span className="highlight">happening.</span>
-                </h1>
-                <p className="subcopy">
-                  Browse local shows, markets, food events and nights out, then jump into a calendar
-                  that helps you see what is going on by day.
-                </p>
-              </div>
-              <div className="view-tools">
-                <ResultsSort value={sort} events onChange={(next) => updateUrl({ sort: next })} />
-                <div className="summary-pill">
+              <div className={`view-tools ${toolbarStyles.toolbar}`}>
+                <ResultsSort
+                  value={sort}
+                  events
+                  onChange={(next) => {
+                    updateUrl({ sort: next });
+                  }}
+                />
+                <div className={`summary-pill ${toolbarStyles.desktopOnly}`}>
                   <span>{visible.length}</span> events
                   {selectedDateObj ? (
                     <>
@@ -764,20 +818,34 @@ export default function EventsResults({
                     </>
                   ) : null}
                 </div>
-                <div className="view-switch">
+                <button className={`mobile-filter-btn ${toolbarStyles.filterButton}`} onClick={() => setDrawerOpen(true)} type="button" aria-haspopup="dialog" aria-expanded={drawerOpen}>
+                  Filters
+                </button>
+                <div className={`view-switch ${toolbarStyles.viewSwitch}`} role="group" aria-label="View mode">
                   {[
-                    { value: "cards", label: "Cards" },
-                    { value: "list", label: "List" },
-                    { value: "calendar", label: "Calendar" },
+                    { value: "cards", label: "Cards", icon: "grid_view" },
+                    { value: "list", label: "List", icon: "view_list" },
+                    { value: "calendar", label: "Calendar", icon: "calendar_month" },
                   ].map((item) => (
-                    <button key={item.value} type="button" className={view === item.value ? "active" : ""} onClick={() => setView(item.value)}>
-                      {item.label}
+                    <button
+                      key={item.value}
+                      type="button"
+                      aria-label={item.label}
+                      aria-pressed={view === item.value}
+                      className={view === item.value ? "active" : ""}
+                      onClick={() => {
+                        if (item.value === "calendar" && window.innerWidth <= 980) {
+                          setMonthModalOpen(true);
+                        } else {
+                          setView(item.value);
+                        }
+                      }}
+                    >
+                      <span className={toolbarStyles.viewLabel}>{item.label}</span>
+                      <span className={`material-icons ${toolbarStyles.viewIcon}`} aria-hidden="true">{item.icon}</span>
                     </button>
                   ))}
                 </div>
-                <button className="mobile-filter-btn" onClick={() => setDrawerOpen(true)} type="button">
-                  Filters
-                </button>
               </div>
             </div>
 
@@ -793,10 +861,10 @@ export default function EventsResults({
             </div>
 
             <section className="dashboard">
-              <div className="left-column" ref={leftColumnRef}>
+              <div className="left-column">
                 <div className="cards-grid">
                   {visible.length ? (
-                    visible.map(renderEventCard)
+                    pageEvents.map(renderEventCard)
                   ) : (
                     <div className="empty">
                       <h3>No events found.</h3>
@@ -831,6 +899,11 @@ export default function EventsResults({
                     </div>
                   )}
                 </div>
+                <nav className={toolbarStyles.mobilePagination} aria-label="Results pages">
+                  <button type="button" disabled={currentPage <= 1} onClick={() => updateUrl({ page: currentPage - 1 })}>Previous</button>
+                  <span aria-live="polite">Page {currentPage} of {pageCount}</span>
+                  <button type="button" disabled={currentPage >= pageCount} onClick={() => updateUrl({ page: currentPage + 1 })}>Next</button>
+                </nav>
               </div>
 
               <aside className="planner">
@@ -865,7 +938,6 @@ export default function EventsResults({
                           className={`legend-chip${isActive ? " active" : ""}`}
                           onClick={() => {
                             const next = isActive ? "" : category;
-                            setCategoryFilter(next);
                             updateUrl({ category: next });
                           }}
                         >
@@ -929,33 +1001,80 @@ export default function EventsResults({
       <div className={`drawer${drawerOpen ? " open" : ""}`} onClick={(event) => event.target === event.currentTarget && setDrawerOpen(false)}>
         <div className="drawer-sheet">
           <div className="drawer-head">
-            <h4>Browse Filters</h4>
+            <div>
+              <h4>Browse Filters</h4>
+              <p>Choose a date or category, or reset the full event list.</p>
+            </div>
             <button className="drawer-close" onClick={() => setDrawerOpen(false)} type="button">
               ×
             </button>
           </div>
-          <div className="nav-stack">
-            {DATE_FILTERS.filter((filter) => filter.value).map((filter) => (
+          <button className="all-events-filter" type="button" onClick={clearAllFilters}>
+            <span className="material-icons" aria-hidden="true">event_available</span>
+            <span><strong>All Events</strong><small>Clear every filter</small></span>
+          </button>
+          <div className="filter-section">
+            <h5>Date</h5>
+            <div className="filter-options">
+              {DATE_FILTERS.map((filter) => (
+                <button
+                  key={filter.value || "all"}
+                  className={dateFilter === filter.value ? "filter-option active" : "filter-option"}
+                  type="button"
+                  onClick={() => {
+                    updateUrl({ date: filter.value });
+                  }}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="filter-section">
+            <h5>City</h5>
+            <div className="filter-options">
               <button
-                key={filter.value}
-                className="nav-item"
+                className={!city ? "filter-option active" : "filter-option"}
+                type="button"
+                onClick={() => selectCity("")}
+              >
+                All Cities
+              </button>
+              {cities.map((value) => (
+                <button
+                  key={value}
+                  className={city === value ? "filter-option active" : "filter-option"}
+                  type="button"
+                  onClick={() => selectCity(value)}
+                >
+                  {value.replace(", TX", "")}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="filter-section">
+            <h5>Category</h5>
+            <div className="filter-options">
+              <button
+                className={!categoryFilter ? "filter-option active" : "filter-option"}
                 type="button"
                 onClick={() => {
-                  setDateFilter(filter.value);
-                  updateUrl({ date: filter.value });
-                  setDrawerOpen(false);
+                  updateUrl({ category: "" });
                 }}
               >
-                <span className="icon-bubble">*</span>
-                <span className="grow">{filter.label}</span>
+                All Categories
               </button>
-            ))}
-            {categories.map((category) => (
-              <button key={category} className="nav-item" type="button" onClick={() => { selectCategory(category); setDrawerOpen(false); }}>
-                <span className="icon-bubble">◇</span>
-                <span className="grow">{category}</span>
-              </button>
-            ))}
+              {categories.map((category) => (
+                <button
+                  key={category}
+                  className={categoryFilter === category ? "filter-option active" : "filter-option"}
+                  type="button"
+                  onClick={() => selectCategory(category)}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -963,7 +1082,15 @@ export default function EventsResults({
       <div className={`month-modal${monthModalOpen ? " open" : ""}`} onClick={(event) => event.target === event.currentTarget && setMonthModalOpen(false)}>
         <div className="month-sheet">
           <div className="drawer-head">
-            <h4>{monthTitle}</h4>
+            <div className="modal-month-controls">
+              <button type="button" onClick={() => shiftMonth(-1)} aria-label="Previous month">
+                <span className="material-icons" aria-hidden="true">chevron_left</span>
+              </button>
+              <h4>{monthTitle}</h4>
+              <button type="button" onClick={() => shiftMonth(1)} aria-label="Next month">
+                <span className="material-icons" aria-hidden="true">chevron_right</span>
+              </button>
+            </div>
             <button className="drawer-close" onClick={() => setMonthModalOpen(false)} type="button">
               ×
             </button>
@@ -978,7 +1105,6 @@ export default function EventsResults({
                   className={`legend-chip${isActive ? " active" : ""}`}
                   onClick={() => {
                     const next = isActive ? "" : category;
-                    setCategoryFilter(next);
                     updateUrl({ category: next });
                   }}
                 >
@@ -992,16 +1118,59 @@ export default function EventsResults({
         </div>
       </div>
 
+      <div
+        className={`day-events-modal${dayModalDate ? " open" : ""}`}
+        onClick={(event) => event.target === event.currentTarget && setDayModalDate("")}
+      >
+        <section className="day-events-sheet" role="dialog" aria-modal="true" aria-label={`Events on ${fmtLong(dayModalDate)}`}>
+          <div className="drawer-head">
+            <div>
+              <h4>{fmtLong(dayModalDate)}</h4>
+              <p>{dayModalEvents.length} event{dayModalEvents.length === 1 ? "" : "s"}</p>
+            </div>
+            <button className="drawer-close" onClick={() => setDayModalDate("")} type="button" aria-label="Close day events">
+              ×
+            </button>
+          </div>
+          <div className="day-events-list">
+            {dayModalEvents.length ? dayModalEvents.map((event) => (
+              <Link
+                key={event.id}
+                className="day-event-link"
+                href={`/events/${event.id}${event.recurrenceLabel ? `?date=${dayModalDate}` : ""}`}
+              >
+                <span className="day-event-time">{eventTimeLabelOn(event, dayModalDate)}</span>
+                <span className="day-event-copy">
+                  <strong>{event.title}</strong>
+                  <small>{event.venue} &middot; {event.cityLabel}</small>
+                </span>
+                <span className="material-icons" aria-hidden="true">arrow_forward</span>
+              </Link>
+            )) : (
+              <div className="empty">
+                <h3>No events on this day.</h3>
+                <p>Choose another date to keep browsing.</p>
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
+
       <nav className="bottom-nav" aria-label="Mobile event navigation">
         {[
-          { action: "events", icon: "□", label: "Events" },
-          { action: "calendar", icon: "▦", label: "Calendar" },
-          { action: "filters", icon: "◇", label: "Filters" },
-          { action: "saved", icon: "♥", label: "Saved" },
-          { action: "login", icon: "→", label: "Login" },
+          { action: "businesses", icon: "storefront", label: "Business" },
+          { action: "calendar", icon: "calendar_month", label: "Calendar" },
+          { action: "filters", icon: "tune", label: "Filters" },
+          { action: "saved", icon: "bookmark", label: "Saved" },
+          { action: "account", icon: isLoggedIn ? "dashboard" : "login", label: isLoggedIn ? "Dashboard" : "Login" },
         ].map(({ action, icon, label }) => (
-          <button key={action} onClick={() => handleBottomNav(action)} type="button">
-            <span className="ico">{icon}</span>
+          <button
+            key={action}
+            className={action === "saved" && savedOnly ? "active" : ""}
+            onClick={() => handleBottomNav(action)}
+            type="button"
+          >
+            <span className="material-icons ico" aria-hidden="true">{icon}</span>
             <span>{label}</span>
           </button>
         ))}

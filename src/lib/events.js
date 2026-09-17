@@ -3,7 +3,10 @@ import { getPublicEventAccessWhere } from "@/lib/listing-visibility";
 import { prisma } from "@/lib/prisma";
 import { getEventOccurrences, getRecurrenceLabel, isRecurringEvent } from "@/lib/event-recurrence";
 import { fromZonedTime } from "date-fns-tz";
-import { isUnavailablePrismaRelationError } from "@/lib/prisma-errors";
+import {
+  isMissingPrismaTableError,
+  isUnavailablePrismaRelationError,
+} from "@/lib/prisma-errors";
 import {
   fromEventCategoryTagName,
   isEventCategoryTagName,
@@ -208,8 +211,8 @@ function normalizeEvent(event, now = new Date()) {
 }
 
 export async function getPublishedEvents(userId = null) {
-  const findEvents = (includeLikes) => prisma.event.findMany({
-    where: getPublicEventWhere(),
+  const findEvents = ({ includeLikes, includeRecurrence, includeSoftDeletion }) => prisma.event.findMany({
+    where: getPublicEventWhere(new Date(), { includeRecurrence, includeSoftDeletion }),
     orderBy: [{ startDate: "asc" }, { createdAt: "desc" }],
     select: {
       id: true,
@@ -225,8 +228,9 @@ export async function getPublishedEvents(userId = null) {
       startDate: true,
       endDate: true,
       timezone: true,
-      recurrence: true,
-      recurrenceUntil: true,
+      ...(includeRecurrence
+        ? { recurrence: true, recurrenceUntil: true }
+        : {}),
       tags: { select: { name: true, slug: true } },
       business: {
         select: {
@@ -245,18 +249,90 @@ export async function getPublishedEvents(userId = null) {
     },
   });
 
-  let events;
-  try {
-    events = await findEvents(true);
-  } catch (error) {
-    if (!isUnavailablePrismaRelationError(error, "likes")) {
-      throw error;
+  const profiles = [
+    { includeLikes: true, includeRecurrence: true, includeSoftDeletion: true },
+    { includeLikes: false, includeRecurrence: true, includeSoftDeletion: true },
+    { includeLikes: false, includeRecurrence: false, includeSoftDeletion: true },
+    { includeLikes: false, includeRecurrence: false, includeSoftDeletion: false },
+  ];
+
+  let events = null;
+  for (const [index, profile] of profiles.entries()) {
+    try {
+      events = await findEvents(profile);
+      break;
+    } catch (error) {
+      const missingOptionalLikes =
+        profile.includeLikes && isUnavailablePrismaRelationError(error, "likes");
+      const staleEventSchema =
+        isMissingPrismaTableError(error) ||
+        ["recurrence", "recurrenceUntil", "deletedAt"].some((field) =>
+          isUnavailablePrismaRelationError(error, field)
+        );
+
+      if ((!missingOptionalLikes && !staleEventSchema) || index === profiles.length - 1) {
+        throw error;
+      }
     }
-    events = await findEvents(false);
   }
 
-  return events.map((event) => normalizeEvent(event)).filter(Boolean)
+  const savedEventIds = new Set();
+  if (userId && prisma.eventFavorite) {
+    try {
+      const favorites = await prisma.eventFavorite.findMany({
+        where: { userId },
+        select: { eventId: true },
+      });
+      favorites.forEach(({ eventId }) => savedEventIds.add(eventId));
+    } catch (error) {
+      if (!isUnavailablePrismaRelationError(error, "eventFavorite")) {
+        throw error;
+      }
+    }
+  }
+
+  return events
+    .map((event) => {
+      const normalized = normalizeEvent(event);
+      return normalized
+        ? { ...normalized, isSaved: savedEventIds.has(normalized.id) }
+        : null;
+    })
+    .filter(Boolean)
     .sort((a, b) => new Date(a.startDate) - new Date(b.startDate) || a.id.localeCompare(b.id));
+}
+
+export async function getPublishedEventCityNames() {
+  const findCities = ({ includeRecurrence, includeSoftDeletion }) => prisma.event.findMany({
+    where: getPublicEventWhere(new Date(), { includeRecurrence, includeSoftDeletion }),
+    distinct: ["city"],
+    select: { city: true },
+  });
+
+  const profiles = [
+    { includeRecurrence: true, includeSoftDeletion: true },
+    { includeRecurrence: false, includeSoftDeletion: true },
+    { includeRecurrence: false, includeSoftDeletion: false },
+  ];
+
+  for (const [index, profile] of profiles.entries()) {
+    try {
+      const events = await findCities(profile);
+      return unique(events.map((event) => event.city)).sort((a, b) => a.localeCompare(b));
+    } catch (error) {
+      const staleEventSchema =
+        isMissingPrismaTableError(error) ||
+        ["recurrence", "recurrenceUntil", "deletedAt"].some((field) =>
+          isUnavailablePrismaRelationError(error, field)
+        );
+
+      if (!staleEventSchema || index === profiles.length - 1) {
+        throw error;
+      }
+    }
+  }
+
+  return [];
 }
 
 export function getEventCities(events) {
@@ -363,33 +439,62 @@ export async function getEventsPageData(filters = {}, { userId = null } = {}) {
 }
 
 export async function getEventById(id, occurrenceDate = null) {
-  const event = await prisma.event.findFirst({
-    where: { id, ...getPublicEventAccessWhere() },
-    select: {
-      id: true,
-      title: true,
-      createdAt: true,
-      description: true,
-      imageUrl: true,
-      eventUrl: true,
-      addressName: true,
-      address: true,
-      city: true,
-      state: true,
-      startDate: true,
-      endDate: true,
-      timezone: true,
-      recurrence: true,
-      recurrenceUntil: true,
-      tags: { select: { name: true, slug: true } },
-      business: {
-        select: {
-          name: true,
-          slug: true,
+  const findEvent = ({ includeRecurrence, includeSoftDeletion }) =>
+    prisma.event.findFirst({
+      where: {
+        id,
+        ...getPublicEventAccessWhere({ includeRecurrence, includeSoftDeletion }),
+      },
+      select: {
+        id: true,
+        title: true,
+        createdAt: true,
+        description: true,
+        imageUrl: true,
+        eventUrl: true,
+        addressName: true,
+        address: true,
+        city: true,
+        state: true,
+        startDate: true,
+        endDate: true,
+        timezone: true,
+        ...(includeRecurrence
+          ? { recurrence: true, recurrenceUntil: true }
+          : {}),
+        tags: { select: { name: true, slug: true } },
+        business: {
+          select: {
+            name: true,
+            slug: true,
+          },
         },
       },
-    },
-  });
+    });
+
+  const profiles = [
+    { includeRecurrence: true, includeSoftDeletion: true },
+    { includeRecurrence: false, includeSoftDeletion: true },
+    { includeRecurrence: false, includeSoftDeletion: false },
+  ];
+  let event = null;
+
+  for (const [index, profile] of profiles.entries()) {
+    try {
+      event = await findEvent(profile);
+      break;
+    } catch (error) {
+      const staleEventSchema =
+        isMissingPrismaTableError(error) ||
+        ["recurrence", "recurrenceUntil", "deletedAt"].some((field) =>
+          isUnavailablePrismaRelationError(error, field)
+        );
+
+      if (!staleEventSchema || index === profiles.length - 1) {
+        throw error;
+      }
+    }
+  }
 
   if (!event) return null;
   if (occurrenceDate && isRecurringEvent(event)) {

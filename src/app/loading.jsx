@@ -1,11 +1,12 @@
-import ResultsCardSkeleton from "./results/ResultsCardSkeleton";
+import styles from "./loading.module.css";
 
-// A shared streaming boundary lets navigation respond while server data loads.
 export default function Loading() {
   return (
-    <main style={{ minHeight: "100vh", padding: "2rem clamp(1rem, 5vw, 5rem)" }} aria-busy="true">
-      <p className="font-accent" role="status">Loading Texas Localist…</p>
-      <ResultsCardSkeleton />
+    <main className={styles.page} aria-busy="true">
+      <div className={styles.loader} role="status" aria-live="polite">
+        <span className={styles.spinner} aria-hidden="true" />
+        <span>Loading Texas Localist</span>
+      </div>
     </main>
   );
 }

@@ -197,8 +197,8 @@
   box-shadow: 7px 7px 0 var(--retro-brown);
 }
 
-.mobileMenuLink,
-.mobileMenuCta {
+.mobileMenuPanel .mobileMenuLink,
+.mobileMenuPanel .mobileMenuCta {
   display: flex;
   align-items: center;
   min-height: 48px;
@@ -212,17 +212,17 @@
   text-transform: uppercase;
 }
 
-.mobileMenuLink:hover,
-.mobileMenuLink:focus-visible {
+.mobileMenuPanel .mobileMenuLink:hover,
+.mobileMenuPanel .mobileMenuLink:focus-visible {
   background: rgba(47, 36, 29, 0.08);
 }
 
-.mobileMenuLinkActive {
+.mobileMenuPanel .mobileMenuLinkActive {
   background: rgba(167, 68, 41, 0.1);
   color: #a74429;
 }
 
-.mobileMenuCta {
+.mobileMenuPanel .mobileMenuCta {
   justify-content: center;
   margin-top: 0.4rem;
   background: linear-gradient(180deg, #ff8d24 0%, var(--retro-orange) 100%);
