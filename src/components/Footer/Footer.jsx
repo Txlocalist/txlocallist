@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
+import { FaFacebookF, FaInstagram, FaTiktok } from "react-icons/fa6";
 
-import logo from "@/app/assets/Tx-Localist-01.png";
 import styles from "./Footer.module.css";
 
 /**
@@ -9,7 +9,7 @@ import styles from "./Footer.module.css";
  *
  * Props:
  *   - links:   array of { href, label }
- *   - socials: array of { href, icon, label } (icon is a material-icons name)
+ *   - socials: array of { href, icon, label } (icon is a React component)
  */
 export default function Footer({
   links = [
@@ -20,8 +20,9 @@ export default function Footer({
     { href: "/contact", label: "CONTACT" },
   ],
   socials = [
-    { href: "#", icon: "share", label: "Share Texas Localist" },
-    { href: "#", icon: "camera_alt", label: "Instagram" },
+    { href: "https://www.facebook.com/profile.php?id=61589432485668", icon: FaFacebookF, label: "Facebook" },
+    { href: "https://www.instagram.com/Texas_Localist", icon: FaInstagram, label: "Instagram" },
+    { href: "https://www.tiktok.com/@thetexaslocalist", icon: FaTiktok, label: "TikTok" },
   ],
   compact = false,
 }) {
@@ -31,9 +32,9 @@ export default function Footer({
         <Link href="/" className={styles.footerLogo} aria-label="Texas Localist - Home">
           <Image
             alt="Texas Localist"
-            src={logo}
-            width={80}
-            height={80}
+            src="/Main-Logo.svg"
+            width={220}
+            height={105}
             style={{ width: "100%", height: "100%", objectFit: "contain" }}
           />
         </Link>
@@ -47,18 +48,21 @@ export default function Footer({
         </nav>
 
         <div className={styles.footerSocial}>
-          {socials.map((social, idx) => (
-            <a
-              key={`${social.icon}-${idx}`}
-              href={social.href}
-              className={styles.socialButton}
-              aria-label={social.label}
-            >
-              <span className={`material-icons ${styles.socialIcon}`} aria-hidden="true">
-                {social.icon}
-              </span>
-            </a>
-          ))}
+          {socials.map((social) => {
+            const SocialIcon = social.icon;
+            return (
+              <a
+                key={social.label}
+                href={social.href}
+                className={styles.socialButton}
+                aria-label={social.label}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <SocialIcon className={styles.socialIcon} aria-hidden="true" />
+              </a>
+            );
+          })}
         </div>
       </div>
 

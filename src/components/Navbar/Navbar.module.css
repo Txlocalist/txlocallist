@@ -94,7 +94,6 @@
   color: #fff8df;
   padding: 15px 26px;
   border-radius: var(--radius-pill);
-  transform: rotate(-2deg);
   box-shadow: 0 5px 0 rgba(0, 0, 0, 0.48), inset 0 1px 0 rgba(255, 255, 255, 0.32);
   transition:
     transform var(--dur-sm) var(--ease-snap),
@@ -114,7 +113,7 @@
 }
 
 .navLoginButton:hover {
-  transform: rotate(0deg) scale(1.08);
+  transform: scale(1.08);
   box-shadow: 0 7px 0 rgba(0, 0, 0, 0.48), inset 0 1px 0 rgba(255, 255, 255, 0.34);
 }
 
@@ -124,7 +123,6 @@
   color: #fff;
   padding: 15px 26px;
   border-radius: var(--radius-pill);
-  transform: rotate(-2deg);
   box-shadow: 0 5px 0 var(--retro-brown), inset 0 1px 0 rgba(255, 255, 255, 0.24);
   transition:
     transform var(--dur-sm) var(--ease-snap),
@@ -144,7 +142,7 @@
 }
 
 .navDashboardButton:hover {
-  transform: rotate(0deg) scale(1.08);
+  transform: scale(1.08);
   box-shadow: 0 7px 0 var(--retro-brown), inset 0 1px 0 rgba(255, 255, 255, 0.28);
 }
 

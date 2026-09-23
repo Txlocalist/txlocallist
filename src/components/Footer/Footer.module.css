@@ -21,8 +21,8 @@
 }
 
 .footerLogo {
-  height: 4rem;
-  width: 4rem;
+  height: 8rem;
+  width: 8rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -30,8 +30,8 @@
 
 @media (min-width: 768px) {
   .footerLogo {
-    height: 5rem;
-    width: 5rem;
+    height: 10rem;
+    width: 10rem;
   }
 }
 
@@ -70,17 +70,17 @@
   align-items: center;
   justify-content: center;
   border: none;
-  cursor: pointer;
   transition: background-color var(--dur-sm) var(--ease-snap);
   text-decoration: none;
 }
 
-.socialButton:hover {
+a.socialButton:hover {
   background-color: var(--primary);
 }
 
 .socialIcon {
-  font-size: 1.25rem;
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 .footerCopyright {
@@ -103,8 +103,8 @@
 }
 
 .footerCompact .footerLogo {
-  width: 6.2rem;
-  height: 3.75rem;
+  width: 12.4rem;
+  height: 7.5rem;
 }
 
 .footerCompact .footerLinks {

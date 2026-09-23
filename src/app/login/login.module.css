@@ -28,6 +28,32 @@
   align-content: center;
 }
 
+.backToWebsite {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  width: fit-content;
+  min-height: 44px;
+  padding: 0.55rem 0.95rem;
+  border: 2px solid var(--retro-brown);
+  border-radius: 999px;
+  background: #fffdf9;
+  color: var(--retro-brown);
+  box-shadow: 3px 3px 0 var(--retro-brown);
+  font-family: var(--font-accent), sans-serif;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+}
+
+.backToWebsite:hover {
+  background: #f9e6bb;
+}
+
+.backToWebsite span {
+  font-size: 1.1rem;
+}
+
 .brandBadge {
   margin: 0;
   color: #b55214;

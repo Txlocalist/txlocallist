@@ -26,6 +26,10 @@ export default async function SignupPage({ searchParams }) {
       <section className={styles.shell}>
         <div className={styles.brandPanel}>
           <div className={styles.brandInner}>
+            <Link href="/" className={styles.backToWebsite}>
+              <span className="material-icons" aria-hidden="true">arrow_back</span>
+              Back to Website
+            </Link>
             <p className={styles.brandBadge}>
               TX Localist {isOwner ? "// List Your Business" : "// Sign Up"}
             </p>

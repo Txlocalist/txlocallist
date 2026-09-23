@@ -23,6 +23,10 @@ export default async function LoginPage({ searchParams }) {
       <section className={styles.shell}>
         <div className={styles.brandPanel}>
           <div className={styles.brandInner}>
+            <Link href="/" className={styles.backToWebsite}>
+              <span className="material-icons" aria-hidden="true">arrow_back</span>
+              Back to Website
+            </Link>
             <p className={styles.brandBadge}>TX Localist</p>
             <h1 className={styles.heroTitle}>Login</h1>
             <h2 className={styles.heroSubtitle}>Skip the noise. Get back to local.</h2>

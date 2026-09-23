@@ -37,13 +37,17 @@
     padding 420ms var(--ease-snap);
 }
 
+.homepageHero {
+  padding-top: 0.5rem;
+}
+
 @media (min-width: 768px) {
   .hero {
     padding: 6rem 1.5rem;
   }
 
   .homepageHero {
-    padding-top: 3rem;
+    padding-top: 0.5rem;
   }
 }
 
@@ -284,11 +288,15 @@
   line-height: 1.2;
   letter-spacing: -0.02em;
   text-shadow: 4px 4px 0 rgba(74, 55, 40, 0.2);
-  transform: rotate(-1deg);
   animation: hero-swap 320ms var(--ease-snap);
   transition:
     color 420ms var(--ease-snap),
     text-shadow 420ms var(--ease-snap);
+}
+
+.homepageHero .heroHeading {
+  font-family: var(--font-editorial), Georgia, serif;
+  font-size: clamp(2.25rem, 8vw, 5.625rem);
 }
 
 @media (min-width: 768px) {
@@ -300,6 +308,10 @@
 .heroPrimary {
   color: var(--primary);
   font-style: italic;
+}
+
+.homepageHero .heroPrimary {
+  font-style: normal;
 }
 
 .eventAccent {
@@ -1135,6 +1147,10 @@
     padding: 3.25rem 1.5rem 3rem;
   }
 
+  .businessMode .homepageHero {
+    padding-top: 0.5rem;
+  }
+
   .businessMode .heroBg {
     display: none;
   }
@@ -1219,11 +1235,11 @@
 @keyframes hero-swap {
   from {
     opacity: 0;
-    transform: translateY(10px) rotate(-1deg);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) rotate(-1deg);
+    transform: translateY(0);
   }
 }
 

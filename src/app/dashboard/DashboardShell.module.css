@@ -371,13 +371,12 @@
   font-weight: 900;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  transform: rotate(-2deg);
   transition: transform var(--dur-sm) var(--ease-snap), box-shadow var(--dur-sm) var(--ease-snap);
   text-decoration: none;
   flex-shrink: 0;
 }
 
-.websiteButton:hover { transform: rotate(0deg) translateY(-2px); box-shadow: 0 7px 0 var(--retro-brown); }
+.websiteButton:hover { transform: translateY(-2px); box-shadow: 0 7px 0 var(--retro-brown); }
 .headerActions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 0.8rem; }
 .mobileMenuTrigger { display: none; }
 .websiteButton :global(.material-icons) { font-size: 1.1rem; }

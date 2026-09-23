@@ -35,9 +35,8 @@ export const metadata = {
   description:
     "TX Local List with secure signup, login, and a protected admin dashboard.",
   icons: {
-    icon: "/citryn-gold.png",
-    shortcut: "/citryn-gold.png",
-    apple: "/citryn-gold.png",
+    icon: [{ url: "/favicon.webp", type: "image/webp" }],
+    shortcut: "/favicon.webp",
   },
 };
 
