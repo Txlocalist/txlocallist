@@ -9,7 +9,7 @@ import { getPublicBusinessWhere } from "@/lib/listing-visibility";
  *   - q (optional): keyword search (searched in name, description, tags)
  *   - loc (optional): city slug or name (searched in city.slug or city.name)
  *   - category (optional): category slug
- *   - jobs (optional): set to 1 to require at least one active job
+ *   - jobs (optional): set to 1 for businesses marked hiring or with active jobs
  *   - page (optional): page number (default 1)
  *   - limit (optional): results per page (default 12, maximum 15)
  *
@@ -41,6 +41,7 @@ function getBusinessSelect(userId, includeLikes = true) {
     description: true,
     phone: true,
     website: true,
+    isHiring: true,
     city: { select: { id: true, name: true, slug: true } },
     plan: { select: { slug: true, features: true } },
     photos: { take: 1, orderBy: { order: "asc" } },
@@ -109,9 +110,13 @@ export async function GET(request) {
       }
 
       if (jobsOnly) {
-        where.jobs = {
-          some: { status: "ACTIVE" },
-        };
+        // Keep this OR separate from the keyword search OR above.
+        where.AND = [{
+          OR: [
+            { isHiring: true },
+            { jobs: { some: { status: "ACTIVE" } } },
+          ],
+        }];
       }
 
       return where;
@@ -169,6 +174,7 @@ export async function GET(request) {
       likesCount: business._count?.likes ?? 0,
       isLiked: Boolean(business.likes?.length),
       activeJobCount: business._count?.jobs ?? 0,
+      isHiring: business.isHiring,
       // Tier-gated fields
       showContact: JSON.parse(business.plan?.features || "{}").SHOW_CONTACT,
       showWebsite: JSON.parse(business.plan?.features || "{}").SHOW_WEBSITE,

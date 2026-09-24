@@ -16,7 +16,7 @@ describe("route loading states", () => {
   it("uses a dark event-shaped skeleton for event routes", () => {
     const html = renderToStaticMarkup(createElement(EventsLoading));
 
-    expect(html).toContain('aria-label="Loading events"');
+    expect(html).toContain('aria-label="Loading happenings"');
     expect(html.match(/<article/g)).toHaveLength(4);
   });
 });

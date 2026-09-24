@@ -18,7 +18,7 @@ describe("SearchBar type selector", () => {
     const html = renderToStaticMarkup(createElement(SearchBar));
 
     expect(html).toContain("Local Businesses");
-    expect(html).toContain("Local Events");
+    expect(html).toContain("Local Happenings");
   });
 
   it("can hide the type selector for the results-page search bar", () => {

@@ -45,6 +45,10 @@ export async function GET(_request, { params }) {
     return new Response("Forbidden", { status: 403 });
   }
 
+  if (!application.resumeUrl?.trim()) {
+    return new Response("No resume was submitted", { status: 404 });
+  }
+
   const isPrivateBlob = isPrivateBlobUrl(application.resumeUrl);
   const access = isPrivateBlob ? "private" : "public";
   const blob = await get(application.resumeUrl, { access });

@@ -96,6 +96,28 @@ export async function sendNewLikeEmail({ to, recipientName, postTitle, postType,
   return sendEmail({ to, subject: `Someone liked ${postTitle}`, html });
 }
 
+export async function sendNewApplicationEmail({ to, businessName, applicantName, role, applicationId }) {
+  const applicationUrl = new URL("/dashboard/applications", SITE);
+  applicationUrl.searchParams.set("application", applicationId);
+  applicationUrl.hash = `application-${applicationId}`;
+  const html = emailShell({
+    title: "You received a new application",
+    siteUrl: SITE,
+    body: `
+      <h1 style="margin:0 0 12px;font-size:24px;font-weight:800;color:#2D241E;">Someone wants to join your team!</h1>
+      <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#4a3a30;"><strong>${escapeHtml(applicantName)}</strong> submitted a resume for <strong>${escapeHtml(role)}</strong> at <strong>${escapeHtml(businessName)}</strong>.</p>
+      <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#4a3a30;">Sign in to your TX Localist dashboard to review their application, view their resume, and find their contact details.</p>
+      <p style="margin:0 0 20px;text-align:center;">${btn(escapeHtml(applicationUrl.href), "View Application")}</p>
+      <p style="margin:0;font-size:13px;line-height:1.6;color:#6A4A31;">You can find all submissions in the Applications tab of your dashboard.</p>`,
+  });
+  return sendEmail({
+    to,
+    subject: `New application for ${businessName}`,
+    html,
+    text: `${applicantName} submitted a resume for ${role} at ${businessName}.\n\nSign in to review their application, resume, and contact details:\n${applicationUrl.href}\n\nYou can find all submissions in the Applications tab of your TX Localist dashboard.`,
+  });
+}
+
 /**
  * Listing published — sent when a business goes ACTIVE.
  */

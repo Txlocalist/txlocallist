@@ -151,7 +151,7 @@ test("event cards and lists sort independently of chronological calendar dates",
 
 test("event search and filters restore with Back, Forward and reload", async ({ page }) => {
   await page.goto("/events/results?sort=name-asc&q=Alpha&loc=Austin%2C+TX&category=Community&date=2030-01-11");
-  const search = page.getByRole("form", { name: "Search local events" });
+  const search = page.getByRole("form", { name: "Search local happenings" });
   await expect(page.locator(".card-title")).toHaveText(["AlphaTown Hall"]);
   await search.getByRole("searchbox").fill("Echo");
   await search.getByPlaceholder("City", { exact: true }).fill("");

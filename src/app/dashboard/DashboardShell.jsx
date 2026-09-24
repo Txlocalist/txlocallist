@@ -77,6 +77,12 @@ export async function DashboardLayout({ children, activeTab = "overview" }) {
           href: "/dashboard/businesses/saved",
           icon: "bookmark",
         },
+        ...(hasCreatorAccess ? [{
+          id: "applications",
+          label: "Applications",
+          href: "/dashboard/applications",
+          icon: "description",
+        }] : []),
       ],
     },
     {
@@ -93,7 +99,7 @@ export async function DashboardLayout({ children, activeTab = "overview" }) {
   if (activeTab?.startsWith("events-")) {
     openSections.add("Posts");
   }
-  if (activeTab?.startsWith("businesses-")) {
+  if (activeTab?.startsWith("businesses-") || activeTab === "applications") {
     openSections.add("Businesses");
   }
   if (activeTab === "billing" || activeTab === "settings") {
@@ -102,6 +108,7 @@ export async function DashboardLayout({ children, activeTab = "overview" }) {
 
   const sectionTitles = {
     overview: "Dashboard",
+    applications: "Applications",
     "events-live": "My Happenings",
     "events-create": "Post Happening",
     "events-saved": "Saved Happenings",

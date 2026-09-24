@@ -11,6 +11,7 @@ import SearchBar from "@/components/SearchBar";
 import DirectoryImage from "@/components/DirectoryImage";
 import NavbarMobileMenu from "@/components/Navbar/NavbarMobileMenu";
 import { formatEventDateRange } from "@/lib/event-dates";
+import { isBusinessHiring } from "@/lib/business-search";
 
 import {
   ArrowRightIcon,
@@ -113,10 +114,12 @@ function BusinessCard({ biz, saved, count, saving, onSave, isLoggedIn }) {
         </div>
       )}
       <div className="category-tag">{biz.city?.name ?? biz.city}</div>
-      {biz.activeJobCount > 0 && (
+      {isBusinessHiring(biz) && (
         <div className="hiring-tag">
           <span className="material-icons" aria-hidden="true">work</span>
-          {biz.activeJobCount} {biz.activeJobCount === 1 ? "job" : "jobs"}
+          {biz.activeJobCount > 0
+            ? `${biz.activeJobCount} ${biz.activeJobCount === 1 ? "job" : "jobs"}`
+            : "Hiring Now"}
         </div>
       )}
       <h4 className="gem-name">{biz.name}</h4>
@@ -190,9 +193,11 @@ function BusinessRow({ biz, saved, count, saving, onSave, isLoggedIn }) {
           {biz.categories?.[0]?.name && (
             <span className="font-accent list-item-cat">{biz.categories[0].name.toUpperCase()}</span>
           )}
-          {biz.activeJobCount > 0 && (
+          {isBusinessHiring(biz) && (
             <span className="font-accent list-item-hiring">
-              HIRING {biz.activeJobCount} {biz.activeJobCount === 1 ? "ROLE" : "ROLES"}
+              {biz.activeJobCount > 0
+                ? `HIRING ${biz.activeJobCount} ${biz.activeJobCount === 1 ? "ROLE" : "ROLES"}`
+                : "HIRING NOW"}
             </span>
           )}
         </div>
@@ -640,7 +645,7 @@ export default function ResultsExperience({
         return (!lastSearch.q || text.includes(lastSearch.q.toLowerCase())) &&
           (!location || city.includes(location) || item.city?.slug === location) &&
           (!selectedCategory || item.categories?.some((category) => category.slug === selectedCategory)) &&
-          (!jobsOnly || item.activeJobCount > 0);
+          (!jobsOnly || isBusinessHiring(item));
       }), activeSort, { date: (item) => item.savedAt });
 
   const activeFilterChips = [];

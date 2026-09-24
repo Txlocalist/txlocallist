@@ -15,7 +15,11 @@ export default async function ApplicationsPage({ searchParams }) {
   const session = await getCurrentSession();
 
   if (!session || !session.user) {
-    redirect("/login");
+    const applicationId = typeof params?.application === "string" ? params.application : "";
+    const nextPath = applicationId
+      ? `/dashboard/applications?application=${encodeURIComponent(applicationId)}#application-${encodeURIComponent(applicationId)}`
+      : "/dashboard/applications";
+    redirect(`/login?next=${encodeURIComponent(nextPath)}`);
   }
 
   const user = session.user;
@@ -108,13 +112,13 @@ export default async function ApplicationsPage({ searchParams }) {
                 Submitted
               </div>
               <div className={styles.tableCol} style={{ flex: 1.2 }}>
-                Application
+                Resume
               </div>
             </div>
 
             <div className={styles.tableBody}>
               {sortResults(applications, params?.sort, { name: (item) => `${item.firstName} ${item.lastName}` }).map((application) => (
-                <div key={application.id} className={styles.tableRow}>
+                <div key={application.id} id={`application-${application.id}`} className={styles.tableRow}>
                   <div className={styles.tableCol} style={{ flex: 2 }}>
                     <div>
                       <p className={styles.businessName}>
@@ -146,59 +150,25 @@ export default async function ApplicationsPage({ searchParams }) {
                   </div>
 
                   <div className={styles.tableCol} style={{ flex: 1.2 }}>
-                    <details className={styles.applicationDetails}>
-                      <summary className={styles.applicationSummary}>
-                        View Application
-                      </summary>
-                      <div className={styles.applicationPanel}>
-                        <p className={styles.applicationPanelRow}>
-                          <span className={styles.applicationPanelLabel}>First Name:</span>{" "}
-                          {application.firstName}
-                        </p>
-                        <p className={styles.applicationPanelRow}>
-                          <span className={styles.applicationPanelLabel}>Last Name:</span>{" "}
-                          {application.lastName}
-                        </p>
-                        <p className={styles.applicationPanelRow}>
-                          <span className={styles.applicationPanelLabel}>Email:</span>{" "}
-                          {application.email}
-                        </p>
-                        <p className={styles.applicationPanelRow}>
-                          <span className={styles.applicationPanelLabel}>Role:</span>{" "}
-                          {application.role}
-                        </p>
-                        <p className={styles.applicationPanelRow}>
-                          <span className={styles.applicationPanelLabel}>Listing:</span>{" "}
-                          {application.business.name}
-                        </p>
-                        <p className={styles.applicationPanelRow}>
-                          <span className={styles.applicationPanelLabel}>Submitted:</span>{" "}
-                          {new Intl.DateTimeFormat("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          }).format(new Date(application.createdAt))}
-                        </p>
-
-                        <div className={styles.applicationPanelActions}>
-                          <a
-                            href={`/api/dashboard/applications/${application.id}/resume`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={styles.actionButton}
-                          >
-                            View Resume
-                          </a>
-                          <Link
-                            href={`/business/${application.business.slug}`}
-                            target="_blank"
-                            className={styles.actionButtonSecondary}
-                          >
-                            View Listing
-                          </Link>
-                        </div>
-                      </div>
-                    </details>
+                    {application.resumeUrl?.trim() ? (
+                      <a
+                        href={`/api/dashboard/applications/${application.id}/resume`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={styles.actionButton}
+                      >
+                        View Resume
+                      </a>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled
+                        title="No resume was submitted"
+                        className={styles.actionButton}
+                      >
+                        View Resume
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

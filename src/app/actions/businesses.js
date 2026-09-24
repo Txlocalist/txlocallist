@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { requireUser } from "@/lib/auth/session";
 import { getAccountAccess } from "@/lib/account-access";
+import { sendNewApplicationEmail } from "@/lib/email";
 import { normalizeBusinessHoursInput } from "@/lib/business-hours";
 import { isEventCategoryTagName } from "@/lib/event-categories.mjs";
 import { getPublicBusinessWhere } from "@/lib/listing-visibility";
@@ -849,6 +850,8 @@ export async function submitBusinessApplicationAction(data) {
     where: { slug, ...getPublicBusinessWhere() },
     select: {
       id: true,
+      name: true,
+      owner: { select: { email: true } },
       status: true,
       isHiring: true,
       hiringRoles: true,
@@ -867,8 +870,9 @@ export async function submitBusinessApplicationAction(data) {
     return { success: false, message: "Select a valid role before applying." };
   }
 
+  let application;
   try {
-    await prisma.businessApplication.create({
+    application = await prisma.businessApplication.create({
       data: {
         businessId: business.id,
         firstName,
@@ -882,6 +886,20 @@ export async function submitBusinessApplicationAction(data) {
   } catch (error) {
     console.error("Error submitting business application:", error);
     return { success: false, message: "Failed to submit application. Please try again." };
+  }
+
+  revalidatePath("/dashboard/applications");
+  // The application is already saved. Email failure must not invite a duplicate submission.
+  try {
+    await sendNewApplicationEmail({
+      to: business.owner.email,
+      businessName: business.name,
+      applicantName: `${firstName} ${lastName}`,
+      role,
+      applicationId: application.id,
+    });
+  } catch (error) {
+    console.error("[applications] notification failed:", error);
   }
 
   return { success: true, message: "Application submitted successfully!" };

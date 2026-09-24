@@ -31,7 +31,7 @@ test("editing loads the schedule and can turn recurrence off", async ({ page }) 
 test("one-time event purchases cannot select weekly recurrence", async ({ page }) => {
   await page.goto("/event-form-edit?oneTime=1");
   await expect(page.getByLabel("Repeat", { exact: true }).locator("option[value=WEEKLY]")).toBeDisabled();
-  await expect(page.getByText("Weekly events require membership", { exact: false })).toBeVisible();
+  await expect(page.getByText("Weekly happenings require membership", { exact: false })).toBeVisible();
 });
 
 test("calendar shows the selected weekly occurrence and links to its date", async ({ page }) => {
@@ -53,7 +53,7 @@ test("calendar dates open a scrollable day dialog", async ({ page }, info) => {
     await page.locator('.desktop-grid button[aria-label*="January 10"]').click();
   }
 
-  const dialog = page.getByRole("dialog", { name: /Events on Thu, January 10/i });
+  const dialog = page.getByRole("dialog", { name: /Happenings on Thu, January 10/i });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByText("zebra", { exact: true })).toBeVisible();
 });
@@ -77,8 +77,8 @@ test("mobile saved view persists a save and filters the event cards", async ({ p
   await expect(page.locator(".event-card")).toHaveCount(1);
   await page.goBack();
   await expect(page.locator(".event-card")).toHaveCount(6);
-  await expect(page.getByRole("button", { name: "Remove Saved Events" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Remove Saved Happenings" })).toHaveCount(0);
   await page.goForward();
   await expect(page.locator(".event-card")).toHaveCount(1);
-  await expect(page.getByRole("button", { name: "Remove Saved Events" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Remove Saved Happenings" })).toBeVisible();
 });

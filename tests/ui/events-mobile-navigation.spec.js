@@ -42,10 +42,10 @@ test("event results opens the primary site navigation from the right-side hambur
   const homeLink = page.getByRole("link", { name: "Home", exact: true });
   await expect(homeLink).toBeVisible();
   await expect(homeLink).toHaveCSS("color", "rgb(255, 243, 212)");
-  await expect(page.getByRole("link", { name: "Events", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Happenings", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Dashboard", exact: true })).toBeVisible();
   await expect(page.locator(".sidebar")).toBeHidden();
-  await expect(page.getByRole("button", { name: "All Events", exact: true })).toBeHidden();
+  await expect(page.getByRole("button", { name: "All Happenings", exact: true })).toBeHidden();
 });
 
 for (const width of [320, 390, 768]) {
@@ -67,7 +67,7 @@ for (const width of [320, 390, 768]) {
       else {
         expect(dimensions).toEqual(reference);
         await expect(panel.getByRole("link", { name: "Home", exact: true })).toHaveCSS("color", "rgb(255, 243, 212)");
-        await expect(panel.getByRole("link", { name: "Events", exact: true })).toHaveAttribute("aria-current", "page");
+        await expect(panel.getByRole("link", { name: "Happenings", exact: true })).toHaveAttribute("aria-current", "page");
         await expect(panel).toHaveCSS("background-image", "linear-gradient(rgb(33, 28, 22) 0%, rgb(16, 14, 11) 100%)");
       }
       await expect(panel.getByRole("link", { name: "Dashboard", exact: true })).toHaveCSS("color", "rgb(255, 255, 255)");

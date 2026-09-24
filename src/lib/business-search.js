@@ -1,6 +1,10 @@
 export const DEFAULT_BUSINESS_SEARCH_PAGE_SIZE = 12;
 export const MAX_BUSINESS_SEARCH_PAGE_SIZE = 15;
 
+export function isBusinessHiring(business) {
+  return business.isHiring === true || business.activeJobCount > 0;
+}
+
 export function getBusinessSearchPageSize(value) {
   const requestedSize = Number.parseInt(value, 10);
 

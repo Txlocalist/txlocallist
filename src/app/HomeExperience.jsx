@@ -122,7 +122,7 @@ const HOME_QUICK_LINKS = [
     description: "Find businesses hiring now",
   },
   {
-    label: "A Happening?",
+    label: "Happenings",
     href: "/events/results",
     icon: "event",
     tone: "orange",

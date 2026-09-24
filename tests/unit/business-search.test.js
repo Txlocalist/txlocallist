@@ -4,7 +4,20 @@ import {
   DEFAULT_BUSINESS_SEARCH_PAGE_SIZE,
   MAX_BUSINESS_SEARCH_PAGE_SIZE,
   getBusinessSearchPageSize,
+  isBusinessHiring,
 } from "@/lib/business-search";
+
+describe("isBusinessHiring", () => {
+  it.each([
+    [{ isHiring: true, activeJobCount: 0 }, true],
+    [{ isHiring: false, activeJobCount: 2 }, true],
+    [{ isHiring: true, activeJobCount: 2 }, true],
+    [{ isHiring: false, activeJobCount: 0 }, false],
+    [{}, false],
+  ])("recognizes hiring flags and active postings: %j", (business, expected) => {
+    expect(isBusinessHiring(business)).toBe(expected);
+  });
+});
 
 describe("getBusinessSearchPageSize", () => {
   it("keeps the existing page size when no limit is requested", () => {
