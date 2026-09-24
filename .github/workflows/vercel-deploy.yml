@@ -1,14 +1,11 @@
-name: Deploy to Vercel
+name: Deploy to Vercel (manual fallback)
 
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
 on:
-  workflow_run:
-    workflows: [CI]
-    types: [completed]
-    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -19,10 +16,7 @@ concurrency:
 
 jobs:
   Deploy-Production:
-    if: >-
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'push' &&
-      github.event.workflow_run.head_repository.full_name == github.repository
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: production
     timeout-minutes: 30
@@ -30,14 +24,14 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: ${{ github.sha }}
 
       - name: Refuse a superseded release
         env:
-          RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
+          RELEASE_SHA: ${{ github.sha }}
         run: |
           git fetch origin main --depth=1
-          test "$(git rev-parse origin/main)" = "$RELEASE_SHA" || { echo "A newer main commit exists; let its CI deploy it."; exit 1; }
+          test "$(git rev-parse origin/main)" = "$RELEASE_SHA" || { echo "A newer main commit exists; let Vercel deploy it from Git."; exit 1; }
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
