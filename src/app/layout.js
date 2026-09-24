@@ -1,6 +1,7 @@
 import { Bungee, Geist_Mono, Shrikhand, Space_Grotesk, Ultra } from "next/font/google";
 import "./globals.css";
 import "./results/globals.css";
+import ListingNavigationTracker from "@/components/ListingReturn/ListingNavigationTracker";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-sans",
@@ -46,7 +47,10 @@ export default function RootLayout({ children }) {
       lang="en"
       className={`${spaceGrotesk.variable} ${geistMono.variable} ${shrikhand.variable} ${bungee.variable} ${ultra.variable}`}
     >
-      <body suppressHydrationWarning={true}>{children}</body>
+      <body suppressHydrationWarning={true}>
+        <ListingNavigationTracker />
+        {children}
+      </body>
     </html>
   );
 }

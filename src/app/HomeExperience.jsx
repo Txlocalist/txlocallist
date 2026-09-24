@@ -91,7 +91,7 @@ const EVENT_STEPS = [
   {
     number: 3,
     label: "MAKE THE PLAN",
-    description: "Save the event, add it to your calendar, and get back to your day.",
+    description: "Save the happening, add it to your calendar, and get back to your day.",
     borderTone: "yellow",
   },
 ];
@@ -99,7 +99,7 @@ const EVENT_STEPS = [
 const EVENT_CHIPS = [
   { label: "Live Music", icon: "music_note", query: "live music" },
   { label: "This Weekend", icon: "calendar_today", date: "this-weekend" },
-  { label: "Free Events", icon: "star", query: "free" },
+  { label: "Free Happenings", icon: "star", query: "free" },
   { label: "Outdoor", icon: "park", query: "outdoor" },
   { label: "Markets", icon: "view_list", query: "market" },
   { label: "Family Friendly", icon: "circle", query: "family" },
@@ -122,7 +122,7 @@ const HOME_QUICK_LINKS = [
     description: "Find businesses hiring now",
   },
   {
-    label: "An Event?",
+    label: "A Happening?",
     href: "/events/results",
     icon: "event",
     tone: "orange",
@@ -171,7 +171,7 @@ function EventSearchPanel() {
           <span className="material-icons" aria-hidden="true">
             event
           </span>
-          Local Events
+          Local Happenings
         </div>
 
         <label className={`${styles.eventSearchField} ${styles.eventDateField}`}>
@@ -193,7 +193,7 @@ function EventSearchPanel() {
         </button>
       </form>
 
-      <div className={styles.eventChipRow} aria-label="Popular event filters">
+      <div className={styles.eventChipRow} aria-label="Popular happening filters">
         {EVENT_CHIPS.map((chip) => {
           const params = new URLSearchParams();
           if (chip.query) params.set("q", chip.query);
@@ -263,7 +263,7 @@ export default function HomeExperience({
         </div>
 
         <p className={styles.modeEyebrow}>
-          {isEvents ? "TEXAS EVENTS CALENDAR" : businessEyebrow}
+          {isEvents ? "TEXAS HAPPENINGS CALENDAR" : businessEyebrow}
         </p>
 
         <h1 key={activeType} className={styles.heroHeading}>
@@ -271,7 +271,7 @@ export default function HomeExperience({
             <>
               Find Texas
               <br />
-              <span className={styles.eventAccent}>Events.</span>{" "}
+              <span className={styles.eventAccent}>Happenings.</span>{" "}
               <span className={`material-icons ${styles.eventStar}`} aria-hidden="true">
                 star
               </span>
@@ -446,7 +446,7 @@ export default function HomeExperience({
             <span className={styles.ctaAccent}>{isEvents ? "Night." : "Noise."}</span>
           </h2>
           <p className={styles.ctaTagline}>
-            {isEvents ? "Events worth leaving the house for." : "No ads. No nonsense. Just local."}
+            {isEvents ? "Happenings worth leaving the house for." : "No ads. No nonsense. Just local."}
           </p>
           <Button
             as="link"

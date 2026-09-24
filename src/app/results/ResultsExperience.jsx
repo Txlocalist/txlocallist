@@ -28,7 +28,7 @@ const EMPTY_ITEMS = [];
 const PRIMARY_NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/results", label: "Businesses" },
-  { href: "/events", label: "Events" },
+  { href: "/events", label: "Happenings" },
   { href: "/about", label: "About" },
   { href: "/post-your-business", label: "Add Listing" },
 ];
@@ -648,7 +648,7 @@ export default function ResultsExperience({
   if (hasSearched) {
     activeFilterChips.push({
       key: "tab",
-      label: activeTab === "events" ? "Local Events" : "Local Businesses",
+      label: activeTab === "events" ? "Local Happenings" : "Local Businesses",
       tone: activeTab === "events" ? "events" : "businesses",
     });
   }
@@ -798,9 +798,9 @@ export default function ResultsExperience({
     if (events.length === 0) {
       return (
         <EmptyResultsState
-          eyebrow="No events"
-          title={`No events found near ${lastSearch.loc || lastSearch.q || "this area"}.`}
-          description="Try broadening your search or removing a filter to see more events."
+          eyebrow="No happenings"
+          title={`No happenings found near ${lastSearch.loc || lastSearch.q || "this area"}.`}
+          description="Try broadening your search or removing a filter to see more happenings."
           primaryLabel="Clear Filters"
           primaryAction={clearSearch}
         />
@@ -826,7 +826,7 @@ export default function ResultsExperience({
               <div className="nav-icon-wrapper">
                 <span className="material-icons" style={{ fontSize: "1.2rem", color: "white" }}>event</span>
               </div>
-              EVENTS
+              HAPPENINGS
             </Link>
 
             {/* Cities dropdown */}
@@ -1035,7 +1035,7 @@ export default function ResultsExperience({
                                 ? " · NEW"
                                 : ""
                         }`
-                      : `${events.length} EVENT${events.length !== 1 ? "S" : ""}`
+                      : `${events.length} HAPPENING${events.length !== 1 ? "S" : ""}`
                   )}
                 </span>
 
@@ -1113,7 +1113,7 @@ export default function ResultsExperience({
         <footer className="app-footer">
           <div className="font-accent footer-links">
             <Link href="/">HOME</Link>
-            <Link href="/events">EVENTS</Link>
+            <Link href="/events">HAPPENINGS</Link>
             <Link href="/login">LOGIN</Link>
           </div>
           <div className="footer-social">
@@ -1130,7 +1130,7 @@ export default function ResultsExperience({
       <nav className="mobile-bottom-nav" aria-label="Mobile navigation">
         <Link href="/events" className="font-accent mobile-nav-item">
           <span className="material-icons">event</span>
-          <span>EVENTS</span>
+          <span>HAPPENINGS</span>
         </Link>
         <button
           type="button"

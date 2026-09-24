@@ -48,7 +48,7 @@ const DATE_FILTERS = [
 const PRIMARY_NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/results", label: "Businesses" },
-  { href: "/events", label: "Events" },
+  { href: "/events", label: "Happenings" },
   { href: "/about", label: "About" },
   { href: "/post-your-business", label: "Add Listing" },
 ];
@@ -62,6 +62,8 @@ const CATEGORY_COLORS = [
   "#5d8df4",
   "#ef7fa6",
 ];
+
+const displayCategory = (category) => category === "Free Events" ? "Free Happenings" : category;
 
 function pad(n) {
   return String(n).padStart(2, "0");
@@ -237,7 +239,7 @@ function timeBucket(event, dateKey) {
 
 function Logo({ mobile = false }) {
   return (
-    <Link href="/events" className={mobile ? "brand-image mobile" : "brand-image"} aria-label="Texas Localist events">
+    <Link href="/events" className={mobile ? "brand-image mobile" : "brand-image"} aria-label="Texas Localist happenings">
       <Image src="/Dark-mode-logo.svg" alt="Texas Localist" width={mobile ? 170 : 224} height={mobile ? 82 : 108} priority />
     </Link>
   );
@@ -448,7 +450,7 @@ export default function EventsResults({
     categoryFilter
       ? {
           key: "category",
-          label: categoryFilter,
+          label: displayCategory(categoryFilter),
           clear: () => {
             updateUrl({ category: "" });
           },
@@ -457,7 +459,7 @@ export default function EventsResults({
     savedOnly
       ? {
           key: "saved",
-          label: "Saved Events",
+          label: "Saved Happenings",
           clear: () => {
             updateUrl({ saved: false });
           },
@@ -519,7 +521,7 @@ export default function EventsResults({
         body: JSON.stringify({ eventId: id }),
       });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || "Unable to update saved events.");
+      if (!response.ok) throw new Error(data.error || "Unable to update saved happenings.");
       setSavedIds((current) => {
         const next = new Set(current);
         if (data.saved) next.add(id);
@@ -592,7 +594,7 @@ export default function EventsResults({
               key={`${keyPrefix}-${cell.key}`}
               type="button"
               className={classes}
-              aria-label={`${fmtLong(cell.key)}${cell.count ? `, ${cell.count} events` : ", no events"}`}
+              aria-label={`${fmtLong(cell.key)}${cell.count ? `, ${cell.count} happenings` : ", no happenings"}`}
               onClick={() => selectDay(cell.key)}
             >
               <div className="day-top">
@@ -713,7 +715,7 @@ export default function EventsResults({
             </Link>
             <button className={`nav-item${!savedOnly ? " active" : ""}`} type="button" onClick={clearAllFilters}>
               <span className="icon-bubble"><span className="material-icons" aria-hidden="true">event</span></span>
-              <span className="grow">All Events</span>
+              <span className="grow">All Happenings</span>
             </button>
 
             <button
@@ -756,7 +758,7 @@ export default function EventsResults({
                     className={`sub-item${categoryFilter === value ? " active-sub" : ""}`}
                     onClick={() => selectCategory(value)}
                   >
-                    {value}
+                    {displayCategory(value)}
                   </button>
                 ))
               ) : (
@@ -777,7 +779,7 @@ export default function EventsResults({
 
           <button className={`browse-item${savedOnly ? " active" : ""}`} onClick={openSavedEvents}>
             <span className="browse-bubble bubble-fav"><span className="material-icons" aria-hidden="true">bookmark</span></span>
-            <span>Saved Events</span>
+            <span>Saved Happenings</span>
           </button>
 
           <div className="side-footer">
@@ -868,7 +870,7 @@ export default function EventsResults({
                     pageEvents.map(renderEventCard)
                   ) : (
                     <div className="empty">
-                      <h3>No events found.</h3>
+                      <h3>No happenings found.</h3>
                       <p>Try another date, city, or category.</p>
                     </div>
                   )}
@@ -878,7 +880,7 @@ export default function EventsResults({
                   {listGroups.length ? (
                     listGroups.map(([date, items]) => (
                       <div key={date} className="day-group">
-                        <h3>{date === "sorted" ? "Events" : fmtLong(date)}</h3>
+                        <h3>{date === "sorted" ? "Happenings" : fmtLong(date)}</h3>
                         {items.map((event) => (
                           <Link key={event.id} className="list-row" href={`/events/${event.id}${selectedDate && event.recurrenceLabel ? `?date=${selectedDate}` : ""}`}>
                             <div className="list-time">{eventTimeLabelOn(event, date)}</div>
@@ -895,7 +897,7 @@ export default function EventsResults({
                     ))
                   ) : (
                     <div className="empty">
-                      <h3>No events found.</h3>
+                      <h3>No happenings found.</h3>
                       <p>Try another search or pick another date.</p>
                     </div>
                   )}
@@ -943,7 +945,7 @@ export default function EventsResults({
                           }}
                         >
                           <i className="dot" style={{ backgroundColor: categoryColorMap.get(category) || CATEGORY_COLORS[0] }} />
-                          <span>{category}</span>
+                          <span>{displayCategory(category)}</span>
                         </button>
                       );
                     })}
@@ -987,8 +989,8 @@ export default function EventsResults({
                         ))
                     ) : (
                       <div className="empty">
-                        <h3>{selectedDate ? "No events on this day." : "Choose a calendar date."}</h3>
-                        <p>{selectedDate ? "Try another date or help locals find what is happening." : "Select a day above to see its events in time order."}</p>
+                        <h3>{selectedDate ? "No happenings on this day." : "Choose a calendar date."}</h3>
+                        <p>{selectedDate ? "Try another date or help locals find what is happening." : "Select a day above to see its happenings in time order."}</p>
                       </div>
                     )}
                   </div>
@@ -1004,7 +1006,7 @@ export default function EventsResults({
           <div className="drawer-head">
             <div>
               <h4>Browse Filters</h4>
-              <p>Choose a date or category, or reset the full event list.</p>
+              <p>Choose a date or category, or reset the full happenings list.</p>
             </div>
             <button className="drawer-close" onClick={() => setDrawerOpen(false)} type="button">
               ×
@@ -1012,7 +1014,7 @@ export default function EventsResults({
           </div>
           <button className="all-events-filter" type="button" onClick={clearAllFilters}>
             <span className="material-icons" aria-hidden="true">event_available</span>
-            <span><strong>All Events</strong><small>Clear every filter</small></span>
+            <span><strong>All Happenings</strong><small>Clear every filter</small></span>
           </button>
           <div className="filter-section">
             <h5>Date</h5>
@@ -1072,7 +1074,7 @@ export default function EventsResults({
                   type="button"
                   onClick={() => selectCategory(category)}
                 >
-                  {category}
+                  {displayCategory(category)}
                 </button>
               ))}
             </div>
@@ -1110,7 +1112,7 @@ export default function EventsResults({
                   }}
                 >
                   <i className="dot" style={{ backgroundColor: categoryColorMap.get(category) || CATEGORY_COLORS[0] }} />
-                  <span>{category}</span>
+                  <span>{displayCategory(category)}</span>
                 </button>
               );
             })}
@@ -1123,13 +1125,13 @@ export default function EventsResults({
         className={`day-events-modal${dayModalDate ? " open" : ""}`}
         onClick={(event) => event.target === event.currentTarget && setDayModalDate("")}
       >
-        <section className="day-events-sheet" role="dialog" aria-modal="true" aria-label={`Events on ${fmtLong(dayModalDate)}`}>
+        <section className="day-events-sheet" role="dialog" aria-modal="true" aria-label={`Happenings on ${fmtLong(dayModalDate)}`}>
           <div className="drawer-head">
             <div>
               <h4>{fmtLong(dayModalDate)}</h4>
-              <p>{dayModalEvents.length} event{dayModalEvents.length === 1 ? "" : "s"}</p>
+              <p>{dayModalEvents.length} happening{dayModalEvents.length === 1 ? "" : "s"}</p>
             </div>
-            <button className="drawer-close" onClick={() => setDayModalDate("")} type="button" aria-label="Close day events">
+            <button className="drawer-close" onClick={() => setDayModalDate("")} type="button" aria-label="Close day happenings">
               ×
             </button>
           </div>
@@ -1149,7 +1151,7 @@ export default function EventsResults({
               </Link>
             )) : (
               <div className="empty">
-                <h3>No events on this day.</h3>
+                <h3>No happenings on this day.</h3>
                 <p>Choose another date to keep browsing.</p>
               </div>
             )}

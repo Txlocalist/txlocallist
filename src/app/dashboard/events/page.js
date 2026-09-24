@@ -79,7 +79,7 @@ export default async function DashboardEventsPage({ searchParams }) {
       : event);
   } catch (error) {
     if (isMissingPrismaTableError(error)) {
-      schemaNotice = "The event posting database migration has not been applied yet.";
+      schemaNotice = "Happenings are unavailable until the database update is applied.";
     } else {
       throw error;
     }
@@ -89,25 +89,25 @@ export default async function DashboardEventsPage({ searchParams }) {
     <DashboardLayout activeTab="events-live">
       <div className={styles.pageHeader}>
         <div>
-          <h1 className={styles.pageTitle}>My Events</h1>
-          <p className={styles.pageSubtitle}>Manage the events connected to your dashboard.</p>
+          <h1 className={styles.pageTitle}>My Happenings</h1>
+          <p className={styles.pageSubtitle}>Manage the happenings connected to your dashboard.</p>
         </div>
         <div className={styles.pageActions}>
           <Link
             href="/dashboard/events/new"
             className={styles.createButton}
           >
-            + Post Event
+            + Post Happening
           </Link>
         </div>
       </div>
 
       <ResultsSort />
-      {!access?.hasCreatorAccess && <p role="status">Membership events are suspended while your subscription is inactive. You can still delete them. Separately purchased events keep their posting access.</p>}
-      {created && <div className={styles.successBanner}>Your event was submitted for admin review.</div>}
-      {updated && <div className={styles.successBanner}>Your event changes were saved.</div>}
-      {resubmitted && <div className={styles.successBanner}>Your corrected event was resubmitted for admin review.</div>}
-      {canceled && <div className={styles.successBanner}>Your event was canceled. No automatic refund was issued.</div>}
+      {!access?.hasCreatorAccess && <p role="status">Membership happenings are suspended while your subscription is inactive. You can still delete them. Separately purchased happenings keep their posting access.</p>}
+      {created && <div className={styles.successBanner}>Your happening was submitted for admin review.</div>}
+      {updated && <div className={styles.successBanner}>Your happening changes were saved.</div>}
+      {resubmitted && <div className={styles.successBanner}>Your corrected happening was resubmitted for admin review.</div>}
+      {canceled && <div className={styles.successBanner}>Your happening was canceled. No automatic refund was issued.</div>}
       {cancellationBlocked ? (
         <div className={`${styles.noticeBanner} ${styles.noticeError}`}>
           Cancellation is waiting for Stripe to finish the current payment. Try again after the payment status updates.
@@ -121,17 +121,17 @@ export default async function DashboardEventsPage({ searchParams }) {
       {resubmitError ? (
         <div className={`${styles.noticeBanner} ${styles.noticeError}`}>
           {resubmitError === "membership"
-            ? "An active membership and linked active business are required to resubmit this event."
+            ? "An active membership and linked active business are required to resubmit this happening."
             : resubmitError === "payment"
-              ? "The original event payment or purchased date range could not be verified. Contact support for help."
-              : "This event could not be resubmitted. Reload the page and try again."}
+              ? "The original happening payment or purchased date range could not be verified. Contact support for help."
+              : "This happening could not be resubmitted. Reload the page and try again."}
         </div>
       ) : null}
 
       {schemaNotice && (
         <div className={styles.card}>
           <div className={styles.emptyState}>
-            <h2 className={styles.emptyStateTitle}>Events Unavailable</h2>
+            <h2 className={styles.emptyStateTitle}>Happenings Unavailable</h2>
             <p className={styles.emptyStateDescription}>{schemaNotice}</p>
           </div>
         </div>
@@ -139,15 +139,15 @@ export default async function DashboardEventsPage({ searchParams }) {
 
       {!schemaNotice && events.length === 0 && (
         <div className={styles.emptyState}>
-          <h3 className={styles.emptyStateTitle}>No events yet</h3>
+          <h3 className={styles.emptyStateTitle}>No happenings yet</h3>
           <p className={styles.emptyStateDescription}>
-            Create your first event to send it to the admin review queue.
+            Create your first happening to send it to the admin review queue.
           </p>
           <Link
             href="/dashboard/events/new"
             className={styles.emptyStateAction}
           >
-            Post Event
+            Post Happening
           </Link>
         </div>
       )}

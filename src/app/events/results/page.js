@@ -5,8 +5,8 @@ import { getCurrentUser, getDashboardPath } from "@/lib/auth/session";
 import { getEventsPageData } from "@/lib/events";
 
 export const metadata = {
-  title: "Event Results | Texas Localist",
-  description: "Browse upcoming Texas events inside the Texas Localist compact calendar.",
+  title: "Happenings Results | Texas Localist",
+  description: "Browse upcoming Texas happenings inside the Texas Localist compact calendar.",
 };
 
 export default async function EventResultsPage({ searchParams }) {

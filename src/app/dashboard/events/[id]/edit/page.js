@@ -86,9 +86,9 @@ export default async function EditEventPage({ params }) {
     <DashboardLayout activeTab="events-live">
       <div className={styles.pageHeader}>
         <div>
-          <h1 className={styles.pageTitle}>Edit Event</h1>
+          <h1 className={styles.pageTitle}>Edit Happening</h1>
           <p className={styles.pageSubtitle}>
-            Material changes to a published event return it to admin review.
+            Material changes to a published happening return it to admin review.
           </p>
         </div>
       </div>

@@ -8,7 +8,7 @@ import ResultsExperience from "./ResultsExperience";
 
 export const metadata = {
   title: "Explore | Texas Localist",
-  description: "Find local businesses, events, and hidden gems across Texas.",
+  description: "Find local businesses, happenings, and hidden gems across Texas.",
 };
 
 function toBusinessResult(business, extra = {}) {

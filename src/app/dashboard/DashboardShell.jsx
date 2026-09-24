@@ -33,23 +33,23 @@ export async function DashboardLayout({ children, activeTab = "overview" }) {
     : billingState?.hasStaffAccess
       ? "Your staff role includes creator tools without a paid subscription."
       : oneTimePostingEnabled
-        ? "Your membership includes business-linked events. Standalone event posts are also available."
-        : "Your membership includes business-linked events. One-time Checkout is currently paused.";
+        ? "Your membership includes business-linked happenings. Standalone posts are also available."
+        : "Your membership includes business-linked happenings. One-time Checkout is currently paused.";
   const navSections = [
     {
       title: "Posts",
       icon: "campaign",
       items: [
-        { id: "events-live", label: "My Events", href: "/dashboard/events", icon: "event" },
+        { id: "events-live", label: "My Happenings", href: "/dashboard/events", icon: "event" },
         {
           id: "events-create",
-          label: "Post Event",
+          label: "Post Happening",
           href: "/dashboard/events/new",
           icon: "add_circle",
         },
         {
           id: "events-saved",
-          label: "Saved Events",
+          label: "Saved Happenings",
           href: "/dashboard/events/saved",
           icon: "bookmark",
         },
@@ -102,9 +102,9 @@ export async function DashboardLayout({ children, activeTab = "overview" }) {
 
   const sectionTitles = {
     overview: "Dashboard",
-    "events-live": "My Events",
-    "events-create": "Post Event",
-    "events-saved": "Saved Events",
+    "events-live": "My Happenings",
+    "events-create": "Post Happening",
+    "events-saved": "Saved Happenings",
     "businesses-live": "Live Businesses",
     "businesses-create": hasCreatorAccess ? "Create Business" : "Upgrade Account",
     "businesses-saved": "Saved Businesses",

@@ -129,7 +129,7 @@ export default function EventSearchBar({
   const today = dateKey(new Date());
 
   return (
-    <form className={styles.search} onSubmit={submit} aria-label="Search local events">
+    <form className={styles.search} onSubmit={submit} aria-label="Search local happenings">
       <label className={styles.field}>
         <span className="material-icons" aria-hidden="true">search</span>
         <span className="sr-only">Search</span>

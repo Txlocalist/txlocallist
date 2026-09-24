@@ -154,7 +154,7 @@ export default function EventsLanding({
                 links={[
                   { href: "/", label: "Home" },
                   { href: "/results", label: "Businesses" },
-                  { href: "/events", label: "Events" },
+                  { href: "/events", label: "Happenings" },
                   { href: "/about", label: "About" },
                   { href: "/post-your-business", label: "Add Listing" },
                 ]}
@@ -188,7 +188,7 @@ export default function EventsLanding({
                 </span>
               </h1>
               <p className="hero-sub">
-                Live music, local events, and weekend plans
+                Live music, local happenings, and weekend plans
                 <br />
                 without the noise.
               </p>
@@ -198,14 +198,14 @@ export default function EventsLanding({
                 initialDate="this-weekend"
               />
 
-              <div className="chips" aria-label="Popular event filters">
+              <div className="chips" aria-label="Popular happening filters">
                 {["Live Music", "This Weekend", "Free Events", "Outdoor", "Markets", "Family Friendly", "Nightlife"].map((chip) => {
                   const params = new URLSearchParams();
                   if (chip === "This Weekend") params.set("date", "this-weekend");
                   else params.set("category", chip.replace(" Friendly", ""));
                   return (
                     <Link key={chip} className="chip" href={`/events/results?${params.toString()}`}>
-                      <b>*</b> {chip}
+                      <b>*</b> {chip === "Free Events" ? "Free Happenings" : chip}
                     </Link>
                   );
                 })}
@@ -239,10 +239,10 @@ export default function EventsLanding({
                 </div>
               ) : (
                 <div className="empty-state">
-                  <h3>No published events yet.</h3>
-                  <p>Approved events will appear here automatically as locals add them.</p>
+                  <h3>No published happenings yet.</h3>
+                  <p>Approved happenings will appear here automatically as locals add them.</p>
                   <Link href="/dashboard/events/new" className="primary-btn">
-                    Add an Event
+                    Add a Happening
                   </Link>
                 </div>
               )}
@@ -264,7 +264,7 @@ export default function EventsLanding({
                   <Link key={category} href={`/events/results?category=${encodeURIComponent(category)}`} className="vibe-card">
                     <div className="vibe-img" />
                     <div className="vibe-icon">*</div>
-                    <h3>{category}</h3>
+                    <h3>{category === "Free Events" ? "Free Happenings" : category}</h3>
                     <p>Find local plans, venues, and happenings in this lane.</p>
                   </Link>
                 ))}
@@ -280,7 +280,7 @@ export default function EventsLanding({
               <div className="step-grid">
                 {[
                   ["1", "Pick a Vibe", "Choose what you are in the mood for from local categories."],
-                  ["2", "Find the Spot", "Browse approved local events without sponsored clutter."],
+                  ["2", "Find the Spot", "Browse approved local happenings without sponsored clutter."],
                   ["3", "Support Local", "Head out and keep the Texas spirit alive and well."],
                 ].map(([number, title, copy]) => (
                   <article key={number} className="step">
@@ -302,9 +302,9 @@ export default function EventsLanding({
                   <h2 className="cta-title">
                     Skip the <span>Noise.</span>
                   </h2>
-                  <p className="cta-copy">No ads. No sponsored events. Just local.</p>
+                  <p className="cta-copy">No ads. No sponsored happenings. Just local.</p>
                   <Link href="/events/results" className="primary-btn">
-                    See Events Near You &rarr;
+                    See Happenings Near You &rarr;
                   </Link>
                 </div>
               </div>

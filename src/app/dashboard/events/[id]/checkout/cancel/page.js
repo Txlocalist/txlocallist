@@ -16,7 +16,7 @@ import styles from "../../../../dashboard.module.css";
 const EVENT_POST_PRICE = formatWholeDollarPrice(EVENT_POST_PRICE_CENTS);
 
 export const metadata = {
-  title: "Event Checkout Closed | TX Localist",
+  title: "Happening Checkout Closed | TX Localist",
 };
 
 export default async function EventCheckoutCancelPage({ params }) {
@@ -31,7 +31,7 @@ export default async function EventCheckoutCancelPage({ params }) {
   if (!event || event.creatorId !== session.user.id) notFound();
   const eventPostingEnabled = isEventPostingEnabled();
   const checkoutMessage = event.status !== "DRAFT"
-    ? "Stripe has already updated this event. Return to My Events for its current status."
+    ? "Stripe has already updated this happening. Return to My Happenings for its current status."
     : eventPostingEnabled
       ? `${event.title} stays as a private draft unless Stripe confirms payment. You can safely retry Checkout.`
       : `${event.title} remains saved as a private draft. One-time Checkout is currently paused.`;
@@ -52,7 +52,7 @@ export default async function EventCheckoutCancelPage({ params }) {
               </button>
             </form>
           ) : null}
-          <Link href="/dashboard/events" className={styles.actionButton}>Back to My Events</Link>
+          <Link href="/dashboard/events" className={styles.actionButton}>Back to My Happenings</Link>
         </div>
       </div>
     </DashboardLayout>

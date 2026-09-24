@@ -60,9 +60,9 @@ export default async function SavedEventsPage({ searchParams }) {
     <DashboardLayout activeTab="events-saved">
       <div className={styles.pageHeader}>
         <div>
-          <h1 className={styles.pageTitle}>Saved Events</h1>
+          <h1 className={styles.pageTitle}>Saved Happenings</h1>
           <p className={styles.pageSubtitle}>
-            Keep track of events you want to come back to.
+            Keep track of happenings you want to come back to.
           </p>
         </div>
       </div>
@@ -86,7 +86,7 @@ export default async function SavedEventsPage({ searchParams }) {
                       {formatEventTime(event.startDate, event.timezone)}
                       {event.addressName ? `, ${event.addressName}` : ""}
                       {cityLabel ? `, ${cityLabel}` : ""}
-                      {isEventPast(event) ? " (Past event)" : ""}
+                      {isEventPast(event) ? " (Past happening)" : ""}
                     </p>
                   </div>
                   <div className={styles.listItemAction}>
@@ -94,7 +94,7 @@ export default async function SavedEventsPage({ searchParams }) {
                       href={`/events/${event.id}`}
                       className={`${styles.statusBadge} ${styles.statusActive}`}
                     >
-                      View Event
+                      View Happening
                     </Link>
                   </div>
                 </div>
@@ -105,12 +105,12 @@ export default async function SavedEventsPage({ searchParams }) {
       ) : (
         <div className={styles.card}>
           <div className={styles.emptyState}>
-            <h2 className={styles.emptyStateTitle}>No saved events yet</h2>
+            <h2 className={styles.emptyStateTitle}>No saved happenings yet</h2>
             <p className={styles.emptyStateDescription}>
-              Save an event from its detail page and it will appear here.
+              Save a happening from its detail page and it will appear here.
             </p>
             <Link href="/events" className={styles.emptyStateAction}>
-              Explore Events
+              Explore Happenings
             </Link>
           </div>
         </div>

@@ -54,27 +54,7 @@
   padding: 1rem 0 4rem;
 }
 
-.backLink {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
-  margin: 0 0 1rem 0.25rem;
-  color: var(--event-muted);
-  font-family: var(--font-accent), sans-serif;
-  font-size: 0.7rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  transition: color 160ms ease, transform 160ms ease;
-}
-
-.backLink:hover {
-  color: var(--event-cream);
-  transform: translateX(-3px);
-}
-
-.backLink span {
-  font-size: 1.05rem;
-}
+.returnRow { margin: 0 0 1rem 0.25rem; }
 
 .hero {
   display: grid;

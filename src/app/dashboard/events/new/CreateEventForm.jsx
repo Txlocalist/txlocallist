@@ -56,14 +56,14 @@ export function CreateEventForm({
   );
 
   const postingNotice = isStaff
-    ? "Staff event posts go directly to review without a separate charge."
+    ? "Staff happening posts go directly to review without a separate charge."
     : hasCoveredBusiness
       ? oneTimePostingEnabled
         ? `Your membership will use ${businesses[0].name} by default. Choose the standalone option only if you want a separate ${eventPostPrice} Checkout.`
         : `Your membership will use ${businesses[0].name} by default. Standalone one-time Checkout is currently paused.`
       : hasMembership
-        ? `Your membership covers events linked to an active business. No active business is available, so this post uses ${eventPostPrice} Checkout.`
-        : `Standalone event posts cost ${eventPostPrice} once. Secure Stripe Checkout starts before admin review.`;
+        ? `Your membership covers happenings linked to an active business. No active business is available, so this post uses ${eventPostPrice} Checkout.`
+        : `Standalone happening posts cost ${eventPostPrice} once. Secure Stripe Checkout starts before admin review.`;
 
   return (
     <form ref={formRef} action={formAction} className={styles.form}>
@@ -72,7 +72,7 @@ export function CreateEventForm({
       {state?.error ? (
         <div className={styles.errorMessage} role="alert">
           <p>{state.error}</p>
-          {state.retryPath ? <Link href={state.retryPath}>Open My Events</Link> : null}
+          {state.retryPath ? <Link href={state.retryPath}>Open My Happenings</Link> : null}
         </div>
       ) : null}
 
@@ -83,16 +83,16 @@ export function CreateEventForm({
         </div>
       ) : (
         <div className={styles.paymentNotice}>
-          Published event changes return to admin review. Your original payment stays attached to this event.
+          Published happening changes return to admin review. Your original payment stays attached to this happening.
         </div>
       )}
 
       <div className={styles.step}>
-        <h2 className={styles.stepTitle}>Event Details</h2>
+        <h2 className={styles.stepTitle}>Happening Details</h2>
         <p className={styles.stepDescription}>Tell people what is happening, where, and when.</p>
 
         <div className={styles.formGroup}>
-          <label className={styles.label} htmlFor="category">Event Category *</label>
+          <label className={styles.label} htmlFor="category">Happening Category *</label>
           <select
             id="category"
             name="category"
@@ -110,7 +110,7 @@ export function CreateEventForm({
         </div>
 
         <div className={styles.formGroup}>
-          <label className={styles.label} htmlFor="title">Event Title *</label>
+          <label className={styles.label} htmlFor="title">Happening Title *</label>
           <input
             id="title"
             name="title"
@@ -133,7 +133,7 @@ export function CreateEventForm({
             name="description"
             rows={4}
             className={styles.textarea}
-            placeholder="Tell people what the event includes."
+            placeholder="Tell people what the happening includes."
             value={description}
             onChange={(event) => setDescription(event.target.value)}
             minLength={20}
@@ -161,7 +161,7 @@ export function CreateEventForm({
             uploadEndpoint="/api/event-images/upload"
             acceptedTypes="image/jpeg,image/png,image/webp"
             supportedTypesLabel="JPG, PNG, and WEBP"
-            limitMessage="One event cover image is allowed."
+            limitMessage="One happening cover image is allowed."
           />
           <p className={styles.uploadHint}>Add one optional raster cover image.</p>
           <FieldError id="imageUrl-error" message={fieldErrors.imageUrl} />
@@ -206,13 +206,13 @@ export function CreateEventForm({
           </select>
           <FieldError id="recurrence-error" message={fieldErrors.recurrence} />
           <p className={styles.helpText}>
-            {canRepeat ? "Repeats on the first occurrence’s weekday at the same local time, including daylight-saving changes." : "Weekly events require membership and a linked active business. One-time payments cover one event only."}
+            {canRepeat ? "Repeats on the first occurrence’s weekday at the same local time, including daylight-saving changes." : "Weekly happenings require membership and a linked active business. One-time payments cover one happening only."}
           </p>
           {recurrence === "WEEKLY" ? <>
             <label className={styles.label} htmlFor="recurrenceUntil">Last Occurrence (optional)</label>
             <input id="recurrenceUntil" name="recurrenceUntil" type="date" className={styles.input}
               defaultValue={initialEvent?.recurrenceUntil ?? ""} />
-            <p className={styles.helpText}>Leave blank to keep repeating, or choose the same weekday as the first occurrence. Editing changes the whole series and sends it back to review. Failed payments hide the event; a canceled membership hides it when paid access ends.</p>
+            <p className={styles.helpText}>Leave blank to keep repeating, or choose the same weekday as the first occurrence. Editing changes the whole series and sends it back to review. Failed payments hide the happening; a canceled membership hides it when paid access ends.</p>
           </> : null}
         </div>
 
@@ -228,11 +228,11 @@ export function CreateEventForm({
             <option value="America/Chicago">Central Time</option>
             <option value="America/Denver">Mountain Time</option>
           </select>
-          <p className={styles.helpText}>Choose the time zone where the event takes place.</p>
+          <p className={styles.helpText}>Choose the time zone where the happening takes place.</p>
         </div>
 
         <div className={styles.formGroup}>
-          <label className={styles.label} htmlFor="eventUrl">Event or Ticket Link</label>
+          <label className={styles.label} htmlFor="eventUrl">Happening or Ticket Link</label>
           <input
             id="eventUrl"
             name="eventUrl"
@@ -336,7 +336,7 @@ export function CreateEventForm({
               {...errorAttributes(fieldErrors, "businessId")}
             >
               {oneTimePostingEnabled || isEditing ? (
-                <option value="">Standalone event ({eventPostPrice} one time)</option>
+                <option value="">Standalone happening ({eventPostPrice} one time)</option>
               ) : null}
               {businesses.map((business) => (
                 <option key={business.id} value={business.id}>
@@ -345,7 +345,7 @@ export function CreateEventForm({
               ))}
             </select>
             <p className={styles.helpText}>
-              Active members can link an owned business to include event posting with membership.
+              Active members can link an owned business to include happening posting with membership.
             </p>
           <FieldError id="businessId-error" message={fieldErrors.businessId} />
           </div>

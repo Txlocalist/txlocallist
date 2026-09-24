@@ -16,7 +16,7 @@ import styles from "../../dashboard.module.css";
 import { CreateEventForm } from "./CreateEventForm";
 
 export const metadata = {
-  title: "Post an Event | TX Localist",
+  title: "Post a Happening | TX Localist",
 };
 
 export default async function NewEventPage() {
@@ -49,7 +49,7 @@ export default async function NewEventPage() {
     });
   } catch (error) {
     if (isMissingPrismaTableError(error)) {
-      schemaNotice = "The event posting database update has not been applied yet.";
+      schemaNotice = "Happening posting is unavailable until the database update is applied.";
     } else {
       throw error;
     }
@@ -59,9 +59,9 @@ export default async function NewEventPage() {
     <DashboardLayout activeTab="events-create">
       <div className={styles.pageHeader}>
         <div>
-          <h1 className={styles.pageTitle}>Post an Event</h1>
+          <h1 className={styles.pageTitle}>Post a Happening</h1>
           <p className={styles.pageSubtitle}>
-            Post a single event lasting up to {EVENT_MAX_CALENDAR_DAYS} calendar days, or use membership to repeat an event every week.
+            Post a single happening lasting up to {EVENT_MAX_CALENDAR_DAYS} calendar days, or use membership to repeat a happening every week.
           </p>
         </div>
       </div>
@@ -78,7 +78,7 @@ export default async function NewEventPage() {
               {schemaNotice ??
                 (billingUnavailable
                   ? "We could not verify your membership right now. Please try again before posting."
-                  : "One-time event posting is being configured. Please check back soon.")}
+                  : "One-time happening posting is being configured. Please check back soon.")}
             </p>
           </div>
         </div>

@@ -88,7 +88,7 @@ function EventModerationForm({ eventId, canApprove = true }) {
           <input type="hidden" name="entityId" value={eventId} />
           <input type="hidden" name="entityType" value="event" />
           <input type="hidden" name="status" value="approved" />
-          <button type="submit" className={styles.publishButton}>Approve Event</button>
+          <button type="submit" className={styles.publishButton}>Approve Happening</button>
         </form>
       ) : null}
       <form action={updatePostModerationStatusAction} className={styles.eventDenialForm}>
@@ -257,7 +257,7 @@ export default async function AdminPostsPage({ searchParams }) {
     },
     {
       id: "events",
-      label: "Events",
+      label: "Happenings",
       count: events.length,
       href: `/admin/posts?type=events&view=${view}&page=1`,
     },
@@ -272,7 +272,7 @@ export default async function AdminPostsPage({ searchParams }) {
         <div>
           <h1 className={styles.pageTitle}>Review Queue</h1>
           <p className={styles.pageSubtitle}>
-            Approve or deny submitted businesses and events before they appear publicly.
+            Approve or deny submitted businesses and happenings before they appear publicly.
           </p>
         </div>
       </div>
@@ -322,10 +322,10 @@ export default async function AdminPostsPage({ searchParams }) {
           <p className={styles.emptyStateDescription}>
             {type === "events"
               ? view === "queue"
-                ? "New event submissions will appear here."
+                ? "New happening submissions will appear here."
                 : view === "payments"
-                  ? "No event payment exceptions need attention."
-                  : "No published or denied event history yet."
+                  ? "No happening payment exceptions need attention."
+                  : "No published or denied happening history yet."
               : view === "queue"
                 ? "New business submissions will appear here."
                 : "No active or denied business history yet."}
@@ -402,7 +402,7 @@ export default async function AdminPostsPage({ searchParams }) {
         <div className={styles.businessesTable}>
           <div className={styles.tableHeader}>
             <div className={styles.tableCol} style={{ flex: 2 }}>
-              Event
+              Happening
             </div>
             <div className={styles.tableCol} style={{ flex: 1 }}>
               Owner
@@ -452,7 +452,7 @@ export default async function AdminPostsPage({ searchParams }) {
 
               return (
                 <div key={event.id} className={styles.tableRow}>
-                  <div className={styles.tableCol} style={{ flex: 2 }} data-label="Event">
+                  <div className={styles.tableCol} style={{ flex: 2 }} data-label="Happening">
                     <div>
                       <p className={styles.businessName}>{event.title}</p>
                       <p className={styles.businessMeta}>{formatDate(event.createdAt)}</p>
@@ -506,7 +506,7 @@ export default async function AdminPostsPage({ searchParams }) {
                           </a>
                         ) : null}
                         {event.reviews.length > 0 ? (
-                          <section className={styles.reviewTimeline} aria-label="Event review history">
+                          <section className={styles.reviewTimeline} aria-label="Happening review history">
                             <h4 className={styles.reviewTimelineTitle}>Review History</h4>
                             <ol className={styles.reviewTimelineList}>
                               {event.reviews.map((review) => (
@@ -619,7 +619,7 @@ export default async function AdminPostsPage({ searchParams }) {
                       {isAdmin && !event.deletedAt && payments.length === 0 ? (
                         <form action={adminDeleteEventAction}>
                           <input type="hidden" name="id" value={event.id} />
-                          <button type="submit" className={styles.deleteButton}>Delete Event</button>
+                          <button type="submit" className={styles.deleteButton}>Delete Happening</button>
                         </form>
                       ) : null}
                     </div>

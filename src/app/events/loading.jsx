@@ -5,8 +5,8 @@ const cards = Array.from({ length: 4 }, (_, index) => index);
 export default function EventsLoading() {
   return (
     <main className={styles.page} aria-busy="true">
-      <div className={styles.shell} role="status" aria-live="polite" aria-label="Loading events">
-        <span className={styles.status}>Loading local events</span>
+      <div className={styles.shell} role="status" aria-live="polite" aria-label="Loading happenings">
+        <span className={styles.status}>Loading local happenings</span>
         <div className={`${styles.line} ${styles.logo}`} />
         <div className={styles.search} />
         <div className={`${styles.line} ${styles.heading}`} />

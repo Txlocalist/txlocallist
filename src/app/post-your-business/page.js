@@ -17,12 +17,12 @@ const STEPS = [
   },
   {
     number: "02",
-    title: "Start The Paid Plan",
+    title: "Pay the Price",
     description: "Unlock listing access with one simple $10 monthly subscription through Stripe.",
   },
   {
     number: "03",
-    title: "Build Your Listing",
+    title: "Craft Your Look",
     description: "Add your business name, description, contact info, photos, and categories.",
   },
   {
@@ -35,8 +35,8 @@ const STEPS = [
 const BENEFITS = [
   { icon: "📍", title: "Local Visibility", description: "Appear in city and keyword searches across Texas." },
   { icon: "📞", title: "Direct Contact", description: "Let customers reach you directly with no middleman." },
-  { icon: "📸", title: "Photo Gallery", description: "Showcase your space, products, or team with photos." },
-  { icon: "💼", title: "Job Postings", description: "Post open positions and find local talent fast." },
+  { icon: "📸", title: "Post Your Pics", description: "Showcase your space, products, or team with photos." },
+  { icon: "💼", title: "Hire Help", description: "Post open positions and find local talent fast." },
   { icon: "🔗", title: "Website & Socials", description: "Link your website and social profiles to your listing." },
 ];
 

@@ -18,6 +18,7 @@ import { getBusinessHoursDisplayRows } from "@/lib/business-hours";
 import { isMissingPrismaTableError } from "@/lib/prisma-errors";
 import { Navbar, Footer, LikeCount, SaveButton } from "@/components";
 import { getFeatures } from "@/lib/tiers";
+import ListingReturnButton from "@/components/ListingReturn/ListingReturnButton";
 
 import ShareButton from "./ShareButton";
 import PhotoGallery from "./PhotoGallery";
@@ -184,6 +185,10 @@ export default async function BusinessDetailPage({ params }) {
       <Navbar />
 
       <div className={styles.pageWrapper}>
+
+        <div className={styles.returnRow}>
+          <ListingReturnButton fallbackHref="/results" fallbackLabel="Back to Businesses" />
+        </div>
 
         {/* ── HERO ── */}
         <section className={styles.heroSection}>

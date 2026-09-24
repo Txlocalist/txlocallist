@@ -52,12 +52,12 @@ export async function EventsSection({ city = "" }) {
       <div className={styles.header}>
         <div>
           <h2 className={styles.title}>
-            {city ? `Events near ${city}` : "Local Events"}
+            {city ? `Happenings near ${city}` : "Local Happenings"}
           </h2>
           <p className={styles.subtitle}>Happenings in your area</p>
         </div>
         <Link href="/events" className={styles.seeAll}>
-          See all events →
+          See all happenings →
         </Link>
       </div>
 
@@ -108,10 +108,10 @@ export async function EventsSection({ city = "" }) {
 
       <div className={styles.footer}>
         <Link href="/events" className={styles.footerLink}>
-          Browse all local events →
+          Browse all local happenings →
         </Link>
         <Link href="/dashboard/events/new" className={styles.footerLinkSecondary}>
-          Post an event
+          Post a happening
         </Link>
       </div>
     </section>

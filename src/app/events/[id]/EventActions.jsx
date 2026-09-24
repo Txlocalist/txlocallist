@@ -45,17 +45,17 @@ export default function EventActions({
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(data.error || "Unable to update your saved events.");
+        throw new Error(data.error || "Unable to update your saved happenings.");
       }
 
       setSaved(data.saved);
       setCount(data.count);
-      setFeedback(data.saved ? "Event saved." : "Event removed from saved events.");
+      setFeedback(data.saved ? "Happening saved." : "Happening removed from saved happenings.");
       router.refresh();
     } catch (error) {
       setSaved(previousSaved);
       setCount(previousCount);
-      setFeedback(error.message || "Unable to update your saved events.");
+      setFeedback(error.message || "Unable to update your saved happenings.");
     } finally {
       setLoading(false);
     }

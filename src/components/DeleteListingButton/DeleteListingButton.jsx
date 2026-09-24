@@ -52,7 +52,7 @@ export default function DeleteListingButton({ id, name, kind, className, returnT
     <dialog ref={dialog} className={styles.dialog} aria-labelledby={`delete-${kind}-${id}`} aria-describedby={`delete-description-${id}`} aria-busy={pending} onKeyDown={trapFocus} onCancel={(event) => { event.preventDefault(); close(); }}>
       <h2 id={`delete-${kind}-${id}`}>Delete {name}?</h2>
       <p id={`delete-description-${id}`}>This removes the {kind} from public listings and your results. You cannot restore it from your account.</p>
-      {kind === "business" && <p>Membership events linked to this business will also go offline. You can manage or delete them in My Events.</p>}
+      {kind === "business" && <p>Membership happenings linked to this business will also go offline. You can manage or delete them in My Happenings.</p>}
       <p>Deleting a listing does not cancel your membership or issue a refund.</p>
       {error && <p ref={errorRef} role="alert" tabIndex={-1} className={styles.error}>{error}</p>}
       <div className={styles.actions}>

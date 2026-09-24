@@ -157,7 +157,7 @@ export default function AboutPage() {
             <div className={styles.nextCopy}>
               <h2 id="next-title">What&apos;s next</h2>
               <p>
-                We&apos;re continuing to expand local search, events, saved places, business profile
+                We&apos;re continuing to expand local search, happenings, saved places, business profile
                 depth, and owner tools so people can find what&apos;s nearby faster and businesses can
                 keep their information current.
               </p>

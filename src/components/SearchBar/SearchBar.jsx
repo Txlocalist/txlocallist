@@ -49,7 +49,7 @@ export default function SearchBar({
         {
           value: "events",
           icon: "event",
-          label: "Local Events",
+          label: "Local Happenings",
           activeClass: styles.evtActive,
         },
       ].filter((option) => availableTypes.includes(option.value)),

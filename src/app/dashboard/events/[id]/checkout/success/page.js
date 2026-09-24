@@ -9,7 +9,7 @@ import { DashboardLayout } from "../../../../DashboardShell";
 import styles from "../../../../dashboard.module.css";
 
 export const metadata = {
-  title: "Event Payment | TX Localist",
+  title: "Happening Payment | TX Localist",
 };
 
 export default async function EventCheckoutSuccessPage({ params, searchParams }) {
@@ -58,7 +58,7 @@ export default async function EventCheckoutSuccessPage({ params, searchParams })
         : reviewRequired
           ? "Payment Needs Admin Review"
         : cancelledPaid
-          ? "Event Canceled"
+          ? "Happening Canceled"
         : paid
           ? "Payment Confirmed"
           : "Payment Is Verifying";
@@ -69,12 +69,12 @@ export default async function EventCheckoutSuccessPage({ params, searchParams })
       : refundFailed
         ? "The administrator-approved refund needs support attention. Do not submit another payment."
         : reviewRequired
-          ? "The payment was recorded, but an administrator must review it before the event can continue. No refund will be issued automatically."
+          ? "The payment was recorded, but an administrator must review it before the happening can continue. No refund will be issued automatically."
         : cancelledPaid
-          ? "Stripe confirmed payment before cancellation completed. The event remains canceled, and no automatic refund was issued."
+          ? "Stripe confirmed payment before cancellation completed. The happening remains canceled, and no automatic refund was issued."
         : paid
           ? `${event.title} is now in the admin review queue.`
-          : "Stripe has not confirmed the payment yet. The signed webhook will update this event when payment settles.";
+          : "Stripe has not confirmed the payment yet. The signed webhook will update this happening when payment settles.";
 
   return (
     <DashboardLayout activeTab="events-live">
@@ -82,7 +82,7 @@ export default async function EventCheckoutSuccessPage({ params, searchParams })
         <div className={styles.emptyState}>
           <h1 className={styles.emptyStateTitle}>{heading}</h1>
           <p className={styles.emptyStateDescription}>{description}</p>
-          <Link href="/dashboard/events" className={styles.emptyStateAction}>View My Events</Link>
+          <Link href="/dashboard/events" className={styles.emptyStateAction}>View My Happenings</Link>
         </div>
       </div>
     </DashboardLayout>

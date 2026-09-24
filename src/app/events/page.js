@@ -7,8 +7,8 @@ import { getEventsPageData } from "@/lib/events";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Events | Texas Localist",
-  description: "Discover Texas events through the Texas Localist events landing page.",
+  title: "Happenings | Texas Localist",
+  description: "Discover Texas happenings through the Texas Localist calendar.",
 };
 
 export default async function EventsPage() {

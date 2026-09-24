@@ -39,7 +39,7 @@ export default async function SignupPage({ searchParams }) {
             </h2>
             <p className={styles.heroCopy}>
               {isOwner
-                ? "Create your account first, then unlock billing when you're ready to post listings and events."
+                ? "Create your account first, then unlock billing when you're ready to post listings and happenings."
                 : "Create an account to browse, save, and keep up with local Texas businesses."}
             </p>
             <div className={styles.landscapeFrame}>

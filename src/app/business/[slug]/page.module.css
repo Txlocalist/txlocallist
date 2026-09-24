@@ -23,7 +23,13 @@
   padding: 0 1.5rem;
 }
 
-.heroSection   { padding-top: 2rem; }
+.returnRow {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.25rem 1.5rem 0;
+}
+
+.heroSection   { padding-top: 1rem; }
 .gallerySection,
 .bentoSection,
 .hiringSection,

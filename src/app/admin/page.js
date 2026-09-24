@@ -88,7 +88,7 @@ export default async function AdminOverviewPage() {
           { label: "Business Owners",  value: stats.owners,           icon: "storefront", color: "var(--retro-orange)" },
           { label: "All Listings",     value: stats.businesses,       icon: "list_alt",   color: "var(--retro-brown)" },
           { label: "Live Listings",    value: stats.activeBusinesses, icon: "check_circle", color: "var(--retro-teal)" },
-          { label: "Events",           value: stats.events,           icon: "event",      color: "var(--retro-red)" },
+          { label: "Happenings",       value: stats.events,           icon: "event",      color: "var(--retro-red)" },
         ].map((s) => (
           <div key={s.label} className={styles.card} style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
             <span className="material-icons" style={{ fontSize: "1.75rem", color: s.color }}>{s.icon}</span>

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Footer, Navbar } from "@/components";
@@ -8,6 +7,7 @@ import { getEventById } from "@/lib/events";
 import { prisma } from "@/lib/prisma";
 import { isMissingPrismaTableError } from "@/lib/prisma-errors";
 import { getSiteUrl } from "@/lib/stripe";
+import ListingReturnButton from "@/components/ListingReturn/ListingReturnButton";
 
 import EventActions from "./EventActions";
 import EventHeroImage from "./EventHeroImage";
@@ -162,10 +162,9 @@ export default async function EventDetailPage({ params, searchParams }) {
       />
 
       <main className={styles.shell}>
-        <Link href="/events/results" className={styles.backLink}>
-          <span className="material-icons" aria-hidden="true">west</span>
-          Back to Events
-        </Link>
+        <div className={styles.returnRow}>
+          <ListingReturnButton fallbackHref="/events/results" fallbackLabel="Back to Happenings" theme="dark" />
+        </div>
 
         <section className={styles.hero} aria-labelledby="event-title">
           <div className={styles.heroContent}>
@@ -173,7 +172,7 @@ export default async function EventDetailPage({ params, searchParams }) {
               <span className={styles.typePill}>{event.type}</span>
               <span className={styles.cityLabel}>{event.cityLabel}</span>
               {event.isPast ? (
-                <span className={styles.pastPill}>Past Event</span>
+                <span className={styles.pastPill}>Past Happening</span>
               ) : null}
             </div>
 
@@ -199,7 +198,7 @@ export default async function EventDetailPage({ params, searchParams }) {
           <div className={styles.heroImage}>
             <EventHeroImage
               src={imageUrl}
-              alt={`${event.title} event photo`}
+              alt={`${event.title} happening photo`}
               type={event.type}
               dateLabel={event.dateRangeLabel}
               timeLabel={event.timeLabel}
@@ -208,9 +207,9 @@ export default async function EventDetailPage({ params, searchParams }) {
           </div>
         </section>
 
-        <section className={styles.detailsGrid} aria-label="Event details">
+        <section className={styles.detailsGrid} aria-label="Happening details">
           <article className={styles.aboutCard}>
-            <h2>About This Event</h2>
+            <h2>About This Happening</h2>
             <div className={styles.cardRule} />
             <p>{event.description}</p>
             {event.tags.length > 0 ? (
@@ -233,7 +232,7 @@ export default async function EventDetailPage({ params, searchParams }) {
                 <p className={styles.infoPrimary}>{event.dateRangeLabel}</p>
                 <p className={styles.infoAccent}>{event.timeLabel}</p>
                 {event.isPast ? (
-                  <p className={styles.pastNotice}>This event has ended.</p>
+                  <p className={styles.pastNotice}>This happening has ended.</p>
                 ) : null}
               </div>
             </article>
@@ -259,7 +258,7 @@ export default async function EventDetailPage({ params, searchParams }) {
                     rel="noopener noreferrer nofollow"
                     className={styles.mapButton}
                   >
-                    Event or Ticket Link
+                    Happening or Ticket Link
                   </a>
                 ) : null}
               </div>

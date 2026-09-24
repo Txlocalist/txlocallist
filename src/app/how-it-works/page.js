@@ -31,9 +31,10 @@ const LOCAL_STEPS = [
 ];
 
 const OWNER_STEPS = [
-  "Create an owner account and start a listing from the dashboard.",
-  "Add the basics, choose categories, upload photos, and set weekly business hours.",
-  "Publish when you're ready, then come back any time to update details as your listing evolves.",
+  { title: "Create Your Account", copy: "Create an owner account to manage your listing from the dashboard." },
+  { title: "Pay the Price", copy: "Start the monthly paid plan to unlock listing creation." },
+  { title: "Craft Your Look", copy: "Add the basics, choose categories, upload photos, and set weekly business hours." },
+  { title: "Go Live", copy: "Submit your listing for review, then update details as your business evolves." },
 ];
 
 function LocalSteps() {
@@ -58,11 +59,11 @@ function OwnerSteps() {
   return (
     <ol className={styles.ownerSteps}>
       {OWNER_STEPS.map((step, index) => (
-        <li key={step} className={styles.ownerStep}>
+        <li key={step.title} className={styles.ownerStep}>
           <span className={styles.ownerNumber} aria-hidden="true">
             {String(index + 1).padStart(2, "0")}.
           </span>
-          <p>{step}</p>
+          <p><strong>{step.title}</strong><br />{step.copy}</p>
         </li>
       ))}
     </ol>
