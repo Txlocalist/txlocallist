@@ -5,6 +5,7 @@ import styles from "../../dashboard.module.css";
 import { getAccountAccess } from "@/lib/account-access";
 import { isEventCategoryTagName } from "@/lib/event-categories.mjs";
 import { prisma } from "@/lib/prisma";
+import { getSelectableCities } from "@/lib/cities.server";
 import { getCurrentSession } from "@/lib/auth/session";
 import { isMissingPrismaTableError, phase3SchemaMessage } from "@/lib/prisma-errors";
 
@@ -65,7 +66,7 @@ export default async function NewBusinessPage() {
 
   try {
     const [availableCities, availableCategories, availableTags] = await Promise.all([
-      prisma.city.findMany({ orderBy: { name: "asc" } }),
+      getSelectableCities(),
       prisma.category.findMany({ orderBy: { name: "asc" } }),
       prisma.tag.findMany({ orderBy: { name: "asc" } }),
     ]);

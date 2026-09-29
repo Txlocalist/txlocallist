@@ -13,6 +13,7 @@ export default async function AdminTagsPage({ searchParams }) {
   const isAdmin = staff.role === "ADMIN";
 
   const tags = await prisma.tag.findMany({
+    where: { NOT: { name: { startsWith: "Event Category:", mode: "insensitive" } } },
     orderBy: resultOrderBy(params?.sort, { fallback: "name-asc" }),
     include: { _count: { select: { businessTags: true } } },
   });
@@ -22,7 +23,7 @@ export default async function AdminTagsPage({ searchParams }) {
       <div className={styles.pageHeader}>
         <div>
           <h1 className={styles.pageTitle}>Directory Tags</h1>
-          <p className={styles.pageSubtitle}>{tags.length} tags - used to categorize listings and events</p>
+          <p className={styles.pageSubtitle}>{tags.length} tags — extra keywords for listings and events. Categories have their own admin pages.</p>
         </div>
       </div>
 

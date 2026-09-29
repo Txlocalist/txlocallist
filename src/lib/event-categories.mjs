@@ -1,3 +1,4 @@
+// Initial seed values only. Live forms load EventCategory rows from the database.
 export const EVENT_CATEGORIES = [
   "Live Music",
   "Family Friendly",
@@ -17,26 +18,20 @@ export const EVENT_CATEGORIES = [
   "Other",
 ];
 
-const EVENT_CATEGORY_SET = new Set(EVENT_CATEGORIES);
 const EVENT_CATEGORY_TAG_PREFIX = "Event Category: ";
-
-export function isEventCategory(value) {
-  return EVENT_CATEGORY_SET.has(value);
-}
 
 export function toEventCategoryTagName(category) {
   return `${EVENT_CATEGORY_TAG_PREFIX}${category}`;
 }
 
 export function fromEventCategoryTagName(tagName) {
-  if (typeof tagName !== "string" || !tagName.startsWith(EVENT_CATEGORY_TAG_PREFIX)) {
+  if (!isEventCategoryTagName(tagName)) {
     return null;
   }
 
-  const category = tagName.slice(EVENT_CATEGORY_TAG_PREFIX.length);
-  return isEventCategory(category) ? category : null;
+  return tagName.slice(tagName.indexOf(":") + 1).trim() || null;
 }
 
 export function isEventCategoryTagName(tagName) {
-  return fromEventCategoryTagName(tagName) !== null;
+  return typeof tagName === "string" && /^Event Category:/i.test(tagName.trim());
 }

@@ -52,15 +52,16 @@ describe("event schema compatibility", () => {
       .mockRejectedValueOnce(missingColumnError())
       .mockRejectedValueOnce(missingColumnError())
       .mockRejectedValueOnce(missingColumnError())
+      .mockRejectedValueOnce(missingColumnError())
       .mockResolvedValueOnce([event]);
 
     const result = await getPublishedEvents();
 
     expect(result).toHaveLength(1);
     expect(result[0]).toMatchObject({ id: "event-1", recurrence: "NONE" });
-    expect(mocks.findMany).toHaveBeenCalledTimes(4);
+    expect(mocks.findMany).toHaveBeenCalledTimes(5);
 
-    const legacyQuery = mocks.findMany.mock.calls[3][0];
+    const legacyQuery = mocks.findMany.mock.calls[4][0];
     expect(JSON.stringify(legacyQuery.where)).not.toContain("recurrence");
     expect(JSON.stringify(legacyQuery.where)).not.toContain("deletedAt");
     expect(legacyQuery.select).not.toHaveProperty("recurrence");
@@ -71,14 +72,15 @@ describe("event schema compatibility", () => {
     mocks.findFirst
       .mockRejectedValueOnce(missingColumnError())
       .mockRejectedValueOnce(missingColumnError())
+      .mockRejectedValueOnce(missingColumnError())
       .mockResolvedValueOnce(event);
 
     const result = await getEventById("event-1");
 
     expect(result).toMatchObject({ id: "event-1", recurrence: "NONE" });
-    expect(mocks.findFirst).toHaveBeenCalledTimes(3);
+    expect(mocks.findFirst).toHaveBeenCalledTimes(4);
 
-    const legacyQuery = mocks.findFirst.mock.calls[2][0];
+    const legacyQuery = mocks.findFirst.mock.calls[3][0];
     expect(JSON.stringify(legacyQuery.where)).not.toContain("recurrence");
     expect(JSON.stringify(legacyQuery.where)).not.toContain("deletedAt");
     expect(legacyQuery.select).not.toHaveProperty("recurrence");

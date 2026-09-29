@@ -6,11 +6,8 @@ import { redirect } from "next/navigation";
 
 import { requireUser } from "@/lib/auth/session";
 import { getAccountAccess, isStaffRole } from "@/lib/account-access";
-import {
-  isEventCategory,
-  isEventCategoryTagName,
-  toEventCategoryTagName,
-} from "@/lib/event-categories.mjs";
+import { isEventCategoryTagName } from "@/lib/event-categories.mjs";
+import { resolveEventCategory } from "@/lib/categories.server";
 import {
   EventDateValidationError,
   validateOrganizerEventDateRange,
@@ -28,6 +25,7 @@ import {
 } from "@/lib/event-payments";
 import { isEventPostingEnabled } from "@/lib/pricing";
 import { prisma } from "@/lib/prisma";
+import { resolveEventCity } from "@/lib/cities.server";
 import { isEventPast } from "@/lib/event-dates";
 import { isRecurringEvent, validateEventRecurrence } from "@/lib/event-recurrence";
 
@@ -67,12 +65,14 @@ async function getValidatedEventInput(formData, user, existingEvent = null) {
   const values = {
     title: getTextValue(formData, "title"),
     category: getTextValue(formData, "category"),
+    categoryId: getTextValue(formData, "categoryId"),
     description: getTextValue(formData, "description"),
     imageUrl: getTextValue(formData, "imageUrl"),
     addressName: getTextValue(formData, "addressName"),
     address: getTextValue(formData, "address"),
     zipCode: getTextValue(formData, "zipCode"),
     city: getTextValue(formData, "city"),
+    cityId: getTextValue(formData, "cityId") === "legacy" ? "" : getTextValue(formData, "cityId"),
     state: getTextValue(formData, "state") || "TX",
     country: getTextValue(formData, "country") || "US",
     businessId: getTextValue(formData, "businessId") || null,
@@ -86,13 +86,13 @@ async function getValidatedEventInput(formData, user, existingEvent = null) {
   };
   const fieldErrors = {};
 
-  if (!isEventCategory(values.category)) fieldErrors.category = "Choose a valid event category.";
+  if (!values.categoryId && !values.category) fieldErrors.category = "Choose an event category.";
   if (values.title.length < 3) fieldErrors.title = "Title must be at least 3 characters.";
   if (values.title.length > 120) fieldErrors.title = "Title must be 120 characters or fewer.";
   if (values.description.length < 20) fieldErrors.description = "Description must be at least 20 characters.";
   if (values.description.length > 300) fieldErrors.description = "Description must be 300 characters or fewer.";
   if (!values.address) fieldErrors.address = "Street address is required.";
-  if (!values.city) fieldErrors.city = "City is required.";
+  if (!values.city && !values.cityId) fieldErrors.city = "Select a city.";
   if (!values.zipCode) fieldErrors.zipCode = "ZIP code is required.";
   if (!isSafeEventUrl(values.eventUrl) || values.eventUrl.length > 2048) {
     fieldErrors.eventUrl = "Enter a valid http or https event link.";
@@ -175,7 +175,7 @@ async function getValidatedEventInput(formData, user, existingEvent = null) {
         .filter((tag) => tag && !isEventCategoryTagName(tag))
         .slice(0, 10)
     : [];
-  const tagNames = [toEventCategoryTagName(values.category), ...optionalTagNames]
+  const tagNames = optionalTagNames
     .filter((name, index, names) => {
       const normalized = name.toLowerCase();
       return names.findIndex((candidate) => candidate.toLowerCase() === normalized) === index;
@@ -258,6 +258,8 @@ export async function createEventAction(prevState, formData) {
   let event;
   try {
     event = await prisma.$transaction(async (tx) => {
+      const location = await resolveEventCity(tx, input.values);
+      const categoryId = await resolveEventCategory(tx, input.values);
       const tagConnects = await upsertEventTags(tx, input.tagNames);
       const created = await tx.event.create({
         data: {
@@ -267,9 +269,8 @@ export async function createEventAction(prevState, formData) {
           addressName: input.values.addressName || input.values.address,
           address: input.values.address,
           zipCode: input.values.zipCode,
-          city: input.values.city,
-          state: input.values.state,
-          country: input.values.country,
+          ...location,
+          categoryId,
           creatorId: user.id,
           businessId: input.business?.id ?? null,
           startDate: input.schedule.startDate,
@@ -294,6 +295,8 @@ export async function createEventAction(prevState, formData) {
       return created;
     });
   } catch (error) {
+    if (error?.code === "EVENT_CATEGORY_UNAVAILABLE") return { error: error.message, fieldErrors: { category: error.message } };
+    if (error?.code === "CITY_UNAVAILABLE") return { error: error.message, fieldErrors: { city: error.message } };
     console.error("[events] event creation failed:", error);
     if (isEventImageUploadClaimError(error)) {
       return {
@@ -501,6 +504,8 @@ export async function updateEventAction(prevState, formData) {
   let replacedUploadIds = [];
   try {
     replacedUploadIds = await prisma.$transaction(async (tx) => {
+      const location = await resolveEventCity(tx, input.values, event);
+      const categoryId = await resolveEventCategory(tx, input.values);
       const tagConnects = await upsertEventTags(tx, input.tagNames);
       const updated = await tx.event.updateMany({
         where: {
@@ -517,9 +522,8 @@ export async function updateEventAction(prevState, formData) {
           addressName: input.values.addressName || input.values.address,
           address: input.values.address,
           zipCode: input.values.zipCode,
-          city: input.values.city,
-          state: input.values.state,
-          country: input.values.country,
+          ...location,
+          categoryId,
           businessId: input.business?.id ?? null,
           startDate: input.schedule.startDate,
           endDate: input.schedule.endDate,
@@ -554,6 +558,8 @@ export async function updateEventAction(prevState, formData) {
       return [];
     });
   } catch (error) {
+    if (error?.code === "EVENT_CATEGORY_UNAVAILABLE") return { error: error.message, fieldErrors: { category: error.message } };
+    if (error?.code === "CITY_UNAVAILABLE") return { error: error.message, fieldErrors: { city: error.message } };
     console.error("[events] event update failed:", error);
     if (isEventImageUploadClaimError(error)) {
       return {

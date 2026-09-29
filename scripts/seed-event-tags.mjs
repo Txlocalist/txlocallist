@@ -29,9 +29,9 @@ const prisma = new PrismaClient({ adapter });
 try {
   await Promise.all(
     EVENT_CATEGORIES.map((name) =>
-      prisma.tag.upsert({
+      prisma.eventCategory.upsert({
         where: { slug: slugifyTag(name) },
-        update: { name },
+        update: {},
         create: {
           name,
           slug: slugifyTag(name),
@@ -40,7 +40,7 @@ try {
     ),
   );
 
-  console.log(`Seeded ${EVENT_CATEGORIES.length} default event tags`);
+  console.log(`Ensured ${EVENT_CATEGORIES.length} default event categories (existing names preserved)`);
 } finally {
   await prisma.$disconnect();
 }

@@ -10,6 +10,9 @@ import EventsResults from "@/app/events/results/EventsResults";
 import { CreateEventForm } from "@/app/dashboard/events/new/CreateEventForm";
 import { FavoritesDashboard } from "@/app/dashboard/favorites/FavoritesDashboard";
 import CityCreateForm from "@/app/admin/cities/CityCreateForm";
+import CityManagementList from "@/app/admin/cities/CityManagementList";
+import CategoryManager from "@/app/admin/categories/CategoryManager";
+import { EVENT_CATEGORIES } from "@/lib/event-categories.mjs";
 import { CreateBusinessForm } from "@/app/dashboard/businesses/new/CreateBusinessForm";
 import { EditBusinessForm } from "@/app/dashboard/businesses/[id]/edit/EditBusinessForm";
 import "@/app/globals.css";
@@ -25,6 +28,8 @@ function App() {
     occurrences: ["10", "17", "24"].map((day) => ({ startDate: `2030-01-${day}T16:00:00Z`, endDate: `2030-01-${day}T18:00:00Z`, dateKeys: [`2030-01-${day}`] })),
   }] : events;
   const cities = ["Austin", "Dallas", localStorage.getItem("fixtureCity") || "Empty Town"];
+  const eventCategories = [...EVENT_CATEGORIES, ...(localStorage.getItem("fixtureEventCategory") ? [localStorage.getItem("fixtureEventCategory")] : [])].map((name) => ({ id: `event-${name}`, name }));
+  const businessCategories = ["Shopping", ...(localStorage.getItem("fixtureBusinessCategory") ? [localStorage.getItem("fixtureBusinessCategory")] : [])].map((name) => ({ id: `business-${name}`, name }));
   const resultEvents = localStorage.getItem("fixturePagedEvents")
     ? Array.from({ length: 25 }, (_, index) => ({ ...calendarEvents[index % calendarEvents.length], id: String(index), title: `Event ${String(index).padStart(2, "0")}` }))
     : calendarEvents;
@@ -45,16 +50,23 @@ function App() {
   }
   if (path === "/event-form" || path === "/event-form-edit") return <main style={{ maxWidth: 850, margin: "auto", padding: 24 }}><CreateEventForm
     businesses={[{ id: "fixture-business", name: "Town Hall" }]} hasMembership={!params.has("oneTime")} oneTimePostingEnabled eventPostPrice="$10"
+    cities={cities.map((name) => ({ id: name, name }))}
+    categories={eventCategories}
     mode={path.endsWith("edit") ? "edit" : "create"}
-    initialEvent={{ title: "Weekly Open Mic", description: "Join your neighbors for live music every Thursday night.", category: "Live Music", address: "123 Main Street", city: "Austin", zipCode: "78701", businessId: "fixture-business", startDate: "2030-01-10T19:00", endDate: "2030-01-10T22:00", timezone: "America/Chicago", ...(path.endsWith("edit") ? { id: "fixture-event", postingMethod: params.has("oneTime") ? "ONE_TIME" : "SUBSCRIPTION", recurrence: params.has("oneTime") ? "NONE" : "WEEKLY", recurrenceUntil: "2030-02-07" } : {}) }}
+    initialEvent={{ title: "Weekly Open Mic", description: "Join your neighbors for live music every Thursday night.", categoryId: "event-Live Music", address: "123 Main Street", city: "Austin", zipCode: "78701", businessId: "fixture-business", startDate: "2030-01-10T19:00", endDate: "2030-01-10T22:00", timezone: "America/Chicago", ...(path.endsWith("edit") ? { id: "fixture-event", postingMethod: params.has("oneTime") ? "ONE_TIME" : "SUBSCRIPTION", recurrence: params.has("oneTime") ? "NONE" : "WEEKLY", recurrenceUntil: "2030-02-07" } : {}) }}
   /></main>;
   if (path === "/results") return <ResultsExperience availableCities={cities} availableCategories={[{ id: "shops", name: "Shops", slug: "shops" }]} initialFavoriteBusinesses={favorites.map((item) => ({ ...item, savedAt: item.createdAt, slug: item.businessSlug, city: { name: item.cityName }, activeJobCount: 1 }))} user={{ id: "fixture" }} dashboardPath="/dashboard" />;
   if (path === "/events") return <EventsLanding events={calendarEvents} cities={cities.map((city) => `${city}, TX`)} categories={["Community", "Live Music", "Markets"]} isLoggedIn dashboardPath="/dashboard" />;
   if (path === "/events/results") return <EventsResults events={resultEvents} allEvents={resultEvents} cities={cities.map((city) => `${city}, TX`)} categories={["Community"]} isLoggedIn dashboardPath="/dashboard" />;
   if (path === "/saved") return <main style={{ padding: 20 }}><FavoritesDashboard favorites={favorites} /></main>;
+  if (path.startsWith("/manage-categories/")) {
+    const type = path.endsWith("event") ? "event" : "business";
+    return <main style={{ maxWidth: 900, padding: 24, margin: "auto" }}><h1>{type === "event" ? "Event Categories" : "Business Categories"}</h1><CategoryManager type={type} categories={(type === "event" ? eventCategories : businessCategories).map((category) => ({ ...category, count: 2 }))} /></main>;
+  }
   if (path === "/city") return <main style={{ maxWidth: 720, padding: 24, margin: "auto" }}><h1>Add a Texas city</h1><CityCreateForm /></main>;
-  if (path === "/new-business") return <main style={{ maxWidth: 900, padding: 20, margin: "auto" }}><CreateBusinessForm cities={cities.map((name) => ({ id: name, name }))} categories={[]} tags={[]} /></main>;
-  if (path === "/edit-business") return <main style={{ maxWidth: 900, padding: 20, margin: "auto" }}><EditBusinessForm business={{ id: "fixture", name: "Town Market", description: "A local market serving the community.", cityId: "Austin", categories: [], tags: [] }} cities={cities.map((name) => ({ id: name, name }))} categories={[]} tags={[]} /></main>;
+  if (path === "/manage-cities") return <main style={{ maxWidth: 900, padding: 24, margin: "auto" }}><h1>Cities</h1><CityManagementList cities={[...cities, "Uncategorized"].map((name) => ({ id: name, name, slug: name.toLowerCase().replaceAll(" ", "-"), _count: { businesses: name === "Austin" ? 3 : 0 } }))} /></main>;
+  if (path === "/new-business") return <main style={{ maxWidth: 900, padding: 20, margin: "auto" }}><CreateBusinessForm cities={cities.map((name) => ({ id: name, name }))} categories={businessCategories} tags={[]} /></main>;
+  if (path === "/edit-business") return <main style={{ maxWidth: 900, padding: 20, margin: "auto" }}><EditBusinessForm business={{ id: "fixture", name: "Town Market", description: "A local market serving the community.", cityId: "Austin", categories: [], tags: [] }} cities={cities.map((name) => ({ id: name, name }))} categories={businessCategories} tags={[]} /></main>;
   return <main style={{ maxWidth: 800, margin: "auto", padding: 24 }}><h1>My listings</h1><p>Town Market</p><DeleteListingButton id="fixture" name="Town Market" kind={params.get("kind") || "business"} /><button style={{ margin: 20 }}>Outside dialog</button></main>;
 }
 createRoot(document.getElementById("root")).render(<App />);

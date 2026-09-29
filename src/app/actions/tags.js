@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { requireStaff } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { isEventCategoryTagName } from "@/lib/event-categories.mjs";
 
 const MIN_TAG_LENGTH = 2;
 
@@ -33,6 +34,10 @@ export async function createTagAction(_prevState, formData) {
   const name = getTextValue(formData, "name");
   const slug = slugifyTag(name);
   const fieldErrors = {};
+
+  if (isEventCategoryTagName(name)) {
+    return buildErrorState("Use the Event Categories page to manage event categories.", { name: "This prefix is reserved for legacy event categories." });
+  }
 
   if (name.length < MIN_TAG_LENGTH) {
     fieldErrors.name = `Use at least ${MIN_TAG_LENGTH} characters for the tag name.`;

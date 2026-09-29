@@ -8,6 +8,8 @@ import {
   isEventCategoryTagName,
 } from "@/lib/event-categories.mjs";
 import { prisma } from "@/lib/prisma";
+import { getSelectableCities } from "@/lib/cities.server";
+import { getEventCategoryOptions } from "@/lib/categories.server";
 import { getRecurrenceUntilInput } from "@/lib/event-recurrence";
 import {
   EVENT_POST_PRICE_CENTS,
@@ -28,7 +30,7 @@ export default async function EditEventPage({ params }) {
   const session = await getCurrentSession();
   if (!session?.user) redirect(`/login?next=${encodeURIComponent(`/dashboard/events/${id}/edit`)}`);
 
-  const [event, businesses, access] = await Promise.all([
+  const [event, businesses, access, cities, categories] = await Promise.all([
     prisma.event.findUnique({
       where: { id },
       include: { tags: { select: { name: true } } },
@@ -39,6 +41,8 @@ export default async function EditEventPage({ params }) {
       orderBy: { name: "asc" },
     }),
     getAccountAccess(session.user.id),
+    getSelectableCities(),
+    getEventCategoryOptions(),
   ]);
 
   if (!event || event.deletedAt || (event.creatorId !== session.user.id && session.user.role !== "ADMIN")) {
@@ -62,10 +66,12 @@ export default async function EditEventPage({ params }) {
     description: event.description,
     imageUrl: event.imageUrl,
     category,
+    categoryId: event.categoryId ?? categories.find((item) => item.name === category)?.id ?? "",
     addressName: event.addressName,
     address: event.address,
     city: event.city,
     state: event.state,
+    country: event.country,
     zipCode: event.zipCode,
     businessId: event.businessId,
     timezone,
@@ -96,6 +102,8 @@ export default async function EditEventPage({ params }) {
       <div className={styles.card}>
         <CreateEventForm
           businesses={businesses}
+          cities={cities}
+          categories={categories}
           initialEvent={initialEvent}
           mode="edit"
           hasMembership={Boolean(access?.hasMembershipAccess)}

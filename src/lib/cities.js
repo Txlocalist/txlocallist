@@ -1,3 +1,9 @@
+export const UNCATEGORIZED_CITY = { name: "Uncategorized", slug: "uncategorized", state: "Texas" };
+
+export function isUncategorizedCity(city) {
+  return city?.slug === UNCATEGORIZED_CITY.slug;
+}
+
 export function normalizeCityInput(value) {
   const name = typeof value === "string"
     ? value.normalize("NFC").trim().replace(/\s+/g, " ").replace(/\u2019/g, "'")
@@ -10,6 +16,9 @@ export function normalizeCityInput(value) {
     .replace(/^-+|-+$/g, "");
   if (name.length < 2 || name.length > 100 || !slug || !/^[\p{L}\p{M} .'-]+$/u.test(name)) {
     return { error: "Enter a city name between 2 and 100 characters, using letters, spaces, apostrophes, periods or hyphens." };
+  }
+  if (slug === UNCATEGORIZED_CITY.slug) {
+    return { error: "Uncategorized is reserved for listings whose city was deleted." };
   }
   return { name, slug, state: "Texas" };
 }

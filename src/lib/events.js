@@ -1,6 +1,7 @@
 import { formatEventCityLabel, mergeEventCityLabels } from "@/lib/cities";
 import { getPublicEventAccessWhere } from "@/lib/listing-visibility";
 import { prisma } from "@/lib/prisma";
+import { getEventCategoryOptions } from "@/lib/categories.server";
 import { getEventOccurrences, getRecurrenceLabel, isRecurringEvent } from "@/lib/event-recurrence";
 import { fromZonedTime } from "date-fns-tz";
 import {
@@ -43,6 +44,7 @@ function slugifyCategoryLabel(value) {
 }
 
 function inferEventType(event) {
+  if (event.category?.name) return event.category.name;
   const explicitCategory = (event.tags || [])
     .map((tag) => fromEventCategoryTagName(tag.name))
     .find(Boolean);
@@ -164,7 +166,7 @@ function normalizeEvent(event, now = new Date()) {
   // The event's category is its display-cased type (e.g. "Live Music"), not the
   // raw tag rows (e.g. "music"), so the category list, calendar legend, and card
   // labels all share one vocabulary. Raw tags remain available via `tags`.
-  const categoryTags = [{ name: type, slug: slugifyCategoryLabel(type) }];
+  const categoryTags = [{ id: event.category?.id, name: type, slug: event.category?.slug ?? slugifyCategoryLabel(type) }];
 
   return {
     id: event.id,
@@ -211,7 +213,7 @@ function normalizeEvent(event, now = new Date()) {
 }
 
 export async function getPublishedEvents(userId = null) {
-  const findEvents = ({ includeLikes, includeRecurrence, includeSoftDeletion }) => prisma.event.findMany({
+  const findEvents = ({ includeLikes, includeRecurrence, includeSoftDeletion, includeCategory }) => prisma.event.findMany({
     where: getPublicEventWhere(new Date(), { includeRecurrence, includeSoftDeletion }),
     orderBy: [{ startDate: "asc" }, { createdAt: "desc" }],
     select: {
@@ -232,6 +234,7 @@ export async function getPublishedEvents(userId = null) {
         ? { recurrence: true, recurrenceUntil: true }
         : {}),
       tags: { select: { name: true, slug: true } },
+      ...(includeCategory ? { category: { select: { id: true, name: true, slug: true } } } : {}),
       business: {
         select: {
           name: true,
@@ -250,7 +253,8 @@ export async function getPublishedEvents(userId = null) {
   });
 
   const profiles = [
-    { includeLikes: true, includeRecurrence: true, includeSoftDeletion: true },
+    { includeLikes: true, includeRecurrence: true, includeSoftDeletion: true, includeCategory: true },
+    { includeLikes: false, includeRecurrence: true, includeSoftDeletion: true, includeCategory: true },
     { includeLikes: false, includeRecurrence: true, includeSoftDeletion: true },
     { includeLikes: false, includeRecurrence: false, includeSoftDeletion: true },
     { includeLikes: false, includeRecurrence: false, includeSoftDeletion: false },
@@ -266,7 +270,7 @@ export async function getPublishedEvents(userId = null) {
         profile.includeLikes && isUnavailablePrismaRelationError(error, "likes");
       const staleEventSchema =
         isMissingPrismaTableError(error) ||
-        ["recurrence", "recurrenceUntil", "deletedAt"].some((field) =>
+        ["recurrence", "recurrenceUntil", "deletedAt", "category", "categoryId"].some((field) =>
           isUnavailablePrismaRelationError(error, field)
         );
 
@@ -322,7 +326,7 @@ export async function getPublishedEventCityNames() {
     } catch (error) {
       const staleEventSchema =
         isMissingPrismaTableError(error) ||
-        ["recurrence", "recurrenceUntil", "deletedAt"].some((field) =>
+        ["recurrence", "recurrenceUntil", "deletedAt", "category", "categoryId"].some((field) =>
           isUnavailablePrismaRelationError(error, field)
         );
 
@@ -384,7 +388,7 @@ export function filterEvents(events, { query = "", location = "", category = "",
     }
 
     if (categoryValue) {
-      const categoryHaystack = [event.type, ...(event.tags || [])]
+      const categoryHaystack = [event.type, ...(event.categoryTags || []).map((item) => item.name)]
         .filter(Boolean)
         .map((value) => value.toLowerCase());
 
@@ -423,9 +427,13 @@ export function groupEventsByDate(events) {
 }
 
 export async function getEventsPageData(filters = {}, { userId = null } = {}) {
-  const [events, managedCities] = await Promise.all([
+  const [events, managedCities, managedCategories] = await Promise.all([
     getPublishedEvents(userId),
     prisma.city.findMany({ select: { name: true, state: true }, orderBy: { name: "asc" } }),
+    getEventCategoryOptions().catch((error) => {
+      if (isMissingPrismaTableError(error)) return [];
+      throw error;
+    }),
   ]);
   const filteredEvents = filterEvents(events, filters);
 
@@ -434,12 +442,12 @@ export async function getEventsPageData(filters = {}, { userId = null } = {}) {
     filteredEvents,
     groupedEvents: groupEventsByDate(filteredEvents),
     cities: mergeEventCityLabels(managedCities, events),
-    categories: getEventCategories(events),
+    categories: unique([...managedCategories.map((category) => category.name), ...getEventCategories(events)]).sort((a, b) => a.localeCompare(b)),
   };
 }
 
 export async function getEventById(id, occurrenceDate = null) {
-  const findEvent = ({ includeRecurrence, includeSoftDeletion }) =>
+  const findEvent = ({ includeRecurrence, includeSoftDeletion, includeCategory }) =>
     prisma.event.findFirst({
       where: {
         id,
@@ -463,6 +471,7 @@ export async function getEventById(id, occurrenceDate = null) {
           ? { recurrence: true, recurrenceUntil: true }
           : {}),
         tags: { select: { name: true, slug: true } },
+        ...(includeCategory ? { category: { select: { id: true, name: true, slug: true } } } : {}),
         business: {
           select: {
             name: true,
@@ -473,6 +482,7 @@ export async function getEventById(id, occurrenceDate = null) {
     });
 
   const profiles = [
+    { includeRecurrence: true, includeSoftDeletion: true, includeCategory: true },
     { includeRecurrence: true, includeSoftDeletion: true },
     { includeRecurrence: false, includeSoftDeletion: true },
     { includeRecurrence: false, includeSoftDeletion: false },
@@ -486,7 +496,7 @@ export async function getEventById(id, occurrenceDate = null) {
     } catch (error) {
       const staleEventSchema =
         isMissingPrismaTableError(error) ||
-        ["recurrence", "recurrenceUntil", "deletedAt"].some((field) =>
+        ["recurrence", "recurrenceUntil", "deletedAt", "category", "categoryId"].some((field) =>
           isUnavailablePrismaRelationError(error, field)
         );
 

@@ -10,6 +10,7 @@ import { normalizeBusinessHoursInput } from "@/lib/business-hours";
 import { isEventCategoryTagName } from "@/lib/event-categories.mjs";
 import { getPublicBusinessWhere } from "@/lib/listing-visibility";
 import { prisma } from "@/lib/prisma";
+import { isUncategorizedCity, normalizeCityInput } from "@/lib/cities";
 import { isMissingPrismaTableError, phase3SchemaMessage } from "@/lib/prisma-errors";
 
 const MIN_NAME_LENGTH = 3;
@@ -83,10 +84,9 @@ async function areBusinessTagIdsValid(tagIds) {
 
 async function resolveCity({ cityId, cityName }) {
   if (cityId) return prisma.city.findUnique({ where: { id: cityId } });
-  const name = cityName?.toString().trim();
-  if (!name || name.length < 2) return null;
-  const slug = slugify(name);
-  if (!slug) return null;
+  const input = normalizeCityInput(cityName);
+  if (input.error) return null;
+  const { name, slug } = input;
   return prisma.city.upsert({
     where: { slug },
     update: {},
@@ -222,7 +222,7 @@ export async function createBusinessAction(_prevState, formData) {
 
   // Verify city exists
   const city = await prisma.city.findUnique({ where: { id: cityId } });
-  if (!city) {
+  if (!city || isUncategorizedCity(city)) {
     return buildErrorState("Selected city not found.", { cityId: "City does not exist." });
   }
 
@@ -478,7 +478,7 @@ export async function createBusinessFromFormAction(data) {
 
   // Verify city exists
   const city = await resolveCity(data);
-  if (!city) {
+  if (!city || isUncategorizedCity(city)) {
     return { success: false, message: "Selected city not found." };
   }
 
@@ -686,7 +686,7 @@ export async function updateBusinessAction(businessId, data) {
 
   // Verify city exists
   const city = await prisma.city.findUnique({ where: { id: data.cityId } });
-  if (!city) {
+  if (!city || (isUncategorizedCity(city) && business.cityId !== city.id)) {
     return { success: false, message: "Selected city not found." };
   }
 

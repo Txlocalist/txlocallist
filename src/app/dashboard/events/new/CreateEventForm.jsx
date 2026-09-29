@@ -5,7 +5,6 @@ import { useActionState, useEffect, useRef, useState } from "react";
 
 import { createEventAction, updateEventAction } from "@/app/actions/events";
 import { PhotoUploader } from "@/components/PhotoUploader";
-import { EVENT_CATEGORIES } from "@/lib/event-categories.mjs";
 
 import styles from "./form.module.css";
 
@@ -22,6 +21,8 @@ function errorAttributes(fieldErrors, field) {
 }
 export function CreateEventForm({
   businesses = [],
+  cities = [],
+  categories = [],
   hasMembership = false,
   isStaff = false,
   oneTimePostingEnabled = false,
@@ -48,6 +49,8 @@ export function CreateEventForm({
   const [description, setDescription] = useState(initialEvent?.description ?? "");
   const [recurrence, setRecurrence] = useState(initialEvent?.recurrence ?? "NONE");
   const isEditing = mode === "edit";
+  const selectedCity = cities.find((city) => city.name.toLowerCase() === initialEvent?.city?.toLowerCase() && ["tx", "texas"].includes((initialEvent?.state ?? "TX").toLowerCase()) && ["us", "usa", "united states"].includes((initialEvent?.country ?? "US").toLowerCase()));
+  const [cityId, setCityId] = useState(selectedCity?.id ?? (isEditing && initialEvent?.city ? "legacy" : ""));
   const fieldErrors = state?.fieldErrors ?? {};
   const hasCoveredBusiness = hasMembership && businesses.length > 0;
   const canRepeat = (isStaff || hasCoveredBusiness) && initialEvent?.postingMethod !== "ONE_TIME";
@@ -68,6 +71,7 @@ export function CreateEventForm({
   return (
     <form ref={formRef} action={formAction} className={styles.form}>
       {initialEvent?.id ? <input type="hidden" name="eventId" value={initialEvent.id} /> : null}
+      <input type="hidden" name="country" value={cityId === "legacy" ? initialEvent?.country ?? "US" : "US"} />
 
       {state?.error ? (
         <div className={styles.errorMessage} role="alert">
@@ -95,18 +99,19 @@ export function CreateEventForm({
           <label className={styles.label} htmlFor="category">Happening Category *</label>
           <select
             id="category"
-            name="category"
+            name="categoryId"
             className={styles.select}
-            defaultValue={initialEvent?.category ?? ""}
+            defaultValue={initialEvent?.categoryId ?? ""}
             required
             {...errorAttributes(fieldErrors, "category")}
           >
             <option value="" disabled>Select a category</option>
-            {EVENT_CATEGORIES.map((category) => (
-              <option key={category} value={category}>{category}</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>{category.name}</option>
             ))}
           </select>
           <FieldError id="category-error" message={fieldErrors.category} />
+          {!categories.length ? <p className={styles.helpText}>No event categories are available yet. Please contact an administrator.</p> : null}
         </div>
 
         <div className={styles.formGroup}>
@@ -280,16 +285,20 @@ export function CreateEventForm({
         <div className={styles.formRow}>
           <div className={styles.formGroup}>
             <label className={styles.label} htmlFor="city">City *</label>
-            <input
+            <select
               id="city"
-              name="city"
-              type="text"
-              className={styles.input}
-              placeholder="Austin"
-              defaultValue={initialEvent?.city ?? ""}
+              name="cityId"
+              className={styles.select}
+              value={cityId}
+              onChange={(event) => setCityId(event.target.value)}
               required
               {...errorAttributes(fieldErrors, "city")}
-            />
+            >
+              <option value="" disabled>Select a city</option>
+              {isEditing && initialEvent?.city && !selectedCity ? <option value="legacy">{initialEvent.city} (current location)</option> : null}
+              {cities.map((city) => <option key={city.id} value={city.id}>{city.name}</option>)}
+            </select>
+            {isEditing ? <input type="hidden" name="city" value={initialEvent?.city ?? ""} /> : null}
             <FieldError id="city-error" message={fieldErrors.city} />
           </div>
           <div className={styles.formGroup}>
@@ -299,7 +308,8 @@ export function CreateEventForm({
               name="state"
               type="text"
               className={styles.input}
-              defaultValue={initialEvent?.state ?? "TX"}
+              value={cityId === "legacy" ? initialEvent?.state ?? "TX" : "TX"}
+              readOnly
               required
             />
           </div>

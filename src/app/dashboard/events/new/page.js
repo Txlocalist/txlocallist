@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { getCurrentSession } from "@/lib/auth/session";
 import { getAccountAccess, isStaffRole } from "@/lib/account-access";
 import { prisma } from "@/lib/prisma";
+import { getSelectableCities } from "@/lib/cities.server";
+import { getEventCategoryOptions } from "@/lib/categories.server";
 import { isMissingPrismaTableError } from "@/lib/prisma-errors";
 import {
   EVENT_MAX_CALENDAR_DAYS,
@@ -39,14 +41,16 @@ export default async function NewEventPage() {
   const oneTimePostingEnabled = isEventPostingEnabled();
   const eventPostPrice = formatWholeDollarPrice(EVENT_POST_PRICE_CENTS);
   let businesses = [];
+  let cities = [];
+  let categories = [];
   let schemaNotice = null;
 
   try {
-    businesses = await prisma.business.findMany({
+    [businesses, cities, categories] = await Promise.all([prisma.business.findMany({
       where: { ownerId: user.id, status: "ACTIVE", deletedAt: null },
       select: { id: true, name: true },
       orderBy: { name: "asc" },
-    });
+    }), getSelectableCities(), getEventCategoryOptions()]);
   } catch (error) {
     if (isMissingPrismaTableError(error)) {
       schemaNotice = "Happening posting is unavailable until the database update is applied.";
@@ -86,6 +90,8 @@ export default async function NewEventPage() {
         <div className={styles.card}>
           <CreateEventForm
             businesses={businesses}
+            cities={cities}
+            categories={categories}
             hasMembership={Boolean(billingState?.hasMembershipAccess)}
             isStaff={isStaff}
             oneTimePostingEnabled={oneTimePostingEnabled}

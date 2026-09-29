@@ -211,6 +211,16 @@ model Category {
   @@index([slug])
 }
 
+// Event categories are separate from business categories and free-form tags.
+model EventCategory {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  events    Event[]
+}
+
 model Tag {
   id        String   @id @default(cuid())
   name      String   @unique
@@ -616,6 +626,9 @@ model Event {
   description String
   imageUrl    String
 
+  categoryId String?
+  category   EventCategory? @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
   // Venue / location
   addressName String
   address     String
@@ -659,6 +672,7 @@ model Event {
   updatedAt DateTime @updatedAt
 
   @@index([city, state])
+  @@index([categoryId])
   @@index([creatorId])
   @@index([businessId])
   @@index([status, createdAt])

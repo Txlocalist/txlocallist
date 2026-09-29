@@ -50,6 +50,7 @@ export async function GET(request) {
         recurrence: true,
         recurrenceUntil: true,
         tags: { select: { name: true } },
+        category: { select: { id: true, name: true, slug: true } },
         business: { select: { name: true, slug: true } },
         ...(includeLikes
           ? {

@@ -178,7 +178,7 @@ test("event search and filters restore with Back, Forward and reload", async ({ 
   expect(await page.evaluate(() => window.serverNavigations || [])).toEqual([]);
 });
 
-test("new city appears in both Explore lists and business create/edit dropdowns", async ({ page }, info) => {
+test("new city appears in Explore and business/event create/edit dropdowns", async ({ page }, info) => {
   await mockResults(page);
   await page.goto("/city");
   await page.getByLabel("City name").fill("Test Empty Town");
@@ -191,6 +191,11 @@ test("new city appears in both Explore lists and business create/edit dropdowns"
   await expect(page.locator("#cityId option").filter({ hasText: "Test Empty Town" })).toHaveCount(1);
   await page.goto("/edit-business");
   await expect(page.locator("#cityId option").filter({ hasText: "Test Empty Town" })).toHaveCount(1);
+  for (const path of ["/event-form", "/event-form-edit"]) {
+    await page.goto(path);
+    await page.getByLabel("City *", { exact: true }).selectOption("Test Empty Town");
+    await expect(page.getByLabel("City *", { exact: true })).toHaveValue("Test Empty Town");
+  }
   await page.goto("/results");
   const cityTrigger = info.project.name === "mobile" ? page.locator(".mobile-bottom-nav button").filter({ hasText: "FILTERS" }) : page.locator(".nav-link-btn").filter({ hasText: "CITIES" });
   await cityTrigger.click();

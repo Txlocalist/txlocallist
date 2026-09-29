@@ -30,6 +30,7 @@
     "db:seed-events": "node scripts/seed-event-data.mjs",
     "db:seed-admin": "node scripts/seed-admin.mjs",
     "db:seed-tags": "node scripts/seed-event-tags.mjs",
+    "db:seed-event-categories": "node scripts/seed-event-tags.mjs",
     "db:seed-test-users": "node scripts/seed-test-users.mjs",
     "db:seed-italian": "node scripts/seed-italian-test.mjs",
     "db:seed-local-businesses": "node scripts/seed-local-businesses.mjs",

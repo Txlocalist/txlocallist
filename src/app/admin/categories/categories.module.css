@@ -1,0 +1,26 @@
+.manager { display: grid; gap: 20px; }
+.manager h2, .manager p { margin: 0; }
+.manager p { line-height: 1.6; }
+.create { display: grid; gap: 16px; border: 1px solid #ddd; border-radius: 12px; padding: 24px; background: white; }
+.form { display: grid; gap: 12px; }
+.form label { color: #333; }
+.form input:not([type="hidden"]) { color: #222; background: #fff; border: 1px solid #999; }
+.form input:focus-visible { outline: 3px solid #497b52; outline-offset: 2px; }
+.error { color: #8b251e; background: #fff0ee; border: 1px solid #e7b5b0; padding: 12px 14px; border-radius: 10px; }
+.success { color: #26542c; background: #edf6e8; border: 1px solid #afcfa6; padding: 12px 14px; border-radius: 10px; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 10px 16px; border: 1px solid #ccc; border-radius: 8px; background: white; color: #222; font: inherit; font-weight: 600; cursor: pointer; }
+.button:hover { background: #f4f4f4; }
+.button:focus-visible { outline: 3px solid #497b52; outline-offset: 3px; }
+.button:disabled { opacity: .55; cursor: default; }
+.list { list-style: none; margin: 0; padding: 0; border: 1px solid #ddd; border-radius: 12px; overflow: hidden; background: white; }
+.list li + li { border-top: 1px solid #ddd; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 24px; padding: 20px; }
+.row strong { overflow-wrap: anywhere; }
+.row span { color: #666; font-size: .875rem; }
+.edit { background: #faf9f6; padding: 20px; border-top: 1px solid #ddd; }
+@media (max-width: 640px) {
+  .create, .edit { padding: 16px; }
+  .row { grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 16px; }
+  .row .button { justify-self: start; }
+}
