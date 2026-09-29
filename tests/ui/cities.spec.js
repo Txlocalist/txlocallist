@@ -18,7 +18,7 @@ test("deletion explains the fallback, allows cancellation, and protects Uncatego
   await page.goto("/manage-cities");
   await expect(page.getByRole("button", { name: /(?:Edit|Delete) Uncategorized/ })).toHaveCount(0);
   await page.getByRole("button", { name: "Delete Austin", exact: true }).click();
-  await expect(page.getByText("All 3 businesses", { exact: false })).toBeVisible();
+  await expect(page.getByText("All 3 full listings, 0 other businesses", { exact: false })).toBeVisible();
   await expect(page.getByText("Listings, subscriptions, and event payments will be preserved.", { exact: false })).toBeVisible();
   expect(await page.evaluate(() => window.citySubmissions || [])).toEqual([]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);

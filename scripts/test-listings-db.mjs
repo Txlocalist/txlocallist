@@ -16,6 +16,7 @@ const env = {
 for (const args of [
   ["node_modules/prisma/build/index.js", "migrate", "deploy"],
   ["node_modules/vitest/vitest.mjs", "run", "tests/integration/listing-management-db.test.js"],
+  ["node_modules/vitest/vitest.mjs", "run", "tests/integration/business-import-db.test.js"],
 ]) {
   const result = spawnSync(process.execPath, args, { env, stdio: "inherit" });
   if (result.status !== 0) process.exit(result.status || 1);

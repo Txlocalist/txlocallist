@@ -112,18 +112,37 @@ export async function deleteCityAction(_previousState, formData) {
         where: { slug: UNCATEGORIZED_CITY.slug }, update: {}, create: UNCATEGORIZED_CITY,
       });
       const businesses = await tx.business.updateMany({ where: { cityId: id }, data: { cityId: fallback.id } });
+      // Publishing takes the same city lock first, so imports cannot be
+      // installed against a city while it is being reassigned and deleted.
+      await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(hashtext('txlocalist:business-import'))`;
+      const conflicts = await tx.$queryRaw`
+        SELECT lower(btrim("name")) AS "name" FROM "ImportedBusiness"
+        WHERE "cityId" IN (${id}, ${fallback.id})
+        GROUP BY lower(btrim("name")) HAVING count(*) > 1 AND bool_or("cityId" = ${id}) LIMIT 1`;
+      if (conflicts.length) {
+        // Throw so the full-listing reassignment above is rolled back too.
+        throw Object.assign(new Error("Reassign duplicate business names in the master spreadsheet before deleting this city. Moving them to Uncategorized would create duplicate other businesses."), { code: "IMPORTED_CITY_COLLISION" });
+      }
+      const imported = await tx.importedBusiness.updateMany({ where: { cityId: id }, data: { cityId: fallback.id } });
+      if (imported.count) {
+        await tx.businessImportState.upsert({
+          where: { id: "directory" }, create: { id: "directory", revision: 1 },
+          update: { revision: { increment: 1 } },
+        });
+      }
       const events = await tx.event.updateMany({ where: eventsInCity(city.name), data: { city: fallback.name } });
       await tx.city.delete({ where: { id } });
       await tx.auditLog.create({ data: {
         actorId: admin.id, action: "delete", entity: "City", entityId: id,
-        meta: JSON.stringify({ name: city.name, fallbackCityId: fallback.id, movedBusinesses: businesses.count, movedEvents: events.count }),
+        meta: JSON.stringify({ name: city.name, fallbackCityId: fallback.id, movedBusinesses: businesses.count, movedImportedBusinesses: imported.count, movedEvents: events.count }),
       } });
-      return { name: city.name, businesses: businesses.count, events: events.count };
+      return { name: city.name, businesses: businesses.count, imported: imported.count, events: events.count };
     });
     if (result?.error) return result;
   } catch (error) {
+    if (error?.code === "IMPORTED_CITY_COLLISION") return fail(error.message);
     return cityError(error, "deleted");
   }
   revalidatePath("/", "layout");
-  return { error: "", fieldErrors: {}, success: `${result.name} deleted. ${result.businesses} businesses and ${result.events} events moved to Uncategorized.` };
+  return { error: "", fieldErrors: {}, success: `${result.name} deleted. ${result.businesses} businesses, ${result.imported} other businesses, and ${result.events} events moved to Uncategorized.` };
 }

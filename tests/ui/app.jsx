@@ -2,6 +2,7 @@ import { createRoot } from "react-dom/client";
 import { usePathname, useSearchParams } from "next/navigation";
 import DeleteListingButton from "@/components/DeleteListingButton/DeleteListingButton";
 import ResultsExperience from "@/app/results/ResultsExperience";
+import OtherBusinessesSection from "@/components/OtherBusinesses/OtherBusinessesSection";
 import DashboardFrame from "@/app/dashboard/DashboardFrame";
 import dashboardStyles from "@/app/dashboard/DashboardShell.module.css";
 import Link from "next/link";
@@ -12,6 +13,7 @@ import { FavoritesDashboard } from "@/app/dashboard/favorites/FavoritesDashboard
 import CityCreateForm from "@/app/admin/cities/CityCreateForm";
 import CityManagementList from "@/app/admin/cities/CityManagementList";
 import CategoryManager from "@/app/admin/categories/CategoryManager";
+import BusinessImportManager from "@/app/admin/other-businesses/BusinessImportManager";
 import { EVENT_CATEGORIES } from "@/lib/event-categories.mjs";
 import { CreateBusinessForm } from "@/app/dashboard/businesses/new/CreateBusinessForm";
 import { EditBusinessForm } from "@/app/dashboard/businesses/[id]/edit/EditBusinessForm";
@@ -56,6 +58,8 @@ function App() {
     initialEvent={{ title: "Weekly Open Mic", description: "Join your neighbors for live music every Thursday night.", categoryId: "event-Live Music", address: "123 Main Street", city: "Austin", zipCode: "78701", businessId: "fixture-business", startDate: "2030-01-10T19:00", endDate: "2030-01-10T22:00", timezone: "America/Chicago", ...(path.endsWith("edit") ? { id: "fixture-event", postingMethod: params.has("oneTime") ? "ONE_TIME" : "SUBSCRIPTION", recurrence: params.has("oneTime") ? "NONE" : "WEEKLY", recurrenceUntil: "2030-02-07" } : {}) }}
   /></main>;
   if (path === "/results") return <ResultsExperience availableCities={cities} availableCategories={[{ id: "shops", name: "Shops", slug: "shops" }]} initialFavoriteBusinesses={favorites.map((item) => ({ ...item, savedAt: item.createdAt, slug: item.businessSlug, city: { name: item.cityName }, activeJobCount: 1 }))} user={{ id: "fixture" }} dashboardPath="/dashboard" />;
+  if (path.startsWith("/categories/")) return <main style={{ maxWidth: 1200, margin: "auto", padding: 24 }}><h1>Shops</h1><p>No full shopping listings found</p><OtherBusinessesSection category={path.split("/").pop()} citySlug={params.get("city") || ""} /></main>;
+  if (path === "/import-businesses") return <main style={{ maxWidth: 1100, margin: "auto", padding: 24 }}><BusinessImportManager initialState={{ revision: 7, total: 2, lastImportedAt: "2026-09-29T12:00:00Z", lastFileName: "master.csv", lastImportedBy: "admin@example.com" }} taxonomy={{ cities: [{ id: "austin", name: "Austin", slug: "austin" }], categories: [{ id: "shops", name: "Shops", slug: "shops" }] }} /></main>;
   if (path === "/events") return <EventsLanding events={calendarEvents} cities={cities.map((city) => `${city}, TX`)} categories={["Community", "Live Music", "Markets"]} isLoggedIn dashboardPath="/dashboard" />;
   if (path === "/events/results") return <EventsResults events={resultEvents} allEvents={resultEvents} cities={cities.map((city) => `${city}, TX`)} categories={["Community"]} isLoggedIn dashboardPath="/dashboard" />;
   if (path === "/saved") return <main style={{ padding: 20 }}><FavoritesDashboard favorites={favorites} /></main>;

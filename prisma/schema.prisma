@@ -192,6 +192,7 @@ model City {
 
   // Relations
   businesses Business[]
+  importedBusinesses ImportedBusiness[]
 
   @@index([slug])
   @@index([state])
@@ -207,6 +208,7 @@ model Category {
 
   // Relations
   businessCategories BusinessCategory[]
+  importedBusinesses ImportedBusiness[]
 
   @@index([slug])
 }
@@ -326,6 +328,29 @@ model Business {
   @@index([status])
   @@index([planId])
   @@index([publishedAt])
+}
+
+// Spreadsheet entries have no owner, subscription, slug, or landing page.
+model ImportedBusiness {
+  id         String   @id @default(cuid())
+  name       String
+  cityId     String
+  city       City     @relation(fields: [cityId], references: [id])
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+  createdAt  DateTime @default(now())
+
+  @@index([cityId, categoryId])
+  @@index([categoryId])
+}
+
+model BusinessImportState {
+  id               String    @id @default("directory")
+  revision         Int       @default(0)
+  lastImportedAt   DateTime?
+  lastFileName     String?
+  lastImportedBy   String?
+  lastFileHash     String?
 }
 
 model BusinessHours {

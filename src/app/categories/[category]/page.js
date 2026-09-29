@@ -6,6 +6,7 @@ import Link from "next/link";
 
 import { prisma } from "@/lib/prisma";
 import { Navbar, Footer, BusinessCard } from "@/components";
+import OtherBusinessesSection from "@/components/OtherBusinesses/OtherBusinessesSection";
 
 import styles from "./page.module.css";
 
@@ -86,8 +87,8 @@ export default async function CategoryPage({ params, searchParams }) {
             {category.name}
           </h1>
           <p className={styles.heroTagline}>
-            {businesses.length} {category.name.toLowerCase()} business
-            {businesses.length !== 1 ? "es" : ""} across Texas
+            {businesses.length} full {category.name.toLowerCase()} listing
+            {businesses.length !== 1 ? "s" : ""}{cityFilter ? " in this city" : " across Texas"}
           </p>
         </section>
 
@@ -98,13 +99,15 @@ export default async function CategoryPage({ params, searchParams }) {
           </div>
         ) : (
           <section className={styles.emptyState}>
-            <h2>No {category.name.toLowerCase()} businesses found</h2>
+            <h2>No full {category.name.toLowerCase()} listings found</h2>
             <p>Start exploring or post your business!</p>
             <Link href="/post-your-business" className={styles.ctaButton}>
               Post Your Business
             </Link>
           </section>
         )}
+
+        <OtherBusinessesSection category={categorySlug} citySlug={resolvedSearchParams?.city || ""} />
 
         {/* Breadcrumb */}
         <nav className={styles.breadcrumb}>

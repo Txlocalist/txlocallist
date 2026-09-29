@@ -23,6 +23,7 @@ import ResultsSort from "@/components/ResultsSort/ResultsSort";
 import toolbarStyles from "@/components/ResultsSort/MobileResultsToolbar.module.css";
 import { normalizeSort, sortResults } from "@/lib/results-sort";
 import ResultsCardSkeleton from "./ResultsCardSkeleton";
+import OtherBusinessesSection from "@/components/OtherBusinesses/OtherBusinessesSection";
 
 const INITIAL_RECENT_BUSINESS_LIMIT = 15;
 const EMPTY_ITEMS = [];
@@ -760,8 +761,8 @@ export default function ResultsExperience({
           : (
               <EmptyResultsState
                 eyebrow="No matches"
-                title="Nothing matched that search."
-                description="Try broadening your search or removing a filter chip."
+                title="No full listings matched that search."
+                description="Try broadening your search or removing a filter chip to find more full listings."
                 primaryLabel="Clear Filters"
                 primaryAction={clearSearch}
               />
@@ -1027,8 +1028,8 @@ export default function ResultsExperience({
                             : businesses.length
                         } ${
                           (activeBrowseTab === "favorites" ? visibleFavoriteBusinesses.length : businesses.length) !== 1
-                            ? "BUSINESSES"
-                            : "BUSINESS"
+                            ? activeBrowseTab === "favorites" ? "BUSINESSES" : "FULL LISTINGS"
+                            : activeBrowseTab === "favorites" ? "BUSINESS" : "FULL LISTING"
                         }${
                           jobsOnly
                             ? " · HIRING NOW"
@@ -1087,6 +1088,14 @@ export default function ResultsExperience({
 
               <ResultsPanel />
               <ResultsPagination className={toolbarStyles.mobilePagination} />
+
+              {urlParams.get("tab") !== "events" && urlParams.get("browse") !== "favorites" && urlParams.get("jobs") !== "1" ? (
+                <OtherBusinessesSection
+                  q={urlParams.get("q") || ""}
+                  loc={urlParams.get("loc") || ""}
+                  category={urlParams.get("category") || ""}
+                />
+              ) : null}
 
               <div className="results-trust-strip card-stack-effect">
                 <div className="results-trust-copy">

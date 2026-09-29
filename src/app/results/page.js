@@ -4,6 +4,7 @@ import { getPublishedEventCityNames } from "@/lib/events";
 import { prisma } from "@/lib/prisma";
 import { isMissingPrismaTableError } from "@/lib/prisma-errors";
 import { mergeCityNames } from "@/lib/cities";
+import { getImportedBusinessCategories } from "@/lib/imported-businesses";
 import ResultsExperience from "./ResultsExperience";
 
 export const metadata = {
@@ -105,8 +106,9 @@ export default async function ResultsPage({ searchParams }) {
   const initialCategory = params?.category ?? "";
   const initialBrowseAll = params?.browse === "all";
   const initialJobsOnly = params?.jobs === "1";
-  const [availableCategories, managedCities, publishedEventCities, user] = await Promise.all([
+  const [regularCategories, importedCategories, managedCities, publishedEventCities, user] = await Promise.all([
     getAvailableCategories(),
+    getImportedBusinessCategories(),
     prisma.city.findMany({
       orderBy: { name: "asc" },
       select: { name: true },
@@ -114,6 +116,10 @@ export default async function ResultsPage({ searchParams }) {
     getPublishedEventCityNames(),
     getCurrentUser().catch(() => null),
   ]);
+
+  const availableCategories = Array.from(new Map(
+    [...regularCategories, ...importedCategories].map((category) => [category.id, category])
+  ).values()).sort((a, b) => a.name.localeCompare(b.name));
 
   const availableCities = mergeCityNames(
     managedCities.map((city) => city.name),

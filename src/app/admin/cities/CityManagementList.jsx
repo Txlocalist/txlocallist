@@ -25,7 +25,7 @@ function CityActionForm({ city, mode, onClose, onSuccess }) {
     <input type="hidden" name="expectedName" value={city.name} />
     {deleting ? <>
       <h3>Delete {city.name}?</h3>
-      <p>All {city._count.businesses} businesses and any events in this Texas city will move to <strong>Uncategorized</strong>. Listings, subscriptions, and event payments will be preserved. You can assign a new city by editing each listing.</p>
+      <p>All {city._count.businesses} full listings, {city._count.importedBusinesses ?? 0} other businesses, and any events in this Texas city will move to <strong>Uncategorized</strong>. Listings, subscriptions, and event payments will be preserved. Edit full listings individually or re-upload the master spreadsheet to assign other businesses a new city.</p>
       <input type="hidden" name="confirmed" value="yes" />
     </> : <>
       <label className={formStyles.label} htmlFor={`city-name-${city.id}`}>City name</label>
@@ -46,7 +46,7 @@ function CityRow({ city, onSuccess }) {
   return <li className={styles.item}>
     <div className={styles.row}>
       <div><strong>{city.name}</strong><span className={styles.slug}>/{city.slug}</span></div>
-      <span>{city._count.businesses} businesses</span>
+      <span>{city._count.businesses} businesses · {city._count.importedBusinesses ?? 0} other businesses</span>
       {protectedCity ? <span className={styles.protected}>Protected fallback</span> : <div className={styles.actions}>
         <button type="button" className={styles.button} onClick={() => setMode("rename")} disabled={mode !== null} aria-label={`Edit ${city.name}`}>Edit name</button>
         <button type="button" className={`${styles.button} ${styles.danger}`} onClick={() => setMode("delete")} disabled={mode !== null} aria-label={`Delete ${city.name}`}>Delete</button>

@@ -360,7 +360,7 @@ describe.skipIf(!db)("listing management against PostgreSQL", () => {
     const archived = await db.business.create({ data: { name: "Archived shop", slug: id(), description: "Archived shop in the city", address: "123 Main St", zipCode: "78701", cityId: target.id, ownerId: owner.id, status: "ARCHIVED", deletedAt: new Date() } });
     const subscription = await db.subscription.create({ data: { businessId: business.id, planId: starter.id, status: "ACTIVE" } });
     const payment = await db.eventPayment.create({ data: { eventId: event.id, userId: owner.id, status: "PAID", stripePriceId: "price_test", amountCents: 1000 } });
-    expect((await deleteCityAction(null, cityInput(target, { confirmed: "yes" }))).success).toContain("2 businesses and 1 events");
+    expect((await deleteCityAction(null, cityInput(target, { confirmed: "yes" }))).success).toContain("2 businesses, 0 other businesses, and 1 events");
     const fallback = await db.city.findUniqueOrThrow({ where: { slug: "uncategorized" } });
     expect(await db.city.findUnique({ where: { id: target.id } })).toBeNull();
     expect(await db.business.findUnique({ where: { id: business.id } })).toMatchObject({ cityId: fallback.id, status: "ACTIVE", publishedAt: business.publishedAt });
