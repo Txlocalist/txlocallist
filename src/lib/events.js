@@ -162,11 +162,13 @@ function normalizeEvent(event, now = new Date()) {
   const rawTagNames = (event.tags || [])
     .map((tag) => tag.name)
     .filter((tagName) => !isEventCategoryTagName(tagName));
-  const tags = unique([type, ...rawTagNames]).slice(0, 6);
-  // The event's category is its display-cased type (e.g. "Live Music"), not the
-  // raw tag rows (e.g. "music"), so the category list, calendar legend, and card
-  // labels all share one vocabulary. Raw tags remain available via `tags`.
-  const categoryTags = [{ id: event.category?.id, name: type, slug: event.category?.slug ?? slugifyCategoryLabel(type) }];
+  const categoryNames = unique([type, ...(event.tags || []).map((tag) => fromEventCategoryTagName(tag.name))]);
+  const tags = unique([...categoryNames, ...rawTagNames]).slice(0, 6);
+  const categoryTags = categoryNames.map((name) => ({
+    id: name === type ? event.category?.id : undefined,
+    name,
+    slug: name === type && event.category?.slug ? event.category.slug : slugifyCategoryLabel(name),
+  }));
 
   return {
     id: event.id,

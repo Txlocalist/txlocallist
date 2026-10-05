@@ -5,7 +5,10 @@ import { useRouter } from "next/navigation";
 import formStyles from "../../new/form.module.css";
 import { updateBusinessAction } from "@/app/actions/businesses";
 import { BusinessHoursEditor } from "../../BusinessHoursEditor";
+import BusinessTaxonomyFields from "../../BusinessTaxonomyFields";
 import { createBusinessHoursFormState } from "@/lib/business-hours";
+import { PhotoUploader } from "@/components/PhotoUploader";
+import { MAX_BUSINESS_PHOTOS } from "@/lib/business-photos.mjs";
 
 function parseHiringRoles(raw) {
   if (!raw) return [""];
@@ -29,6 +32,7 @@ export function EditBusinessForm({ business, cities, categories, tags }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [photosChanged, setPhotosChanged] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -50,6 +54,7 @@ export function EditBusinessForm({ business, cities, categories, tags }) {
     newTags: "",
     isHiring: business.isHiring ?? false,
     hiringRoles: parseHiringRoles(business.hiringRoles),
+    photos: business.photos?.map((photo) => ({ url: photo.url, name: photo.alt || business.name })) || [],
   });
 
   // Handle input changes
@@ -64,22 +69,6 @@ export function EditBusinessForm({ business, cities, categories, tags }) {
     }));
   };
 
-  const handleTagToggle = (tagId) => {
-    setFormData((prev) => ({
-      ...prev,
-      tagIds: prev.tagIds.includes(tagId)
-        ? prev.tagIds.filter((id) => id !== tagId)
-        : prev.tagIds.length < 5 ? [...prev.tagIds, tagId] : prev.tagIds,
-    }));
-  };
-  const handleCategoryToggle = (categoryId) => {
-    setFormData((prev) => ({
-      ...prev,
-      categoryIds: prev.categoryIds.includes(categoryId)
-        ? prev.categoryIds.filter((id) => id !== categoryId)
-        : [...prev.categoryIds, categoryId],
-    }));
-  };
   const handleSocialChange = (platform, value) => setFormData((prev) => ({ ...prev, socialLinks: { ...prev.socialLinks, [platform]: value } }));
 
   const handleHiringRoleChange = (index, value) => {
@@ -148,6 +137,7 @@ export function EditBusinessForm({ business, cities, categories, tags }) {
         newTags: formData.newTags,
         isHiring: formData.isHiring,
         hiringRoles: formData.hiringRoles,
+        ...(photosChanged ? { photos: formData.photos } : {}),
       });
 
       if (!result.success) {
@@ -347,52 +337,27 @@ export function EditBusinessForm({ business, cities, categories, tags }) {
           }
         />
 
+        <h3 style={{ marginTop: "2rem" }}>Business Photos</h3>
+        <p className={formStyles.stepDescription}>
+          Add up to {MAX_BUSINESS_PHOTOS} business photos. Your first photo becomes the cover image.
+        </p>
+        <PhotoUploader
+          photos={formData.photos}
+          onChange={(photos) => {
+            setPhotosChanged(true);
+            setFormData((prev) => ({ ...prev, photos }));
+          }}
+          maxPhotos={MAX_BUSINESS_PHOTOS}
+        />
+
         <h3 style={{ marginTop: "2rem" }}>Categories & Tags</h3>
 
-        <div className={formStyles.formGroup}>
-          <label className={formStyles.label}>Business categories</label>
-          {categories.length > 0 ? (
-            <div className={formStyles.categoryGrid}>
-              {categories.map((category) => (
-                <label key={category.id} className={formStyles.categoryCheckbox}>
-                  <input
-                    type="checkbox"
-                    checked={formData.categoryIds.includes(category.id)}
-                    onChange={() => handleCategoryToggle(category.id)}
-                  />
-                  <span className={formStyles.categoryLabel}>{category.name}</span>
-                </label>
-              ))}
-            </div>
-          ) : (
-            <p className={formStyles.stepDescription}>No business categories are available yet.</p>
-          )}
-        </div>
-
-        <div className={formStyles.formGroup}>
-          <label className={formStyles.label}>Tags (up to five, admin-approved)</label>
-          {tags.length > 0 ? (
-            <div className={formStyles.categoryGrid}>
-              {tags.map((tag) => (
-                <label key={tag.id} className={formStyles.categoryCheckbox}>
-                  <input
-                    type="checkbox"
-                    checked={formData.tagIds.includes(tag.id)}
-                    onChange={() => handleTagToggle(tag.id)}
-                    disabled={!formData.tagIds.includes(tag.id) && formData.tagIds.length >= 5}
-                  />
-                  <span className={formStyles.categoryLabel}>{tag.name}</span>
-                </label>
-              ))}
-            </div>
-          ) : (
-            <p className={formStyles.stepDescription}>
-              No admin tags are available yet.
-            </p>
-          )}
-        </div>
-
-        <div className={formStyles.formGroup}><label htmlFor="newTags" className={formStyles.label}>Suggest new tags (optional)</label><input id="newTags" name="newTags" value={formData.newTags} onChange={handleChange} className={formStyles.input} placeholder="family-owned, dog-friendly" /><p className={formStyles.checkboxHint}>Separate tags with commas. Selected and suggested tags may total five.</p></div>
+        <BusinessTaxonomyFields
+          categories={categories}
+          tags={tags}
+          value={formData}
+          onChange={(changes) => setFormData((previous) => ({ ...previous, ...changes }))}
+        />
 
         <div className={formStyles.formGroup}>
           <label className={formStyles.checkboxLabel}>

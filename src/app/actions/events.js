@@ -1,13 +1,14 @@
 "use server";
 
-import { isRedirectError } from "next/dist/client/components/redirect-error";
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { requireUser } from "@/lib/auth/session";
 import { getAccountAccess, isStaffRole } from "@/lib/account-access";
-import { isEventCategoryTagName } from "@/lib/event-categories.mjs";
-import { resolveEventCategory } from "@/lib/categories.server";
+import { getEventBusinessProfileNotice } from "@/lib/event-business-profile";
+import { EVENT_CATEGORY_LIMIT, EVENT_TAG_LIMIT, isEventCategoryTagName } from "@/lib/event-categories.mjs";
+import { resolveEventCategories } from "@/lib/categories.server";
 import {
   EventDateValidationError,
   validateOrganizerEventDateRange,
@@ -20,10 +21,8 @@ import {
 } from "@/lib/event-image-uploads";
 import {
   cancelEventPosting,
-  createEventCheckoutSession,
   expireOpenEventCheckoutSessions,
 } from "@/lib/event-payments";
-import { isEventPostingEnabled } from "@/lib/pricing";
 import { prisma } from "@/lib/prisma";
 import { resolveEventCity } from "@/lib/cities.server";
 import { isEventPast } from "@/lib/event-dates";
@@ -66,6 +65,7 @@ async function getValidatedEventInput(formData, user, existingEvent = null) {
     title: getTextValue(formData, "title"),
     category: getTextValue(formData, "category"),
     categoryId: getTextValue(formData, "categoryId"),
+    categoryIds: [...new Set(formData.getAll("categoryIds").map((id) => id.toString().trim()).filter(Boolean))],
     description: getTextValue(formData, "description"),
     imageUrl: getTextValue(formData, "imageUrl"),
     addressName: getTextValue(formData, "addressName"),
@@ -86,7 +86,8 @@ async function getValidatedEventInput(formData, user, existingEvent = null) {
   };
   const fieldErrors = {};
 
-  if (!values.categoryId && !values.category) fieldErrors.category = "Choose an event category.";
+  if (!values.categoryIds.length && !values.categoryId && !values.category) fieldErrors.category = "Choose at least one event category.";
+  if (values.categoryIds.length > EVENT_CATEGORY_LIMIT) fieldErrors.category = `Choose no more than ${EVENT_CATEGORY_LIMIT} event categories.`;
   if (values.title.length < 3) fieldErrors.title = "Title must be at least 3 characters.";
   if (values.title.length > 120) fieldErrors.title = "Title must be 120 characters or fewer.";
   if (values.description.length < 20) fieldErrors.description = "Description must be at least 20 characters.";
@@ -173,7 +174,7 @@ async function getValidatedEventInput(formData, user, existingEvent = null) {
         .split(",")
         .map((tag) => tag.trim())
         .filter((tag) => tag && !isEventCategoryTagName(tag))
-        .slice(0, 10)
+        .slice(0, EVENT_TAG_LIMIT)
     : [];
   const tagNames = optionalTagNames
     .filter((name, index, names) => {
@@ -198,9 +199,10 @@ async function upsertEventTags(tx, tagNames) {
 
   for (const name of tagNames) {
     const slug = slugifyTag(name);
+    const isCategory = isEventCategoryTagName(name);
     const tag = await tx.tag.upsert({
-      where: { slug },
-      create: { name, slug },
+      where: isCategory ? { name } : { slug },
+      create: { name, slug: isCategory ? `event-category-${randomUUID()}` : slug },
       update: {},
     });
     tagConnects.push({ id: tag.id });
@@ -233,34 +235,39 @@ export async function createEventAction(prevState, formData) {
     };
   }
   const isStaff = isStaffRole(user.role);
-  const usesMembership = Boolean(
-    !isStaff &&
-    billingState?.hasMembershipAccess &&
-    input.business?.ownerId === user.id,
-  );
-  const postingMethod = isStaff
-    ? "ADMIN"
-    : usesMembership
-      ? "SUBSCRIPTION"
-      : "ONE_TIME";
-
-  if (input.recurrence.recurrence === "WEEKLY" && postingMethod === "ONE_TIME") {
-    return { error: "Recurring events require membership and a linked active business.", fieldErrors: { recurrence: "Use a membership-covered business to repeat this event." } };
-  }
-
-  if (postingMethod === "ONE_TIME" && !isEventPostingEnabled()) {
+  if (!isStaff && !billingState.hasMembershipAccess) {
     return {
-      error: "One-time event posting is not available yet. Please try again later.",
+      error: "An active business membership is required to add events to the calendar.",
       fieldErrors: {},
+      businessProfilePath: "/dashboard/billing",
+      businessProfileLabel: "Advertise Your Business",
     };
   }
+  if (!isStaff && !input.business) {
+    const ownedBusinesses = await prisma.business.findMany({
+      where: { ownerId: user.id, deletedAt: null },
+      select: { id: true, status: true },
+    });
+    if (ownedBusinesses.some((business) => business.status === "ACTIVE")) {
+      const message = "Choose your business profile under Business Profile to add this event with your account.";
+      return { error: message, fieldErrors: { businessId: message } };
+    }
+    const notice = getEventBusinessProfileNotice(ownedBusinesses.length > 0);
+    return {
+      error: notice.description,
+      fieldErrors: {},
+      businessProfilePath: notice.href,
+      businessProfileLabel: notice.label,
+    };
+  }
+  const postingMethod = isStaff ? "ADMIN" : "SUBSCRIPTION";
 
   let event;
   try {
     event = await prisma.$transaction(async (tx) => {
       const location = await resolveEventCity(tx, input.values);
-      const categoryId = await resolveEventCategory(tx, input.values);
-      const tagConnects = await upsertEventTags(tx, input.tagNames);
+      const { categoryId, categoryTagNames } = await resolveEventCategories(tx, input.values);
+      const tagConnects = await upsertEventTags(tx, [...categoryTagNames, ...input.tagNames]);
       const created = await tx.event.create({
         data: {
           title: input.values.title,
@@ -279,7 +286,7 @@ export async function createEventAction(prevState, formData) {
           ...input.recurrence,
           eventUrl: input.values.eventUrl || null,
           postingMethod,
-          status: postingMethod === "ONE_TIME" ? "DRAFT" : "PENDING",
+          status: "PENDING",
           ...(tagConnects.length > 0 ? { tags: { connect: tagConnects } } : {}),
         },
       });
@@ -309,40 +316,13 @@ export async function createEventAction(prevState, formData) {
 
   revalidateEventPaths(event.id);
 
-  if (postingMethod !== "ONE_TIME") {
-    redirect("/dashboard/events?created=1");
-  }
-
-  try {
-    const session = await createEventCheckoutSession({ eventId: event.id, userId: user.id });
-    if (!session.url) throw new Error("Stripe Checkout did not return a redirect URL.");
-    redirect(session.url);
-  } catch (error) {
-    if (isRedirectError(error)) throw error;
-    console.error("[events] one-time Checkout failed:", error);
-    return {
-      error: "Your event draft was saved, but Checkout could not start. Retry payment from My Events.",
-      fieldErrors: {},
-      eventId: event.id,
-      retryPath: "/dashboard/events",
-    };
-  }
+  redirect("/dashboard/events?created=1");
 }
 
-export async function retryEventCheckoutAction(formData) {
-  const user = await requireUser();
-  const eventId = getTextValue(formData, "eventId");
-  if (!eventId) redirect("/dashboard/events?payment=invalid");
-
-  try {
-    const session = await createEventCheckoutSession({ eventId, userId: user.id });
-    if (!session.url) throw new Error("Stripe Checkout did not return a redirect URL.");
-    redirect(session.url);
-  } catch (error) {
-    if (isRedirectError(error)) throw error;
-    console.error("[events] retry Checkout failed:", error);
-    redirect("/dashboard/events?payment=unavailable");
-  }
+export async function retryEventCheckoutAction() {
+  await requireUser();
+  // Old bookmarked forms cannot start a retired event purchase.
+  redirect("/dashboard/events?payment=unavailable");
 }
 
 export async function resubmitEventAction(formData) {
@@ -443,7 +423,7 @@ export async function updateEventAction(prevState, formData) {
   if (input.error) return input;
 
   if (input.recurrence.recurrence === "WEEKLY" && event.postingMethod === "ONE_TIME") {
-    return { error: "One-time event payments do not cover a recurring series. Create a membership event instead.", fieldErrors: { recurrence: "Recurring events require a membership post." } };
+    return { error: "This existing event cannot become a recurring series. Create a new event linked to your business profile instead.", fieldErrors: { recurrence: "Recurring events require a membership post." } };
   }
 
   if (["SUBSCRIPTION", "LEGACY"].includes(event.postingMethod) && !isStaffRole(user.role)) {
@@ -505,8 +485,8 @@ export async function updateEventAction(prevState, formData) {
   try {
     replacedUploadIds = await prisma.$transaction(async (tx) => {
       const location = await resolveEventCity(tx, input.values, event);
-      const categoryId = await resolveEventCategory(tx, input.values);
-      const tagConnects = await upsertEventTags(tx, input.tagNames);
+      const { categoryId, categoryTagNames } = await resolveEventCategories(tx, input.values);
+      const tagConnects = await upsertEventTags(tx, [...categoryTagNames, ...input.tagNames]);
       const updated = await tx.event.updateMany({
         where: {
           id: event.id,

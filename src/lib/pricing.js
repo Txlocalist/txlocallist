@@ -1,6 +1,5 @@
 import { getStripe } from "@/lib/stripe";
 import { MAX_EVENT_CALENDAR_DAYS } from "@/lib/event-dates";
-import { isEventPostingEnabled as isRuntimeEventPostingEnabled } from "@/lib/runtime-config.mjs";
 
 export const BILLING_CURRENCY = "usd";
 export const MEMBERSHIP_PRICE_CENTS = 1000;
@@ -31,24 +30,21 @@ export const EVENT_POST_CHECKOUT_DISCLOSURE = [
 
 export const PRICING_OFFERS = Object.freeze({
   free: {
-    name: "Localist",
+    name: "Localist User",
     priceCents: 0,
     billingLabel: "Free",
   },
   membership: {
-    name: "Local Business Membership",
+    name: "Advertise Your Business",
     priceCents: MEMBERSHIP_PRICE_CENTS,
     billingLabel: "per month",
-  },
-  eventPost: {
-    name: "Event Calendar Post",
-    priceCents: EVENT_POST_PRICE_CENTS,
-    billingLabel: "one time",
   },
 });
 
 export function isEventPostingEnabled() {
-  return isRuntimeEventPostingEnabled();
+  // Standalone event purchases are retired for launch, regardless of environment flags.
+  // Retain payment reconciliation and refund support for historical purchases.
+  return false;
 }
 
 export function getEventPostPriceId() {

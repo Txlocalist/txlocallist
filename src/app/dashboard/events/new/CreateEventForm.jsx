@@ -5,6 +5,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 
 import { createEventAction, updateEventAction } from "@/app/actions/events";
 import { PhotoUploader } from "@/components/PhotoUploader";
+import { EventCategoryField, EventTagField } from "./EventTaxonomyFields";
 
 import styles from "./form.module.css";
 
@@ -23,10 +24,9 @@ export function CreateEventForm({
   businesses = [],
   cities = [],
   categories = [],
+  tagOptions = [],
   hasMembership = false,
   isStaff = false,
-  oneTimePostingEnabled = false,
-  eventPostPrice,
   initialEvent = null,
   mode = "create",
 }) {
@@ -59,14 +59,10 @@ export function CreateEventForm({
   );
 
   const postingNotice = isStaff
-    ? "Staff happening posts go directly to review without a separate charge."
+    ? "Staff happening posts go directly to review."
     : hasCoveredBusiness
-      ? oneTimePostingEnabled
-        ? `Your membership will use ${businesses[0].name} by default. Choose the standalone option only if you want a separate ${eventPostPrice} Checkout.`
-        : `Your membership will use ${businesses[0].name} by default. Standalone one-time Checkout is currently paused.`
-      : hasMembership
-        ? `Your membership covers happenings linked to an active business. No active business is available, so this post uses ${eventPostPrice} Checkout.`
-        : `Standalone happening posts cost ${eventPostPrice} once. Secure Stripe Checkout starts before admin review.`;
+      ? `Happening posting is included with your membership. Your post will use ${businesses[0].name} by default.`
+      : "An active membership and business profile are required to post happenings.";
 
   return (
     <form ref={formRef} action={formAction} className={styles.form}>
@@ -76,6 +72,7 @@ export function CreateEventForm({
       {state?.error ? (
         <div className={styles.errorMessage} role="alert">
           <p>{state.error}</p>
+          {state.businessProfilePath ? <Link href={state.businessProfilePath}>{state.businessProfileLabel ?? "Create Your Business Profile"}</Link> : null}
           {state.retryPath ? <Link href={state.retryPath}>Open My Happenings</Link> : null}
         </div>
       ) : null}
@@ -87,7 +84,7 @@ export function CreateEventForm({
         </div>
       ) : (
         <div className={styles.paymentNotice}>
-          Published happening changes return to admin review. Your original payment stays attached to this happening.
+          Published happening changes return to admin review.
         </div>
       )}
 
@@ -95,24 +92,9 @@ export function CreateEventForm({
         <h2 className={styles.stepTitle}>Happening Details</h2>
         <p className={styles.stepDescription}>Tell people what is happening, where, and when.</p>
 
-        <div className={styles.formGroup}>
-          <label className={styles.label} htmlFor="category">Happening Category *</label>
-          <select
-            id="category"
-            name="categoryId"
-            className={styles.select}
-            defaultValue={initialEvent?.categoryId ?? ""}
-            required
-            {...errorAttributes(fieldErrors, "category")}
-          >
-            <option value="" disabled>Select a category</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>{category.name}</option>
-            ))}
-          </select>
-          <FieldError id="category-error" message={fieldErrors.category} />
-          {!categories.length ? <p className={styles.helpText}>No event categories are available yet. Please contact an administrator.</p> : null}
-        </div>
+        <EventCategoryField categories={categories}
+          initialCategoryIds={initialEvent?.categoryIds ?? (initialEvent?.categoryId ? [initialEvent.categoryId] : [])}
+          error={fieldErrors.category} />
 
         <div className={styles.formGroup}>
           <label className={styles.label} htmlFor="title">Happening Title *</label>
@@ -211,7 +193,7 @@ export function CreateEventForm({
           </select>
           <FieldError id="recurrence-error" message={fieldErrors.recurrence} />
           <p className={styles.helpText}>
-            {canRepeat ? "Repeats on the first occurrence’s weekday at the same local time, including daylight-saving changes." : "Weekly happenings require membership and a linked active business. One-time payments cover one happening only."}
+            {canRepeat ? "Repeats on the first occurrence’s weekday at the same local time, including daylight-saving changes." : "Weekly happenings require membership and a linked active business."}
           </p>
           {recurrence === "WEEKLY" ? <>
             <label className={styles.label} htmlFor="recurrenceUntil">Last Occurrence (optional)</label>
@@ -337,20 +319,21 @@ export function CreateEventForm({
 
         {businesses.length > 0 ? (
           <div className={styles.formGroup}>
-            <label className={styles.label} htmlFor="businessId">Posting Option</label>
+            <label className={styles.label} htmlFor="businessId">Business Profile</label>
             <select
               id="businessId"
               name="businessId"
               className={styles.select}
               defaultValue={defaultBusinessId}
+              required={!isStaff && initialEvent?.postingMethod !== "ONE_TIME"}
               {...errorAttributes(fieldErrors, "businessId")}
             >
-              {oneTimePostingEnabled || isEditing ? (
-                <option value="">Standalone happening ({eventPostPrice} one time)</option>
+              {isStaff || (isEditing && !initialEvent?.businessId) ? (
+                <option value="">No linked business</option>
               ) : null}
               {businesses.map((business) => (
                 <option key={business.id} value={business.id}>
-                  {hasMembership ? `Use membership: ${business.name}` : `Link ${business.name}`}
+                  {business.name}
                 </option>
               ))}
             </select>
@@ -361,18 +344,7 @@ export function CreateEventForm({
           </div>
         ) : null}
 
-        <div className={styles.formGroup}>
-          <label className={styles.label} htmlFor="tags">Tags</label>
-          <input
-            id="tags"
-            name="tags"
-            type="text"
-            className={styles.input}
-            placeholder="music, food, family, outdoor"
-            defaultValue={initialEvent?.tags ?? ""}
-          />
-          <p className={styles.helpText}>Separate up to 10 tags with commas.</p>
-        </div>
+        <EventTagField tags={tagOptions} initialTags={initialEvent?.tags ?? ""} error={fieldErrors.tags} />
       </div>
 
       <div className={styles.formNavigation}>

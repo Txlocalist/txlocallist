@@ -4,11 +4,6 @@ import Link from "next/link";
 import { logoutAction } from "@/app/actions/auth";
 import { getCurrentSession } from "@/lib/auth/session";
 import { getAccountAccess } from "@/lib/account-access";
-import {
-  EVENT_POST_PRICE_CENTS,
-  formatWholeDollarPrice,
-  isEventPostingEnabled,
-} from "@/lib/pricing";
 
 import styles from "./DashboardShell.module.css";
 import DashboardFrame from "./DashboardFrame";
@@ -21,8 +16,6 @@ export async function DashboardLayout({ children, activeTab = "overview" }) {
   const user = session?.user ?? null;
   const billingState = user?.id ? await getAccountAccess(user.id).catch(() => null) : null;
   const hasCreatorAccess = Boolean(billingState?.hasCreatorAccess);
-  const eventPostPrice = formatWholeDollarPrice(EVENT_POST_PRICE_CENTS);
-  const oneTimePostingEnabled = isEventPostingEnabled();
   const creatorAccessLabel = billingState?.hasComplimentaryAccess
     ? "Complimentary Access"
     : billingState?.hasStaffAccess
@@ -32,9 +25,7 @@ export async function DashboardLayout({ children, activeTab = "overview" }) {
     ? "TX Localist has provided your creator tools at no charge."
     : billingState?.hasStaffAccess
       ? "Your staff role includes creator tools without a paid subscription."
-      : oneTimePostingEnabled
-        ? "Your membership includes business-linked happenings. Standalone posts are also available."
-        : "Your membership includes business-linked happenings. One-time Checkout is currently paused.";
+      : "Your membership includes happenings linked to your active business profile.";
   const navSections = [
     {
       title: "Posts",
@@ -73,7 +64,7 @@ export async function DashboardLayout({ children, activeTab = "overview" }) {
         },
         {
           id: "businesses-saved",
-          label: "Saved Businesses",
+          label: "Your Saved Businesses",
           href: "/dashboard/businesses/saved",
           icon: "bookmark",
         },
@@ -114,7 +105,7 @@ export async function DashboardLayout({ children, activeTab = "overview" }) {
     "events-saved": "Saved Happenings",
     "businesses-live": "Live Businesses",
     "businesses-create": hasCreatorAccess ? "Create Business" : "Upgrade Account",
-    "businesses-saved": "Saved Businesses",
+    "businesses-saved": "Your Saved Businesses",
     billing: "Billing",
     settings: "Settings",
   };
@@ -199,9 +190,7 @@ export async function DashboardLayout({ children, activeTab = "overview" }) {
               <p className={styles.helpText}>
                 {hasCreatorAccess
                   ? creatorAccessText
-                  : oneTimePostingEnabled
-                    ? `Browse and save for free, or post one event for a ${eventPostPrice} one-time fee.`
-                    : "Browse local businesses and save favorites for free."}
+                  : "Browse local businesses, save and show some Texas Love to your favorites."}
               </p>
             </div>
           </div>

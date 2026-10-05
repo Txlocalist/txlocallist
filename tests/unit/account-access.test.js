@@ -183,7 +183,7 @@ describe("derived user status", () => {
       ownedBusinessCount: 1,
       hasPaidEventPayment: true,
     }).map((tag) => tag.label);
-    expect(labels).toEqual(["Free", "Business Owner", "One-Time Event Buyer"]);
+    expect(labels).toEqual(["Free", "Business Owner"]);
     expect(labels).not.toContain("Paid Subscriber");
   });
 

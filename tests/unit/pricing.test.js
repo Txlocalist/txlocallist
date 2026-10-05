@@ -96,18 +96,18 @@ describe("isEventPostingEnabled", () => {
     vi.stubEnv("STRIPE_PRICE_EVENT_POST", "price_event");
   }
 
-  test("requires an explicit true value and isolated services", () => {
+  test("keeps retired event purchases disabled even with isolated services and the flag enabled", () => {
     vi.stubEnv("EVENT_POSTING_ENABLED", "false");
     expect(isEventPostingEnabled()).toBe(false);
 
     configureSafeEventEnvironment();
-    expect(isEventPostingEnabled()).toBe(true);
+    expect(isEventPostingEnabled()).toBe(false);
   });
 
-  test("is case-insensitive and trims whitespace", () => {
+  test("does not permit whitespace or capitalization to enable retired purchases", () => {
     configureSafeEventEnvironment();
     vi.stubEnv("EVENT_POSTING_ENABLED", "  TRUE  ");
-    expect(isEventPostingEnabled()).toBe(true);
+    expect(isEventPostingEnabled()).toBe(false);
   });
 
   test("validates exclusive tax and the event product tax code", () => {

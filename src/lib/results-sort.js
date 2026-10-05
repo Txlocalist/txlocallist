@@ -9,15 +9,16 @@ export function normalizeSort(value, fallback = "newest", extras = []) {
   return [...SORT_OPTIONS.map((option) => option.value), ...extras].includes(value) ? value : fallback;
 }
 
-export function resultOrderBy(value, { name = "name", date = "createdAt", fallback = "newest", extras = [] } = {}) {
+export function resultOrderBy(value, { name = "name", date = "createdAt", cityOrderBy = { city: "asc" }, cityDate = null, fallback = "newest", extras = [] } = {}) {
   const sort = normalizeSort(value, fallback, extras);
+  if (sort === "city") return [cityOrderBy, ...(cityDate ? [{ [cityDate]: "asc" }] : []), { id: "asc" }];
   if (sort === "popular") return [{ favorites: { _count: "desc" } }, { createdAt: "desc" }, { id: "asc" }];
   if (sort === "upcoming") return [{ startDate: "asc" }, { id: "asc" }];
   return [{ [sort.startsWith("name-") ? name : date]: ["oldest", "name-asc"].includes(sort) ? "asc" : "desc" }, { id: "asc" }];
 }
 
 const collator = new Intl.Collator("en", { sensitivity: "base", numeric: true });
-export function sortResults(items, value, { name = (item) => item.name ?? item.title ?? "", date = (item) => item.createdAt, fallback = "newest", extras = [] } = {}) {
+export function sortResults(items, value, { name = (item) => item.name ?? item.title ?? "", date = (item) => item.createdAt, city = (item) => item.city?.name ?? item.city ?? item.cityLabel ?? "", cityDate = null, fallback = "newest", extras = [] } = {}) {
   const sort = normalizeSort(value, fallback, extras);
   const timestamp = (input) => {
     const time = new Date(input ?? 0).getTime();
@@ -25,7 +26,8 @@ export function sortResults(items, value, { name = (item) => item.name ?? item.t
   };
   return [...items].sort((a, b) => {
     let result;
-    if (sort.startsWith("name-")) result = collator.compare(name(a), name(b)) * (sort === "name-desc" ? -1 : 1);
+    if (sort === "city") result = collator.compare(city(a), city(b)) || (cityDate ? timestamp(cityDate(a)) - timestamp(cityDate(b)) : 0);
+    else if (sort.startsWith("name-")) result = collator.compare(name(a), name(b)) * (sort === "name-desc" ? -1 : 1);
     else if (sort === "popular") result = (b.favoritesCount ?? 0) - (a.favoritesCount ?? 0);
     else if (sort === "upcoming") result = timestamp(a.startDate) - timestamp(b.startDate);
     else result = (timestamp(date(a)) - timestamp(date(b))) * (sort === "oldest" ? 1 : -1);

@@ -434,7 +434,6 @@ export default async function BillingPage({ searchParams }) {
         <ul className={styles.billingChecklist}>
           <li>User accounts can upgrade to the paid creator plan.</li>
           <li>Complimentary, Manager, and Admin roles include creator tools without creating a paid subscription.</li>
-          <li>One-time event purchases cover only the purchased event.</li>
           <li>Stripe webhooks preserve role-provided access after subscription changes.</li>
         </ul>
       </div>

@@ -29,10 +29,10 @@ const INITIAL_RECENT_BUSINESS_LIMIT = 15;
 const EMPTY_ITEMS = [];
 const PRIMARY_NAV_LINKS = [
   { href: "/", label: "Home" },
-  { href: "/results", label: "Businesses" },
+  { href: "/results", label: "Search" },
   { href: "/events", label: "Happenings" },
   { href: "/about", label: "About" },
-  { href: "/post-your-business", label: "Add Listing" },
+  { href: "/post-your-business", label: "Advertise" },
 ];
 const numberFormatter = new Intl.NumberFormat("en-US");
 
@@ -351,7 +351,7 @@ export default function ResultsExperience({
   const [showCategories,   setShowCategories]   = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const mobileFiltersRef = useRef(null);
-  const [activeSort,       setActiveSort]       = useState(normalizeSort(urlParams.get("sort"), activeTab === "events" ? "upcoming" : "newest", ["popular", "upcoming"])); // "" | "popular"
+  const [activeSort,       setActiveSort]       = useState(normalizeSort(urlParams.get("sort"), activeTab === "events" ? "city" : "newest", ["popular", "city"]));
   const [activeBrowseTab,  setActiveBrowseTab]  = useState(
     initialJobsOnly ? "jobs" : initialBrowseAll ? "all" : initialQuery || initialLocation ? "search" : ""
   );
@@ -406,8 +406,8 @@ export default function ResultsExperience({
     if (type && type !== "businesses") params.set("tab", type);
     if (jobs) params.set("jobs", "1");
     if (["all", "popular", "favorites"].includes(browse)) params.set("browse", browse);
-    const extras = type === "events" ? ["upcoming"] : browse === "favorites" ? [] : ["popular"];
-    params.set("sort", normalizeSort(sort, type === "events" ? "upcoming" : browse === "popular" ? "popular" : "newest", extras));
+    const extras = type === "events" || browse === "favorites" ? ["city"] : ["popular", "city"];
+    params.set("sort", normalizeSort(sort, type === "events" ? "city" : browse === "popular" ? "popular" : "newest", extras));
     if (page > 1) params.set("page", String(page));
 
     const queryString = params.toString();
@@ -429,8 +429,8 @@ export default function ResultsExperience({
     const browse = urlParams.get("browse");
     const mode = ["favorites", "popular", "all"].includes(browse) ? browse : jobs ? "jobs" : q || loc || category ? "search" : "new";
     const type = urlParams.get("tab") === "events" ? "events" : "businesses";
-    const extras = type === "events" ? ["upcoming"] : mode === "favorites" ? [] : ["popular"];
-    const sort = normalizeSort(urlParams.get("sort"), type === "events" ? "upcoming" : mode === "popular" ? "popular" : "newest", extras);
+    const extras = type === "events" || mode === "favorites" ? ["city"] : ["popular", "city"];
+    const sort = normalizeSort(urlParams.get("sort"), type === "events" ? "city" : mode === "popular" ? "popular" : "newest", extras);
     runSearch(q, loc, sort, mode, jobs, mode === "new" ? INITIAL_RECENT_BUSINESS_LIMIT : undefined, category, Math.max(1, parseInt(urlParams.get("page"), 10) || 1), type);
     return () => {
       requestVersion.current += 1;
@@ -482,7 +482,7 @@ export default function ResultsExperience({
     searchController.current?.abort();
     const controller = new AbortController();
     searchController.current = controller;
-    sort = normalizeSort(sort || activeSort, "newest", ["popular", "upcoming"]);
+    sort = normalizeSort(sort || activeSort, type === "events" ? "city" : "newest", type === "events" ? ["city"] : ["popular", "city"]);
     setIsSearching(true);
     setHasSearched(true);
     setLastSearch({ q, loc });
@@ -647,7 +647,7 @@ export default function ResultsExperience({
           (!location || city.includes(location) || item.city?.slug === location) &&
           (!selectedCategory || item.categories?.some((category) => category.slug === selectedCategory)) &&
           (!jobsOnly || isBusinessHiring(item));
-      }), activeSort, { date: (item) => item.savedAt });
+      }), activeSort, { date: (item) => item.savedAt, extras: ["city"] });
 
   const activeFilterChips = [];
 
@@ -680,7 +680,7 @@ export default function ResultsExperience({
   if (hasSearched && activeBrowseTab === "favorites") {
     activeFilterChips.push({
       key: "favorites",
-      label: "Saved Businesses",
+      label: "Your Saved Businesses",
       tone: "favorites",
       onRemove: removeBrowseFilter,
     });
@@ -924,10 +924,10 @@ export default function ResultsExperience({
               )}
             </div>
 
-            {/* Add listing */}
+            {/* Advertise */}
             <Link href="/post-your-business" className="font-accent nav-link">
               <div className="nav-icon-wrapper"><PlusCircleIcon size={20} style={{ color: "white" }} /></div>
-              ADD LISTING
+              ADVERTISE
             </Link>
 
             <Link
@@ -968,7 +968,7 @@ export default function ResultsExperience({
                 <span className="sidebar-browse-icon sidebar-browse-icon-favorites">
                   <span className="material-icons">bookmark</span>
                 </span>
-                <span className="sidebar-browse-label">SAVED BUSINESSES</span>
+                <span className="sidebar-browse-label">YOUR SAVED BUSINESSES</span>
               </button>
             </div>
           </nav>
@@ -1034,7 +1034,7 @@ export default function ResultsExperience({
                           jobsOnly
                             ? " · HIRING NOW"
                             : activeBrowseTab === "favorites"
-                            ? " · SAVED BUSINESSES"
+                            ? " · YOUR SAVED BUSINESSES"
                             : activeSort === "popular"
                               ? " · MOST SAVED"
                               : activeBrowseTab === "new"
@@ -1047,7 +1047,7 @@ export default function ResultsExperience({
 
                 {/* Right: view toggle + clear */}
                 <div className={`results-header-right ${toolbarStyles.toolbar}`}>
-                  <ResultsSort value={activeSort} events={activeTab === "events"} popular={activeTab === "businesses" && activeBrowseTab !== "favorites"} saved={activeBrowseTab === "favorites"} onChange={(sort) => replaceResultsUrl({ query: lastSearch.q, location: lastSearch.loc, category: selectedCategory, type: activeTab, jobs: jobsOnly, browse: activeBrowseTab, sort })} />
+                  <ResultsSort value={activeSort} city fallback={activeTab === "events" ? "city" : "newest"} popular={activeTab === "businesses" && activeBrowseTab !== "favorites"} saved={activeBrowseTab === "favorites"} onChange={(sort) => replaceResultsUrl({ query: lastSearch.q, location: lastSearch.loc, category: selectedCategory, type: activeTab, jobs: jobsOnly, browse: activeBrowseTab, sort })} />
                   <ResultsPagination className={`results-pages ${toolbarStyles.desktopPagination}`} />
                   <button className={toolbarStyles.filterButton} type="button" aria-haspopup="dialog" aria-expanded={showMobileFilters} aria-controls="business-filters" onClick={() => setShowMobileFilters(true)}>Filters</button>
                   <div className={`view-toggle ${toolbarStyles.viewSwitch}`} role="group" aria-label="View mode">

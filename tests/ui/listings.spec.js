@@ -145,8 +145,12 @@ test("event cards and lists sort independently of chronological calendar dates",
   expect(dates.map(Number)).toEqual(Array.from({ length: 31 }, (_, index) => index + 1));
   await noHorizontalOverflow(page);
   await page.screenshot({ path: `test-results/listing-events-${info.project.name}.png`, fullPage: true });
-  await page.getByLabel("Sort by").selectOption("upcoming");
+  await expect(page.getByLabel("Sort by").locator("option[value=upcoming]")).toHaveCount(0);
+  await page.getByLabel("Sort by").selectOption("city");
   await expect(page.locator(".card-title")).toHaveText(names.map((name) => `${name}Town Hall`));
+  await page.getByRole("button", { name: "List", exact: true }).click();
+  await expect(page.locator(".day-group h3")).toHaveText(["Austin, TX"]);
+  await expect(page.locator(".list-detail").first()).toContainText("Jan 10");
 });
 
 test("event search and filters restore with Back, Forward and reload", async ({ page }) => {
@@ -221,4 +225,14 @@ test("Explore saved results honor URL filters and retain sort when removing a fi
   expect(new URL(page.url()).searchParams.get("browse")).toBe("favorites");
   await page.goBack();
   await expect(page.locator(".gem-name")).toHaveText(["Alpha", "alpha"]);
+});
+
+test("City sort orders saved businesses across cities and persists after reload", async ({ page }) => {
+  await page.goto("/results?browse=favorites&sort=newest");
+  await expect(page.getByLabel("Sort by").locator("option[value=upcoming]")).toHaveCount(0);
+  await page.getByLabel("Sort by").selectOption("city");
+  await expect(page.locator(".gem-name")).toHaveText(["Alpha", "alpha", "Echo", "zebra", "beta", "Delta"]);
+  await page.reload();
+  await expect(page.getByLabel("Sort by")).toHaveValue("city");
+  await expect(page.locator(".gem-name")).toHaveText(["Alpha", "alpha", "Echo", "zebra", "beta", "Delta"]);
 });

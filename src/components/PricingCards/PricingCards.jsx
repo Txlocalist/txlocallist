@@ -1,8 +1,6 @@
 import Link from "next/link";
 
 import {
-  EVENT_MAX_CALENDAR_DAYS,
-  EVENT_POST_PRICE_CENTS,
   MEMBERSHIP_PRICE_CENTS,
   formatWholeDollarPrice,
 } from "@/lib/pricing";
@@ -10,11 +8,10 @@ import {
 import styles from "@/app/pricing/pricing.module.css";
 
 const membershipPrice = formatWholeDollarPrice(MEMBERSHIP_PRICE_CENTS);
-const eventPostPrice = formatWholeDollarPrice(EVENT_POST_PRICE_CENTS);
 
 const plans = [
   {
-    name: "Localist",
+    name: "Localist User",
     price: "$0",
     cadence: "forever",
     description: "Explore the Texas local list, like businesses and happenings, and save your favorites.",
@@ -23,7 +20,7 @@ const plans = [
     href: "/results",
   },
   {
-    name: "Local Business Membership",
+    name: "Advertise Your Business",
     price: membershipPrice,
     cadence: "per month",
     description: "Build a complete business profile and get discovered by people nearby.",
@@ -31,19 +28,6 @@ const plans = [
     cta: "List Your Business",
     href: "/post-your-business",
     featured: true,
-  },
-  {
-    name: "Happening Calendar Post",
-    price: eventPostPrice,
-    cadence: "one time",
-    description: "Submit one happening for the community calendar. Every post is reviewed before publication.",
-    features: [
-      `One happening lasting up to ${EVENT_MAX_CALENDAR_DAYS} consecutive days`,
-      "An optional ticket or happening link",
-      "Review before it appears publicly",
-    ],
-    cta: "Post a Happening",
-    href: "/dashboard/events/new",
   },
 ];
 

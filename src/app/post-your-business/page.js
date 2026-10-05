@@ -54,8 +54,8 @@ export default async function PostYourBusinessPage() {
             Get Found by<br />Texas Locals
           </h1>
           <p className={styles.heroSubtitle}>
-            The no-nonsense Texas business directory. Month-to-month plans,
-            no long-term contracts, cancel any time.
+            The no-nonsense Texas business directory. Month-to-month payment for advertisement.
+            NO long-term contracts.
           </p>
           <div className={styles.heroActions}>
             <Link
@@ -65,9 +65,6 @@ export default async function PostYourBusinessPage() {
               {user ? "Upgrade To Post →" : "Create Account →"}
             </Link>
           </div>
-          <p className={styles.heroNote}>
-            $10/month paid plan required before listing creation
-          </p>
         </div>
       </section>
 
@@ -112,12 +109,12 @@ export default async function PostYourBusinessPage() {
           </p>
           <div className={styles.teaseGrid}>
             <div className={styles.teaseCard}>
-              <p className={styles.teasePlan}>Localist</p>
+              <p className={styles.teasePlan}>Localist User</p>
               <p className={styles.teasePrice}>$0<span>/mo</span></p>
-              <p className={styles.teaseDesc}>Browse local businesses and save favorites.</p>
+              <p className={styles.teaseDesc}>Browse local businesses, save and show some Texas Love to your favorites.</p>
             </div>
             <div className={`${styles.teaseCard} ${styles.teaseCardHighlight}`}>
-              <p className={styles.teasePlan}>Local Business Membership</p>
+              <p className={styles.teasePlan}>Advertise Your Business</p>
               <p className={styles.teasePrice}>$10<span>/mo</span></p>
               <p className={styles.teaseDesc}>Contact info, socials, more photos, and job postings.</p>
             </div>

@@ -9,13 +9,8 @@ import {
 } from "@/lib/event-categories.mjs";
 import { prisma } from "@/lib/prisma";
 import { getSelectableCities } from "@/lib/cities.server";
-import { getEventCategoryOptions } from "@/lib/categories.server";
+import { getEventCategoryOptions, getEventTagOptions } from "@/lib/categories.server";
 import { getRecurrenceUntilInput } from "@/lib/event-recurrence";
-import {
-  EVENT_POST_PRICE_CENTS,
-  formatWholeDollarPrice,
-  isEventPostingEnabled,
-} from "@/lib/pricing";
 
 import { DashboardLayout } from "../../../DashboardShell";
 import styles from "../../../dashboard.module.css";
@@ -30,7 +25,7 @@ export default async function EditEventPage({ params }) {
   const session = await getCurrentSession();
   if (!session?.user) redirect(`/login?next=${encodeURIComponent(`/dashboard/events/${id}/edit`)}`);
 
-  const [event, businesses, access, cities, categories] = await Promise.all([
+  const [event, businesses, access, cities, categories, tagOptions] = await Promise.all([
     prisma.event.findUnique({
       where: { id },
       include: { tags: { select: { name: true } } },
@@ -43,6 +38,7 @@ export default async function EditEventPage({ params }) {
     getAccountAccess(session.user.id),
     getSelectableCities(),
     getEventCategoryOptions(),
+    getEventTagOptions(),
   ]);
 
   if (!event || event.deletedAt || (event.creatorId !== session.user.id && session.user.role !== "ADMIN")) {
@@ -55,6 +51,13 @@ export default async function EditEventPage({ params }) {
   const category = event.tags
     .map((tag) => fromEventCategoryTagName(tag.name))
     .find(Boolean) ?? "Other";
+  const categoryIds = [...new Set([
+    event.categoryId,
+    ...event.tags.map((tag) => {
+      const name = fromEventCategoryTagName(tag.name);
+      return name ? categories.find((item) => item.name.toLowerCase() === name.toLowerCase())?.id : null;
+    }),
+  ].filter(Boolean))];
   const optionalTags = event.tags
     .filter((tag) => !isEventCategoryTagName(tag.name))
     .map((tag) => tag.name)
@@ -67,6 +70,7 @@ export default async function EditEventPage({ params }) {
     imageUrl: event.imageUrl,
     category,
     categoryId: event.categoryId ?? categories.find((item) => item.name === category)?.id ?? "",
+    categoryIds,
     addressName: event.addressName,
     address: event.address,
     city: event.city,
@@ -104,12 +108,11 @@ export default async function EditEventPage({ params }) {
           businesses={businesses}
           cities={cities}
           categories={categories}
+          tagOptions={tagOptions}
           initialEvent={initialEvent}
           mode="edit"
           hasMembership={Boolean(access?.hasMembershipAccess)}
           isStaff={isStaffRole(session.user.role)}
-          oneTimePostingEnabled={isEventPostingEnabled()}
-          eventPostPrice={formatWholeDollarPrice(EVENT_POST_PRICE_CENTS)}
         />
       </div>
     </DashboardLayout>

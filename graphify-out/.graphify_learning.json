@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-17T20:33:11.915727+00:00",
+  "generated_at": "2026-10-05T23:11:08.857210+00:00",
   "nodes": {
     "docs_event_posting_launch_one_time_event_posting_launch": {
       "code_fingerprint": "e4934220b53e1cb58d33a5b084f6e869a2fa858f0969d9d733fc8fc76c66ead1",
@@ -12,7 +12,7 @@
           "q": "ok so how should we go about the next phase  to move into launch readiness?"
         }
       ],
-      "score": 0.689063915,
+      "score": 0.453461975,
       "source_file": "docs/event-posting-launch.md",
       "status": "tentative",
       "uses": 1
@@ -28,13 +28,13 @@
           "q": "ok so how should we go about the next phase  to move into launch readiness?"
         }
       ],
-      "score": 0.689063915,
+      "score": 0.453461975,
       "source_file": "scripts/verify-event-posting-readiness.mjs",
       "status": "tentative",
       "uses": 1
     },
     "src_app_about_page_aboutpage": {
-      "code_fingerprint": "6902cb912695aa958703cb884dd3ad318dbaec01ca7b3de97a94ce65cf89f420",
+      "code_fingerprint": "564611be5247824f03ebdf8105c6fa98e0647e8a68d8932274d8b9106ef543fb",
       "label": "AboutPage()",
       "last": "2026-07-15T19:15:31.884023+00:00",
       "provenance": [
@@ -44,7 +44,7 @@
           "q": "Match the About page to the supplied visual reference"
         }
       ],
-      "score": 0.227646757,
+      "score": 0.149810701,
       "source_file": "src/app/about/page.js",
       "status": "tentative",
       "uses": 1
@@ -80,26 +80,31 @@
           "q": "ok so how should we go about the next phase  to move into launch readiness?"
         }
       ],
-      "score": 4.151624165,
+      "score": 2.732117667,
       "source_file": "src/app/actions/admin.js",
       "status": "preferred",
       "uses": 6
     },
     "src_app_actions_businesses": {
-      "code_fingerprint": "1cb791642432367d6ae0db78c8d0e0a53a1b810edf331ec2bf29cdf8608d5a82",
+      "code_fingerprint": "ab60a3a910b73ac3984acb78bce78f975b642320c54a0df7d780239bdcd4023c",
       "label": "businesses.js",
-      "last": "2026-09-09T17:53:45.761199+00:00",
+      "last": "2026-10-05T23:06:05.376275+00:00",
       "provenance": [
+        {
+          "date": "2026-10-05T23:06:05.376275+00:00",
+          "outcome": "useful",
+          "q": "Locate business photos, event creation taxonomy, and results sorting"
+        },
         {
           "date": "2026-09-09T17:53:45.761199+00:00",
           "outcome": "useful",
           "q": "when a new event is made the categories say event crategorie? why is it displaying event when these are business categories. can we fix that? seems like there is a bug when a business is created and category is selected and it gets added to the explore page."
         }
       ],
-      "score": 0.829114173,
+      "score": 1.545545665,
       "source_file": "src/app/actions/businesses.js",
-      "status": "tentative",
-      "uses": 1
+      "status": "preferred",
+      "uses": 2
     },
     "src_app_admin_users_page_adminuserspage": {
       "code_fingerprint": "36e7108f27332f7509539a88b419a24cda6f4080df551372554b5fb7b62399da",
@@ -127,7 +132,7 @@
           "q": "Inspect UserRoleControl.jsx and users.module.css for viewport centering and delete dialog accessibility."
         }
       ],
-      "score": 2.708236674,
+      "score": 1.782247374,
       "source_file": "src/app/admin/users/page.js",
       "status": "preferred",
       "uses": 4
@@ -143,7 +148,7 @@
           "q": "Inspect UserRoleControl.jsx and users.module.css for viewport centering and delete dialog accessibility."
         }
       ],
-      "score": 0.628239157,
+      "score": 0.413434172,
       "source_file": "src/app/admin/users/UserRoleControl.jsx",
       "status": "tentative",
       "uses": 1
@@ -179,13 +184,13 @@
           "q": "ehy is it working the loca env and not in the production env?"
         }
       ],
-      "score": 5.481743681,
+      "score": 3.607448112,
       "source_file": "src/app/admin/users/UserRoleControl.jsx",
       "status": "preferred",
       "uses": 8
     },
     "src_app_business_slug_page_businessdetailpage": {
-      "code_fingerprint": "eb25cc1a1b8024281892b38160b7f654bc09e0d1395f3b5158a265f0de99822b",
+      "code_fingerprint": "8f74613bd3aa0214f6e2abf86088dea286f2501b9815ccc3891607c73cc5d92c",
       "label": "BusinessDetailPage()",
       "last": "2026-09-04T20:30:46.482238+00:00",
       "provenance": [
@@ -200,13 +205,13 @@
           "q": "Diagnose why newly signed-up business landing pages opened from Explore return a server error."
         }
       ],
-      "score": 1.480949649,
+      "score": 0.974589351,
       "source_file": "src/app/business/[slug]/page.js",
       "status": "preferred",
       "uses": 2
     },
     "src_app_dashboard_businesses_new_createbusinessform": {
-      "code_fingerprint": "79c2bb9718d43aabc120ff1a2abe244a015f067eab900b36670e8e412b492f31",
+      "code_fingerprint": "035635acd8e3f2b27f57c3562e50246b7e750f9b29eaa82f010f51253aa5389a",
       "label": "CreateBusinessForm.jsx",
       "last": "2026-09-09T17:53:45.761199+00:00",
       "provenance": [
@@ -216,13 +221,13 @@
           "q": "when a new event is made the categories say event crategorie? why is it displaying event when these are business categories. can we fix that? seems like there is a bug when a business is created and category is selected and it gets added to the explore page."
         }
       ],
-      "score": 0.829114173,
+      "score": 0.545626818,
       "source_file": "src/app/dashboard/businesses/new/CreateBusinessForm.jsx",
       "status": "tentative",
       "uses": 1
     },
     "src_app_dashboard_events_saved_page_savedeventspage": {
-      "code_fingerprint": "3383721fd03e58e81d7f5815ef06085a41e22ff06671c86fb85ca58edd011588",
+      "code_fingerprint": "0654ff0e1f388e4eabfe1ef472913036d396c03367158b4d719aabd252d0f50b",
       "label": "SavedEventsPage()",
       "last": "2026-07-13T21:00:57.816871+00:00",
       "provenance": [
@@ -232,13 +237,13 @@
           "q": "Trace the event detail page implementation, event image fields and fallback behavior, save/favorite counting system, and the equivalent real saved-count flow used on business landing pages."
         }
       ],
-      "score": 0.217734618,
+      "score": 0.143287681,
       "source_file": "src/app/dashboard/events/saved/page.js",
       "status": "tentative",
       "uses": 1
     },
     "src_app_events_eventslanding": {
-      "code_fingerprint": "95931bef6eacbd18bc04dbaa690b9a2b36e3a97b5b326ba64d486bb503d8a385",
+      "code_fingerprint": "30ee6500cace7efcd10c344ac07df3bf6987112c7ecf49b8493ec72e6a76f9b1",
       "label": "EventsLanding.jsx",
       "last": "2026-09-17T20:16:04.232183+00:00",
       "provenance": [
@@ -248,17 +253,27 @@
           "q": "the dashboard is menu is still showing up on mobile nd the haburger nav menu is still not showing up on the right"
         }
       ],
-      "score": 0.999725217,
+      "score": 0.657903225,
       "source_file": "src/app/events/EventsLanding.jsx",
       "status": "tentative",
       "uses": 1
     },
     "src_app_events_results_eventsresults": {
-      "code_fingerprint": "8cfafd011ae86e9377b31f49b141564541a10dd0f96fb19ce24f829ad603dd80",
+      "code_fingerprint": "be6b64ed29cced5faedb892f4ff1549b9b1adbf834162e2abc45a451ddc011f5",
       "label": "EventsResults.jsx",
-      "last": "2026-09-17T20:27:12.572707+00:00",
+      "last": "2026-10-05T23:06:05.376275+00:00",
       "neg": 1,
       "provenance": [
+        {
+          "date": "2026-10-05T23:06:05.376275+00:00",
+          "outcome": "useful",
+          "q": "Locate business photos, event creation taxonomy, and results sorting"
+        },
+        {
+          "date": "2026-09-17T20:43:49.148197+00:00",
+          "outcome": "useful",
+          "q": "Fix the business results page Prisma missing-column error, rename Explore Businesses to Businesses in the new navigation, left-align the top logo on both results pages, and remove the Events & Live Music introduction from event results on mobile and desktop."
+        },
         {
           "date": "2026-09-17T20:27:12.572707+00:00",
           "outcome": "corrected",
@@ -270,14 +285,14 @@
           "q": "the dashboard is menu is still showing up on mobile nd the haburger nav menu is still not showing up on the right"
         }
       ],
-      "score": -0.000178693,
+      "score": 1.657997459,
       "source_file": "src/app/events/results/EventsResults.jsx",
       "status": "contested",
-      "uses": 1,
-      "verdict": "dead end"
+      "uses": 3,
+      "verdict": "useful"
     },
     "src_app_homeexperience_home_quick_links": {
-      "code_fingerprint": "dc6d70c8f576240c93cda9723fd7631ca5c6d03afd14f33808bf2b734e3e690a",
+      "code_fingerprint": "76531403b905f93d7efec0f39e0f59cd89df6ec2b84c70d36592005c60f72727",
       "label": "HOME_QUICK_LINKS",
       "last": "2026-09-11T19:02:01.984010+00:00",
       "provenance": [
@@ -287,13 +302,13 @@
           "q": "can you fix the spacing on the home page on mobile where the tesxt is on red"
         }
       ],
-      "score": 0.86927809,
+      "score": 0.572058051,
       "source_file": "src/app/HomeExperience.jsx",
       "status": "tentative",
       "uses": 1
     },
     "src_app_how_it_works_page_howitworkspage": {
-      "code_fingerprint": "ebcee0ecfc92af51aecd00e0076eab67618ffc04ae3887d397d1c2002da32ffd",
+      "code_fingerprint": "6238aad362874b60f4fec6972feda17a93512f8afb866cde1a6828d65c60d48c",
       "label": "HowItWorksPage()",
       "last": "2026-07-15T20:13:24.315412+00:00",
       "provenance": [
@@ -303,7 +318,7 @@
           "q": "How is the how-it-works page composed, which shared components and routes does it depend on, and what must be preserved during a visual redesign?"
         }
       ],
-      "score": 0.227858246,
+      "score": 0.149949879,
       "source_file": "src/app/how-it-works/page.js",
       "status": "tentative",
       "uses": 1
@@ -319,13 +334,13 @@
           "q": "can you fix the spacing on the home page on mobile where the tesxt is on red"
         }
       ],
-      "score": 0.86927809,
+      "score": 0.572058051,
       "source_file": "src/app/LandingPageTemplate.jsx",
       "status": "tentative",
       "uses": 1
     },
     "src_app_layout_rootlayout": {
-      "code_fingerprint": "abd30f70b6b5ec193db05e60b6eecb73fa68f3e22e30a6daf8a81622b196f41f",
+      "code_fingerprint": "e09d07e4f90890b0c0278e31ae67f1c64dac64c3ce8d58c695632a1ed7a2b851",
       "label": "RootLayout()",
       "last": "2026-07-15T18:15:33.830902+00:00",
       "provenance": [
@@ -335,7 +350,7 @@
           "q": "Inspect graphify-out for context before redesigning the how it works page."
         }
       ],
-      "score": 0.227427825,
+      "score": 0.149666625,
       "source_file": "src/app/layout.js",
       "status": "tentative",
       "uses": 1
@@ -351,7 +366,7 @@
           "q": "can you fix the spacing on the home page on mobile where the tesxt is on red"
         }
       ],
-      "score": 0.86927809,
+      "score": 0.572058051,
       "source_file": "src/app/page.js",
       "status": "tentative",
       "uses": 1
@@ -372,7 +387,7 @@
           "q": "Inspect graphify-out for context before redesigning the how it works page."
         }
       ],
-      "score": 0.455286071,
+      "score": 0.299616504,
       "source_file": "src/app/pricing/page.js",
       "status": "preferred",
       "uses": 2
@@ -388,13 +403,13 @@
           "q": "Add a beautiful skeleton loader for the results page that looks like the cards."
         }
       ],
-      "score": 0.424527996,
+      "score": 0.279375105,
       "source_file": "src/app/results/icons.js",
       "status": "tentative",
       "uses": 1
     },
     "src_app_results_page_resultspage": {
-      "code_fingerprint": "faf5c17695190f25d0db3ebff3042433f3896dc56c02c5e65e4882c919816f29",
+      "code_fingerprint": "807bf4f57152833f884133e2541aadf4b9a54d971eae5cec3384addf606b1f34",
       "label": "ResultsPage()",
       "last": "2026-09-09T22:19:26.546234+00:00",
       "provenance": [
@@ -419,16 +434,21 @@
           "q": "Inspect graphify-out for context before redesigning the how it works page."
         }
       ],
-      "score": 2.120385527,
+      "score": 1.395391907,
       "source_file": "src/app/results/page.js",
       "status": "preferred",
       "uses": 4
     },
     "src_app_results_resultsexperience": {
-      "code_fingerprint": "fa20da0d10b4c67493eb22d51885b154d533e32032e05febf108978a15257bd2",
+      "code_fingerprint": "33aacb4e587019389db40628d626412c8bb8e03d332c32626473f18c40710747",
       "label": "ResultsExperience.jsx",
-      "last": "2026-09-09T17:53:45.761199+00:00",
+      "last": "2026-09-17T20:43:49.148197+00:00",
       "provenance": [
+        {
+          "date": "2026-09-17T20:43:49.148197+00:00",
+          "outcome": "useful",
+          "q": "Fix the business results page Prisma missing-column error, rename Explore Businesses to Businesses in the new navigation, left-align the top logo on both results pages, and remove the Events & Live Music introduction from event results on mobile and desktop."
+        },
         {
           "date": "2026-09-09T17:53:45.761199+00:00",
           "outcome": "useful",
@@ -450,13 +470,13 @@
           "q": "Remove the toggle from the search on the results search bar, and when loading /results without a filter or search load 15 recently added businesses."
         }
       ],
-      "score": 2.418375816,
+      "score": 2.249690772,
       "source_file": "src/app/results/ResultsExperience.jsx",
       "status": "preferred",
-      "uses": 4
+      "uses": 5
     },
     "src_components_footer_footer_footer": {
-      "code_fingerprint": "1e8de55b6b43824c8878d98642219431d5157bc7cb6cec4fdabb9e8de3b0b9e2",
+      "code_fingerprint": "805c1cd111ce51c79e7215d1aa29a28e9ba658169b5d6a9adef9beae15787086",
       "label": "Footer()",
       "last": "2026-07-15T18:15:33.830902+00:00",
       "provenance": [
@@ -466,13 +486,13 @@
           "q": "Inspect graphify-out for context before redesigning the how it works page."
         }
       ],
-      "score": 0.227427825,
+      "score": 0.149666625,
       "source_file": "src/components/Footer/Footer.jsx",
       "status": "tentative",
       "uses": 1
     },
     "src_components_navbar_navbar_navbar": {
-      "code_fingerprint": "d09caf9021c528446eb85877f5abae09b8c9fe073f039e5bada06c8e302cc408",
+      "code_fingerprint": "c6a27f3bcd5b766ba1e30e8c51938998abcb98b219d0098d357610f12001fe8a",
       "label": "Navbar()",
       "last": "2026-07-15T18:15:33.830902+00:00",
       "provenance": [
@@ -482,13 +502,36 @@
           "q": "Inspect graphify-out for context before redesigning the how it works page."
         }
       ],
-      "score": 0.227427825,
+      "score": 0.149666625,
       "source_file": "src/components/Navbar/Navbar.jsx",
       "status": "tentative",
       "uses": 1
     },
+    "src_components_navbar_navbarmobilemenu": {
+      "code_fingerprint": "d7e8344244ccc43e373be67524f737c4948c5a58fe81049ca25700f3fe56726f",
+      "label": "NavbarMobileMenu.jsx",
+      "last": "2026-09-17T20:43:49.148197+00:00",
+      "neg": 1,
+      "provenance": [
+        {
+          "date": "2026-09-17T20:43:49.148197+00:00",
+          "outcome": "useful",
+          "q": "Fix the business results page Prisma missing-column error, rename Explore Businesses to Businesses in the new navigation, left-align the top logo on both results pages, and remove the Events & Live Music introduction from event results on mobile and desktop."
+        },
+        {
+          "date": "2026-09-17T20:27:12.572707+00:00",
+          "outcome": "corrected",
+          "q": "its still showing the dashboard on mobile nnot the main nav menu"
+        }
+      ],
+      "score": 0.000175387,
+      "source_file": "src/components/Navbar/NavbarMobileMenu.jsx",
+      "status": "contested",
+      "uses": 1,
+      "verdict": "useful"
+    },
     "src_components_searchbar_searchbar": {
-      "code_fingerprint": "8135ed76a7aeab77740f12ca5e2e033aff5db257b5fd344c4822bcc2692c6719",
+      "code_fingerprint": "b308cfd12fd48ed0b1d27f953d73e189b68ec8d8d55a46e6ace75a2b42a62c38",
       "label": "SearchBar.jsx",
       "last": "2026-08-11T18:02:08.794515+00:00",
       "provenance": [
@@ -498,7 +541,7 @@
           "q": "Remove the toggle from the search on the results search bar, and when loading /results without a filter or search load 15 recently added businesses."
         }
       ],
-      "score": 0.424303973,
+      "score": 0.279227679,
       "source_file": "src/components/SearchBar/SearchBar.jsx",
       "status": "tentative",
       "uses": 1
@@ -514,7 +557,7 @@
           "q": "Inspect graphify-out for context before redesigning the how it works page."
         }
       ],
-      "score": 0.227427825,
+      "score": 0.149666625,
       "source_file": "src/components/StaticPageLayout/StaticPageLayout.jsx",
       "status": "tentative",
       "uses": 1
@@ -535,7 +578,7 @@
           "q": "Review Admin soft-delete design for User accounts and identify correctness gaps or needed deletedAt filters."
         }
       ],
-      "score": 1.368806272,
+      "score": 0.900789582,
       "source_file": "src/lib/auth/session.js",
       "status": "preferred",
       "uses": 2
@@ -551,7 +594,7 @@
           "q": "Can you fix the business landing-page server error?"
         }
       ],
-      "score": 0.740519976,
+      "score": 0.487324389,
       "source_file": "src/lib/auth/session.js",
       "status": "tentative",
       "uses": 1
@@ -567,7 +610,7 @@
           "q": "lets move on to the next safe phase in the sandbox moderation lifecycle"
         }
       ],
-      "score": 0.688947257,
+      "score": 0.453385205,
       "source_file": "src/lib/event-dates.js",
       "status": "tentative",
       "uses": 1
@@ -583,7 +626,7 @@
           "q": "ok so how should we go about the next phase  to move into launch readiness?"
         }
       ],
-      "score": 0.689063915,
+      "score": 0.453461975,
       "source_file": "src/lib/event-disputes.js",
       "status": "tentative",
       "uses": 1
@@ -614,7 +657,7 @@
           "q": "Review Admin soft-delete design for User accounts and identify correctness gaps or needed deletedAt filters."
         }
       ],
-      "score": 2.682397165,
+      "score": 1.765242804,
       "source_file": "src/lib/event-payments.js",
       "status": "preferred",
       "uses": 4
@@ -630,7 +673,7 @@
           "q": "why is one time posting still unavailable?"
         }
       ],
-      "score": 0.691516568,
+      "score": 0.455076027,
       "source_file": "src/lib/event-payments.js",
       "status": "tentative",
       "uses": 1
@@ -646,7 +689,7 @@
           "q": "lets move on to the next phase. i did add the new DB keys and sandbox stripe keys in the the local.env. the only thing i did not add is a webhook. i need to know how we should set that up"
         }
       ],
-      "score": 0.676099697,
+      "score": 0.444930431,
       "source_file": "src/lib/event-payments.js",
       "status": "tentative",
       "uses": 1
@@ -662,13 +705,13 @@
           "q": "lets move on to the next phase. i did add the new DB keys and sandbox stripe keys in the the local.env. the only thing i did not add is a webhook. i need to know how we should set that up"
         }
       ],
-      "score": 0.676099697,
+      "score": 0.444930431,
       "source_file": "src/lib/event-payments.js",
       "status": "tentative",
       "uses": 1
     },
     "src_lib_events_geteventbyid": {
-      "code_fingerprint": "718772404c73525811aa6cb07c7f3305ff28abce20a74ee1e734df0edd46759b",
+      "code_fingerprint": "cf5c562a7d682e7145e0b0d4d1af4a96aac2823234500af15701035c0171010f",
       "label": "getEventById()",
       "last": "2026-07-13T21:00:57.816871+00:00",
       "provenance": [
@@ -678,13 +721,13 @@
           "q": "Trace the event detail page implementation, event image fields and fallback behavior, save/favorite counting system, and the equivalent real saved-count flow used on business landing pages."
         }
       ],
-      "score": 0.217734618,
+      "score": 0.143287681,
       "source_file": "src/lib/events.js",
       "status": "tentative",
       "uses": 1
     },
     "src_lib_events_getpublishedevents": {
-      "code_fingerprint": "718772404c73525811aa6cb07c7f3305ff28abce20a74ee1e734df0edd46759b",
+      "code_fingerprint": "cf5c562a7d682e7145e0b0d4d1af4a96aac2823234500af15701035c0171010f",
       "label": "getPublishedEvents()",
       "last": "2026-09-17T20:03:51.019931+00:00",
       "provenance": [
@@ -699,7 +742,7 @@
           "q": "Trace the event detail page implementation, event image fields and fallback behavior, save/favorite counting system, and the equivalent real saved-count flow used on business landing pages."
         }
       ],
-      "score": 1.217263834,
+      "score": 0.80106192,
       "source_file": "src/lib/events.js",
       "status": "preferred",
       "uses": 2
@@ -715,7 +758,7 @@
           "q": "why is one time posting still unavailable?"
         }
       ],
-      "score": 0.691516568,
+      "score": 0.455076027,
       "source_file": "src/lib/pricing.js",
       "status": "tentative",
       "uses": 1
@@ -741,7 +784,7 @@
           "q": "i cant sign in can you fix this prisma issue"
         }
       ],
-      "score": 2.29297868,
+      "score": 1.508972709,
       "source_file": "src/lib/prisma.js",
       "status": "preferred",
       "uses": 3
@@ -777,13 +820,13 @@
           "q": "ehy is it working the loca env and not in the production env?"
         }
       ],
-      "score": 5.48179082,
+      "score": 3.607479134,
       "source_file": "src/lib/role-transitions.js",
       "status": "preferred",
       "uses": 8
     },
     "vercel": {
-      "code_fingerprint": "ae2b981a3ea2380450bc6ac4eee1eadabdee740d286afbe2aacf485f7b0ca4c6",
+      "code_fingerprint": "d5d8e042da5e3a6492327f6487f185f303196ea4a9af1ba85bc29eb28af14104",
       "label": "vercel.json",
       "last": "2026-09-02T00:35:15.049061+00:00",
       "provenance": [
@@ -803,7 +846,7 @@
           "q": "ok how can wew make this feature live on the prod site and prod vercel env variables?"
         }
       ],
-      "score": 2.080429515,
+      "score": 1.369097492,
       "source_file": "vercel.json",
       "status": "preferred",
       "uses": 3

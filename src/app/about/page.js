@@ -133,11 +133,7 @@ export default function AboutPage() {
         <section className={styles.pricingSection} aria-labelledby="about-pricing-title">
           <div className={styles.pricingHeader}>
             <p>Simple, honest pricing</p>
-            <h2 id="about-pricing-title">Choose how you show up locally.</h2>
-            <span>
-              Browse and save for free, build your local presence with a membership, or share one
-              event with the community.
-            </span>
+            <h2 id="about-pricing-title">Keep it Real. Keep it Local. Keep it Texas.</h2>
           </div>
           <PricingCards />
         </section>

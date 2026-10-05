@@ -1,4 +1,4 @@
-import { resultOrderBy } from "@/lib/results-sort";
+import { normalizeSort, resultOrderBy, sortResults } from "@/lib/results-sort";
 /**
  * GET /api/events?city=Austin&limit=6
  * Returns published events optionally filtered by city.
@@ -9,14 +9,13 @@ import { getPublicEventWhere } from "@/lib/event-dates";
 import { prisma } from "@/lib/prisma";
 import { isUnavailablePrismaRelationError } from "@/lib/prisma-errors";
 import { getNextEventOccurrence, getRecurrenceLabel, isRecurringEvent } from "@/lib/event-recurrence";
-import { normalizeSort } from "@/lib/results-sort";
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const city  = searchParams.get("city")  ?? "";
   const limit = Math.min(20, Math.max(1, parseInt(searchParams.get("limit") ?? "6", 10) || 6));
   const page = Math.max(1, parseInt(searchParams.get("page"), 10) || 1);
-  const sort = searchParams.get("sort");
+  const sort = normalizeSort(searchParams.get("sort"), "upcoming", ["upcoming", "city"]);
   const q = searchParams.get("q")?.trim();
 
   try {
@@ -31,7 +30,7 @@ export async function GET(request) {
 
     const findEvents = (includeLikes, overrides = {}) => prisma.event.findMany({
       where,
-      orderBy: resultOrderBy(sort, { name: "sortName", fallback: "upcoming", extras: ["upcoming"] }),
+      orderBy: resultOrderBy(sort, { name: "sortName", cityDate: "startDate", fallback: "upcoming", extras: ["upcoming", "city"] }),
       skip: (page - 1) * limit,
       take: limit,
       select: {
@@ -79,7 +78,7 @@ export async function GET(request) {
     };
     let total;
     let events;
-    if (normalizeSort(sort, "upcoming", ["upcoming"]) === "upcoming") {
+    if (sort === "upcoming" || sort === "city") {
       // Recurring anchors may be years old. Merge their calculated next dates
       // into a bounded single-event page rather than sorting on the anchors or
       // loading the entire one-time events table into memory.
@@ -92,8 +91,7 @@ export async function GET(request) {
       const offset = (page - 1) * limit;
       const singleOffset = Math.max(0, offset - recurring.length);
       const singles = await queryEvents({ where: singleWhere, skip: singleOffset, take: limit + recurring.length });
-      events = [...singles, ...recurring]
-        .sort((a, b) => new Date(a.startDate) - new Date(b.startDate) || a.id.localeCompare(b.id))
+      events = sortResults([...singles, ...recurring], sort, { cityDate: (event) => event.startDate, extras: ["upcoming", "city"] })
         .slice(offset - singleOffset, offset - singleOffset + limit);
       total = singleCount + recurring.length;
     } else {

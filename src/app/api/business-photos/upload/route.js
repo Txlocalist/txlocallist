@@ -2,9 +2,9 @@ import { put } from "@vercel/blob";
 
 import { getCurrentUser } from "@/lib/auth/session";
 import { getAccountAccess } from "@/lib/account-access";
+import { MAX_BUSINESS_PHOTOS } from "@/lib/business-photos.mjs";
 
 const MAX_FILE_SIZE_BYTES = 8 * 1024 * 1024;
-const MAX_FILES_PER_REQUEST = 20;
 
 function sanitizeFileName(fileName) {
   return fileName
@@ -51,9 +51,9 @@ export async function POST(request) {
       );
     }
 
-    if (files.length > MAX_FILES_PER_REQUEST) {
+    if (files.length > MAX_BUSINESS_PHOTOS) {
       return Response.json(
-        { success: false, message: `You can upload up to ${MAX_FILES_PER_REQUEST} photos at once.` },
+        { success: false, message: `You can upload up to ${MAX_BUSINESS_PHOTOS} business photos.` },
         { status: 400 }
       );
     }

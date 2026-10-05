@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import formStyles from "./form.module.css";
 import { createBusinessFromFormAction, publishBusinessAction } from "@/app/actions/businesses";
 import { BusinessHoursEditor } from "../BusinessHoursEditor";
+import BusinessTaxonomyFields from "../BusinessTaxonomyFields";
 import { PhotoUploader } from "@/components/PhotoUploader";
+import { MAX_BUSINESS_PHOTOS } from "@/lib/business-photos.mjs";
 import { createBusinessHoursFormState, getBusinessHoursDisplayRows } from "@/lib/business-hours";
 
 /**
@@ -59,24 +61,6 @@ export function CreateBusinessForm({ cities, categories, tags }) {
         ? { hiringRoles: [""] }
         : {}),
       [name]: type === "checkbox" ? checked : value,
-    }));
-  };
-
-  const handleTagToggle = (tagId) => {
-    setFormData((prev) => ({
-      ...prev,
-      tagIds: prev.tagIds.includes(tagId)
-        ? prev.tagIds.filter((id) => id !== tagId)
-        : prev.tagIds.length < 5 ? [...prev.tagIds, tagId] : prev.tagIds,
-    }));
-  };
-
-  const handleCategoryToggle = (categoryId) => {
-    setFormData((prev) => ({
-      ...prev,
-      categoryIds: prev.categoryIds.includes(categoryId)
-        ? prev.categoryIds.filter((id) => id !== categoryId)
-        : [...prev.categoryIds, categoryId],
     }));
   };
 
@@ -416,50 +400,12 @@ export function CreateBusinessForm({ cities, categories, tags }) {
             Choose the business categories customers should find you under, plus up to five tags
           </p>
 
-          <div className={formStyles.formGroup}>
-            <label className={formStyles.label}>Business categories</label>
-            {categories.length > 0 ? (
-              <div className={formStyles.categoryGrid}>
-                {categories.map((category) => (
-                  <label key={category.id} className={formStyles.categoryCheckbox}>
-                    <input
-                      type="checkbox"
-                      checked={formData.categoryIds.includes(category.id)}
-                      onChange={() => handleCategoryToggle(category.id)}
-                    />
-                    <span className={formStyles.categoryLabel}>{category.name}</span>
-                  </label>
-                ))}
-              </div>
-            ) : (
-              <p className={formStyles.stepDescription}>No business categories are available yet.</p>
-            )}
-          </div>
-
-          <div className={formStyles.formGroup}>
-            <label className={formStyles.label}>Tags (admin-managed, optional)</label>
-            {tags.length > 0 ? (
-              <div className={formStyles.categoryGrid}>
-                {tags.map((tag) => (
-                  <label key={tag.id} className={formStyles.categoryCheckbox}>
-                    <input
-                      type="checkbox"
-                      checked={formData.tagIds.includes(tag.id)}
-                      onChange={() => handleTagToggle(tag.id)}
-                      disabled={!formData.tagIds.includes(tag.id) && formData.tagIds.length >= 5}
-                    />
-                    <span className={formStyles.categoryLabel}>{tag.name}</span>
-                  </label>
-                ))}
-              </div>
-            ) : (
-              <p className={formStyles.stepDescription}>
-                No admin tags are available yet.
-              </p>
-            )}
-          </div>
-
-          <div className={formStyles.formGroup}><label htmlFor="newTags" className={formStyles.label}>Suggest new tags (optional)</label><input id="newTags" name="newTags" value={formData.newTags} onChange={handleChange} className={formStyles.input} placeholder="family-owned, dog-friendly" /><p className={formStyles.checkboxHint}>Separate tags with commas. Selected and suggested tags may total five; suggestions are reviewed with the listing.</p></div>
+          <BusinessTaxonomyFields
+            categories={categories}
+            tags={tags}
+            value={formData}
+            onChange={(changes) => setFormData((previous) => ({ ...previous, ...changes }))}
+          />
 
           <div className={formStyles.formGroup}>
             <label className={formStyles.checkboxLabel}>
@@ -516,14 +462,14 @@ export function CreateBusinessForm({ cities, categories, tags }) {
           <h2 className={formStyles.stepTitle}>Photos</h2>
           <p className={formStyles.stepDescription}>
             Add photos to make your listing stand out. Your first photo becomes the cover image.
-            One listing photo is allowed.
+            Add up to {MAX_BUSINESS_PHOTOS} business photos.
           </p>
           <PhotoUploader
             photos={formData.photos}
             onChange={(photos) =>
               setFormData((prev) => ({ ...prev, photos }))
             }
-            maxPhotos={1}
+            maxPhotos={MAX_BUSINESS_PHOTOS}
           />
         </div>
       )}
@@ -570,12 +516,10 @@ export function CreateBusinessForm({ cities, categories, tags }) {
           <div className={formStyles.reviewCard}>
             <h3>Tags</h3>
             <p>
-              {formData.tagIds.length > 0
-                ? formData.tagIds
-                    .map((id) => tags.find((tag) => tag.id === id)?.name)
-                    .filter(Boolean)
-                    .join(", ")
-                : "No tags selected"}
+              {[
+                ...formData.tagIds.map((id) => tags.find((tag) => tag.id === id)?.name),
+                ...formData.newTags.split(",").map((name) => name.trim()),
+              ].filter(Boolean).join(", ") || "No tags selected"}
             </p>
           </div>
 

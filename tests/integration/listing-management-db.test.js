@@ -283,6 +283,49 @@ describe.skipIf(!db)("listing management against PostgreSQL", () => {
     expect(await db.event.count({ where: { categoryId: category.id } })).toBe(0);
   });
 
+  it("creates three event categories, enforces the limit, and retains secondary categories through rename and edit", async () => {
+    const categories = [];
+    for (let index = 0; index < 3; index += 1) categories.push(await addManagedCategory("event"));
+    harness.userId = owner.id;
+    const input = eventInput();
+    input.delete("category");
+    input.set("businessId", business.id);
+    input.set("tags", "Free Admission");
+    categories.forEach((category) => input.append("categoryIds", category.id));
+    input.append("categoryIds", "fourth-category");
+    expect((await createEventAction(null, input)).fieldErrors.category).toContain("no more than 3");
+    input.delete("categoryIds");
+    categories.forEach((category) => input.append("categoryIds", category.id));
+    await expect(createEventAction(null, input)).rejects.toThrow("created=1");
+    const created = await db.event.findFirstOrThrow({ where: { creatorId: owner.id, categoryId: categories[0].id }, include: { tags: true } });
+    input.set("eventId", created.id);
+    input.append("categoryIds", "fourth-category");
+    expect((await updateEventAction(null, input)).fieldErrors.category).toContain("no more than 3");
+    input.delete("categoryIds");
+    categories.forEach((category) => input.append("categoryIds", category.id));
+    expect(created.tags.map((tag) => tag.name)).toEqual(expect.arrayContaining([
+      `Event Category: ${categories[1].name}`, `Event Category: ${categories[2].name}`, "Free Admission",
+    ]));
+    await db.event.update({ where: { id: created.id }, data: { status: "PUBLISHED" } });
+    const renamed = `${categories[1].name} Updated`;
+    harness.userId = admin.id;
+    expect((await renameCategoryAction(null, form({ type: "event", categoryId: categories[1].id, expectedName: categories[1].name, name: renamed }))).error).toBe("");
+    const detail = await getEventById(created.id);
+    expect(detail.categoryTags.map((category) => category.name)).toEqual(expect.arrayContaining([categories[0].name, renamed, categories[2].name]));
+    expect(filterEvents([detail], { category: renamed })).toHaveLength(1);
+    expect(filterEvents([detail], { category: categories[1].name })).toHaveLength(0);
+    harness.userId = owner.id;
+    input.set("eventId", created.id);
+    await expect(updateEventAction(null, input)).rejects.toThrow("updated=1");
+    const edited = await db.event.findUniqueOrThrow({ where: { id: created.id }, include: { tags: true } });
+    expect(edited.tags.map((tag) => tag.name)).toContain(`Event Category: ${renamed}`);
+    input.delete("categoryIds");
+    input.append("categoryIds", categories[0].id);
+    await expect(updateEventAction(null, input)).rejects.toThrow("updated=1");
+    const reduced = await db.event.findUniqueOrThrow({ where: { id: created.id }, include: { tags: true } });
+    expect(reduced.tags.map((tag) => tag.name)).toEqual(["Free Admission"]);
+  });
+
   it("protects category management from non-admins, duplicates, cross-type ids and stale forms", async () => {
     const category = await addManagedCategory("business");
     const another = await addManagedCategory("business");

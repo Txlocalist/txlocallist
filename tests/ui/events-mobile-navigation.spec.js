@@ -37,7 +37,7 @@ test("event results opens the primary site navigation from the right-side hambur
   expect(brandBox.x).toBeLessThan(24);
 
   await menuButton.click();
-  const primaryMenu = page.getByRole("link", { name: "Businesses", exact: true });
+  const primaryMenu = page.getByRole("link", { name: "Search", exact: true });
   await expect(primaryMenu).toBeVisible();
   const homeLink = page.getByRole("link", { name: "Home", exact: true });
   await expect(homeLink).toBeVisible();
@@ -93,7 +93,7 @@ test("business results aligns its mobile logo to the left", async ({ page }) => 
   await menu.click();
   const header = page.locator(".mobile-logo-wrap");
   await expect(header.getByRole("link", { name: "Home", exact: true })).toBeVisible();
-  await expect(header.getByRole("link", { name: "Businesses", exact: true })).toBeVisible();
+  await expect(header.getByRole("link", { name: "Search", exact: true })).toBeVisible();
   await expect(header.getByRole("link", { name: "Dashboard", exact: true })).toHaveAttribute("href", "/dashboard");
   await page.keyboard.press("Escape");
   await expect(menu).toHaveAttribute("aria-expanded", "false");

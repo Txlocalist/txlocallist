@@ -17,6 +17,7 @@ import "./load-next-environment.mjs";
 
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "@prisma/client";
+import { MAX_BUSINESS_PHOTOS } from "../src/lib/business-photos.mjs";
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -58,7 +59,7 @@ const PLANS = [
     billingPeriod: "monthly",
     stripePriceId: starterStripePriceId,
     features: {
-      MAX_PHOTOS: 20,
+      MAX_PHOTOS: MAX_BUSINESS_PHOTOS,
       SHOW_CONTACT: true,
       SHOW_WEBSITE: true,
       SHOW_SOCIALS: true,

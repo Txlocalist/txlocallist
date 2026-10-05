@@ -1,17 +1,14 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 import { getCurrentSession } from "@/lib/auth/session";
 import { getAccountAccess, isStaffRole } from "@/lib/account-access";
 import { prisma } from "@/lib/prisma";
 import { getSelectableCities } from "@/lib/cities.server";
-import { getEventCategoryOptions } from "@/lib/categories.server";
+import { getEventCategoryOptions, getEventTagOptions } from "@/lib/categories.server";
+import { getEventBusinessProfileNotice } from "@/lib/event-business-profile";
 import { isMissingPrismaTableError } from "@/lib/prisma-errors";
-import {
-  EVENT_MAX_CALENDAR_DAYS,
-  EVENT_POST_PRICE_CENTS,
-  formatWholeDollarPrice,
-  isEventPostingEnabled,
-} from "@/lib/pricing";
+import { EVENT_MAX_CALENDAR_DAYS } from "@/lib/pricing";
 
 import { DashboardLayout } from "../../DashboardShell";
 import styles from "../../dashboard.module.css";
@@ -38,19 +35,21 @@ export default async function NewEventPage() {
     billingUnavailable = !isStaff;
   }
 
-  const oneTimePostingEnabled = isEventPostingEnabled();
-  const eventPostPrice = formatWholeDollarPrice(EVENT_POST_PRICE_CENTS);
   let businesses = [];
+  let hasBusinessProfile = false;
   let cities = [];
   let categories = [];
+  let tagOptions = [];
   let schemaNotice = null;
 
   try {
-    [businesses, cities, categories] = await Promise.all([prisma.business.findMany({
-      where: { ownerId: user.id, status: "ACTIVE", deletedAt: null },
-      select: { id: true, name: true },
+    [businesses, cities, categories, tagOptions] = await Promise.all([prisma.business.findMany({
+      where: { ownerId: user.id, deletedAt: null },
+      select: { id: true, name: true, status: true },
       orderBy: { name: "asc" },
-    }), getSelectableCities(), getEventCategoryOptions()]);
+    }), getSelectableCities(), getEventCategoryOptions(), getEventTagOptions()]);
+    hasBusinessProfile = businesses.length > 0;
+    businesses = businesses.filter((business) => business.status === "ACTIVE");
   } catch (error) {
     if (isMissingPrismaTableError(error)) {
       schemaNotice = "Happening posting is unavailable until the database update is applied.";
@@ -58,6 +57,11 @@ export default async function NewEventPage() {
       throw error;
     }
   }
+
+  const needsBusinessProfile = !isStaff && businesses.length === 0 && (
+    billingState?.hasMembershipAccess
+  );
+  const profileNotice = getEventBusinessProfileNotice(hasBusinessProfile);
 
   return (
     <DashboardLayout activeTab="events-create">
@@ -72,9 +76,7 @@ export default async function NewEventPage() {
 
       {schemaNotice ||
       billingUnavailable ||
-      (!oneTimePostingEnabled &&
-        !(billingState?.hasMembershipAccess && businesses.length > 0) &&
-        !isStaff) ? (
+      (!billingState?.hasMembershipAccess && !isStaff) ? (
         <div className={styles.card}>
           <div className={styles.emptyState}>
             <h2 className={styles.emptyStateTitle}>Posting Unavailable</h2>
@@ -82,8 +84,23 @@ export default async function NewEventPage() {
               {schemaNotice ??
                 (billingUnavailable
                   ? "We could not verify your membership right now. Please try again before posting."
-                  : "One-time happening posting is being configured. Please check back soon.")}
+                  : "An active business membership is required to add events to the calendar.")}
             </p>
+            {!schemaNotice && !billingUnavailable ? (
+              <Link href="/dashboard/billing" className={styles.emptyStateAction}>
+                Advertise Your Business
+              </Link>
+            ) : null}
+          </div>
+        </div>
+      ) : needsBusinessProfile ? (
+        <div className={styles.card}>
+          <div className={styles.emptyState}>
+            <h2 className={styles.emptyStateTitle}>{profileNotice.title}</h2>
+            <p className={styles.emptyStateDescription}>{profileNotice.description}</p>
+            <Link href={profileNotice.href} className={styles.emptyStateAction}>
+              {profileNotice.label}
+            </Link>
           </div>
         </div>
       ) : (
@@ -92,10 +109,9 @@ export default async function NewEventPage() {
             businesses={businesses}
             cities={cities}
             categories={categories}
+            tagOptions={tagOptions}
             hasMembership={Boolean(billingState?.hasMembershipAccess)}
             isStaff={isStaff}
-            oneTimePostingEnabled={oneTimePostingEnabled}
-            eventPostPrice={eventPostPrice}
           />
         </div>
       )}

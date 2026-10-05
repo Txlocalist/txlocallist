@@ -136,7 +136,8 @@ export async function GET(request) {
       const where = buildWhere(profile.includeSoftDeletion);
       const orderBy = resultOrderBy(sort, {
         name: profile.includeSortName ? "sortName" : "name",
-        extras: ["popular"],
+        cityOrderBy: { city: { name: "asc" } },
+        extras: ["popular", "city"],
       });
 
       try {

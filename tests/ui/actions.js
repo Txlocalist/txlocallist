@@ -26,7 +26,10 @@ export async function deleteCityAction(previous, data) {
   if (window.cityError) return { error: window.cityError, fieldErrors: {}, success: "" };
   return { error: "", fieldErrors: {}, success: "City deleted. Listings moved to Uncategorized." };
 }
-export async function createBusinessFromFormAction() { return { success: true, data: { id: "fixture" } }; }
+export async function createBusinessFromFormAction(input) {
+  window.businessSubmissions = [...(window.businessSubmissions || []), input];
+  return { success: true, data: { id: "fixture" } };
+}
 export async function createCategoryAction(previous, data) {
   const { normalizeCategoryInput } = await import("@/lib/categories");
   const input = normalizeCategoryInput(data.get("name"));
@@ -42,9 +45,12 @@ export async function renameCategoryAction(previous, data) {
   return { error: "", fieldErrors: {}, success: `${data.get("name")} saved. Existing listings will show the new name.` };
 }
 export async function publishBusinessAction() { return { success: true }; }
-export async function updateBusinessAction() { return { success: true }; }
+export async function updateBusinessAction(id, input) {
+  window.businessSubmissions = [...(window.businessSubmissions || []), { id, ...input }];
+  return { success: true };
+}
 export async function createEventAction(previous, data) {
-  window.eventSubmissions = [...(window.eventSubmissions || []), Object.fromEntries(data)];
+  window.eventSubmissions = [...(window.eventSubmissions || []), { ...Object.fromEntries(data), categoryIds: data.getAll("categoryIds") }];
   return { error: window.eventSubmissionError || "", fieldErrors: {} };
 }
 export const updateEventAction = createEventAction;

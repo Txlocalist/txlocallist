@@ -47,10 +47,10 @@ const DATE_FILTERS = [
 ];
 const PRIMARY_NAV_LINKS = [
   { href: "/", label: "Home" },
-  { href: "/results", label: "Businesses" },
+  { href: "/results", label: "Search" },
   { href: "/events", label: "Happenings" },
   { href: "/about", label: "About" },
-  { href: "/post-your-business", label: "Add Listing" },
+  { href: "/post-your-business", label: "Advertise" },
 ];
 const CATEGORY_COLORS = [
   "#37b3b1",
@@ -272,7 +272,7 @@ export default function EventsResults({
   const [view, setView] = useState("cards");
   // Native history updates and Back/Forward must restore both controls and results.
   // Keep committed filters in the URL; search-field drafts live in EventSearchBar.
-  const sort = normalizeSort(searchParams.get("sort"), "upcoming", ["upcoming"]);
+  const sort = normalizeSort(searchParams.get("sort"), "city", ["city"]);
   const query = searchParams.get("q") || "";
   const city = searchParams.get("loc") || "";
   const dateFilter = searchParams.get("date") || "";
@@ -318,7 +318,7 @@ export default function EventsResults({
   }, []);
 
   const visible = useMemo(
-    () => sortResults(selectedDate ? filtered.filter((event) => eventOccursOn(event, selectedDate)) : filtered, sort, { extras: ["upcoming"] }),
+    () => sortResults(selectedDate ? filtered.filter((event) => eventOccursOn(event, selectedDate)) : filtered, sort, { cityDate: (event) => event.startDate, extras: ["city"] }),
     [filtered, selectedDate, sort]
   );
 
@@ -397,14 +397,15 @@ export default function EventsResults({
   }, [agendaForSelected, selectedDate]);
 
   const listGroups = useMemo(() => {
-    if (sort !== "upcoming") return pageEvents.length ? [["sorted", pageEvents]] : [];
-    const grouped = {};
+    if (sort !== "city") return pageEvents.length ? [["sorted", pageEvents]] : [];
+    const grouped = new Map();
     pageEvents.forEach((event) => {
-      const key = selectedDate || event.dateKey || "undated";
-      (grouped[key] ||= []).push(event);
+      const key = event.cityLabel || event.city || "Other cities";
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key).push(event);
     });
-    return Object.entries(grouped);
-  }, [pageEvents, selectedDate, sort]);
+    return [...grouped.entries()];
+  }, [pageEvents, sort]);
 
   const selectedDateObj = dateObj(selectedDate);
   const monthTitle = `${MONTHS[month.getMonth()]} ${month.getFullYear()}`;
@@ -417,7 +418,7 @@ export default function EventsResults({
     const nextDate = next.date ?? dateFilter;
     const nextCategory = next.category ?? categoryFilter;
     const nextSaved = next.saved ?? savedOnly;
-    if (nextSort && nextSort !== "upcoming") params.set("sort", nextSort);
+    if (nextSort && nextSort !== "city") params.set("sort", nextSort);
     if (nextQuery) params.set("q", nextQuery);
     if (nextCity) params.set("loc", nextCity);
     if (nextDate) params.set("date", nextDate);
@@ -711,7 +712,7 @@ export default function EventsResults({
             </Link>
             <Link className="nav-item" href="/results">
               <span className="icon-bubble"><span className="material-icons" aria-hidden="true">storefront</span></span>
-              <span className="grow">Businesses</span>
+              <span className="grow">Search</span>
             </Link>
             <button className={`nav-item${!savedOnly ? " active" : ""}`} type="button" onClick={clearAllFilters}>
               <span className="icon-bubble"><span className="material-icons" aria-hidden="true">event</span></span>
@@ -768,7 +769,7 @@ export default function EventsResults({
 
             <Link className="nav-item" href="/post-your-business">
               <span className="icon-bubble">+</span>
-              <span className="grow">Add Listing</span>
+              <span className="grow">Advertise</span>
             </Link>
             <Link className="login-btn" href={isLoggedIn ? dashboardPath : "/login"}>
               {isLoggedIn ? "Dashboard" : "Login"}
@@ -803,7 +804,8 @@ export default function EventsResults({
               <div className={`view-tools ${toolbarStyles.toolbar}`}>
                 <ResultsSort
                   value={sort}
-                  events
+                  city
+                  fallback="city"
                   onChange={(next) => {
                     updateUrl({ sort: next });
                   }}
@@ -878,15 +880,16 @@ export default function EventsResults({
 
                 <div className="list-view">
                   {listGroups.length ? (
-                    listGroups.map(([date, items]) => (
-                      <div key={date} className="day-group">
-                        <h3>{date === "sorted" ? "Happenings" : fmtLong(date)}</h3>
+                    listGroups.map(([groupLabel, items]) => (
+                      <div key={groupLabel} className="day-group">
+                        <h3>{groupLabel === "sorted" ? "Happenings" : groupLabel}</h3>
                         {items.map((event) => (
                           <Link key={event.id} className="list-row" href={`/events/${event.id}${selectedDate && event.recurrenceLabel ? `?date=${selectedDate}` : ""}`}>
-                            <div className="list-time">{eventTimeLabelOn(event, date)}</div>
+                            <div className="list-time">{eventTimeLabelOn(event, selectedDate || event.dateKey)}</div>
                             <div className="list-detail">
                               <strong>{event.title}</strong>
                               <span>
+                                {selectedDate ? fmtLong(selectedDate) : event.shortDateRangeLabel || fmtLong(event.dateKey)} &middot; {" "}
                                 {event.venue} &middot; {event.cityLabel}
                               </span>
                             </div>

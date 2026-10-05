@@ -23,7 +23,6 @@ const ACCESS_FILTERS = new Set([
   "complimentary",
   "staff",
   "owner",
-  "one-time",
 ]);
 
 function formatDate(value) {
@@ -202,7 +201,6 @@ export default async function AdminUsersPage({ searchParams }) {
             <option value="complimentary">Complimentary Access</option>
             <option value="staff">Staff Access</option>
             <option value="owner">Business Owner</option>
-            <option value="one-time">One-Time Event Buyer</option>
           </select>
         </div>
         <button type="submit" className={styles.searchButton}>Apply filters</button>

@@ -3,6 +3,7 @@
 import { requireAdmin } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { CATEGORY_TYPES, normalizeCategoryInput } from "@/lib/categories";
+import { renameEventCategoryTags } from "@/lib/categories.server";
 import { revalidatePath } from "next/cache";
 
 const fail = (error) => ({ error, fieldErrors: { name: error }, success: "" });
@@ -33,6 +34,7 @@ async function saveCategory(formData, editing) {
       const category = editing
         ? await model.update({ where: { id }, data: { name: input.name } })
         : await model.create({ data: input });
+      if (editing && type === "event") await renameEventCategoryTags(tx, existing.name, category.name);
       await tx.auditLog.create({ data: {
         actorId: admin.id, action: editing ? "update" : "create", entity: config.entity, entityId: category.id,
         meta: JSON.stringify({ type, ...(existing ? { previousName: existing.name } : {}), name: category.name }),

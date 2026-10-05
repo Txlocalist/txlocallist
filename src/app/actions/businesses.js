@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/auth/session";
 import { getAccountAccess } from "@/lib/account-access";
 import { sendNewApplicationEmail } from "@/lib/email";
 import { normalizeBusinessHoursInput } from "@/lib/business-hours";
+import { MAX_BUSINESS_PHOTOS } from "@/lib/business-photos.mjs";
 import { isEventCategoryTagName } from "@/lib/event-categories.mjs";
 import { getPublicBusinessWhere } from "@/lib/listing-visibility";
 import { prisma } from "@/lib/prisma";
@@ -40,6 +41,18 @@ function isValidHttpUrl(value) {
 
 function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function validateBusinessPhotos(photos) {
+  if (photos === undefined) return null;
+  if (!Array.isArray(photos)) return "Choose valid business photos.";
+  if (photos.length > MAX_BUSINESS_PHOTOS) {
+    return `Upload up to ${MAX_BUSINESS_PHOTOS} business photos.`;
+  }
+  if (photos.some((photo) => !photo || !isValidHttpUrl(photo.url))) {
+    return "Each business photo must have a valid image URL.";
+  }
+  return null;
 }
 
 function slugify(value) {
@@ -470,7 +483,8 @@ export async function createBusinessFromFormAction(data) {
   }
   if (tagIds.length + newTagNames.length > MAX_TAGS) return { success: false, message: `Choose or suggest up to ${MAX_TAGS} tags total.` };
   if (socialLinks.some((link) => !isValidHttpUrl(link.url))) return { success: false, message: "Enter valid social links starting with http:// or https://." };
-  if ((data.photos?.length || 0) > 1) return { success: false, message: "Upload one listing photo only." };
+  const photoError = validateBusinessPhotos(data.photos);
+  if (photoError) return { success: false, message: photoError };
 
   if (isHiring && hiringRoles.length === 0) {
     return { success: false, message: "Add at least one hiring role when hiring is enabled." };
@@ -680,6 +694,9 @@ export async function updateBusinessAction(businessId, data) {
   if (tagIds.length + newTagNames.length > MAX_TAGS) return { success: false, message: `Choose or suggest up to ${MAX_TAGS} tags total.` };
   if (socialLinks.some((link) => !isValidHttpUrl(link.url))) return { success: false, message: "Enter valid social links starting with http:// or https://." };
 
+  const photoError = validateBusinessPhotos(data.photos);
+  if (photoError) return { success: false, message: photoError };
+
   if (isHiring && hiringRoles.length === 0) {
     return { success: false, message: "Add at least one hiring role when hiring is enabled." };
   }
@@ -755,6 +772,16 @@ export async function updateBusinessAction(businessId, data) {
               : {}),
           },
           tags: { deleteMany: {} },
+          ...(data.photos !== undefined ? {
+            photos: {
+              deleteMany: {},
+              create: data.photos.map((photo, order) => ({
+                url: photo.url,
+                alt: photo.name || data.name.trim(),
+                order,
+              })),
+            },
+          } : {}),
           socialLinks: {
             deleteMany: {},
             ...(socialLinks.length > 0 ? { create: socialLinks.map((link, order) => ({ ...link, order })) } : {}),

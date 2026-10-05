@@ -5,6 +5,8 @@
  * All feature checks should go through these functions to keep the system cohesive.
  */
 
+import { MAX_BUSINESS_PHOTOS } from "./business-photos.mjs";
+
 export interface TierFeatures {
   MAX_PHOTOS: number;
   SHOW_CONTACT: boolean;
@@ -54,7 +56,7 @@ export function getFeatures(tierSlug?: string | null): TierFeatures {
   switch ((tierSlug ?? "free").toLowerCase()) {
     case TIER_NAMES.STARTER:
       return {
-        MAX_PHOTOS: 20,
+        MAX_PHOTOS: MAX_BUSINESS_PHOTOS,
         SHOW_CONTACT: true,
         SHOW_WEBSITE: true,
         SHOW_SOCIALS: true,
@@ -102,7 +104,7 @@ export function canBeFeatured(featuresJson?: string | null): boolean {
 }
 
 export function getMaxPhotos(featuresJson?: string | null): number {
-  return parseFeatures(featuresJson).MAX_PHOTOS;
+  return Math.min(parseFeatures(featuresJson).MAX_PHOTOS, MAX_BUSINESS_PHOTOS);
 }
 
 export function getMaxJobPostings(featuresJson?: string | null): number {

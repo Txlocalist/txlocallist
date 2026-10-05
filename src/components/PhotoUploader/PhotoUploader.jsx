@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 
 import { getBlobImageUrl } from "@/lib/blob";
+import { MAX_BUSINESS_PHOTOS } from "@/lib/business-photos.mjs";
 
 import styles from "./PhotoUploader.module.css";
 
@@ -13,16 +14,16 @@ import styles from "./PhotoUploader.module.css";
  * Props:
  *   photos     {Array<{url, name}>}  current list of uploaded photos
  *   onChange   (photos) => void      called whenever the list changes
- *   maxPhotos  number                max photos allowed (from tier, default 1)
+ *   maxPhotos  number                max photos allowed (default 3 for businesses)
  */
 export function PhotoUploader({
   photos = [],
   onChange,
-  maxPhotos = 1,
+  maxPhotos = MAX_BUSINESS_PHOTOS,
   uploadEndpoint = "/api/business-photos/upload",
   acceptedTypes = "image/*",
   supportedTypesLabel = "JPG, PNG, WEBP, and GIF",
-  limitMessage = "Upgrade your plan to add more.",
+  limitMessage = "Remove a photo to add a different one.",
 }) {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
@@ -92,6 +93,7 @@ export function PhotoUploader({
                 type="button"
                 className={styles.removeBtn}
                 onClick={() => handleRemove(photo.url)}
+                disabled={uploading}
                 aria-label="Remove photo"
               >
                 x
@@ -118,7 +120,7 @@ export function PhotoUploader({
               onChange={handleFileChange}
               disabled={uploading}
             />
-            <span className={styles.uploadEyebrow}>Private Vercel Blob Upload</span>
+            <span className={styles.uploadEyebrow}>Photo upload</span>
             <span className={styles.uploadTitle}>
               {uploading ? "Uploading photos..." : "Choose photos to upload"}
             </span>

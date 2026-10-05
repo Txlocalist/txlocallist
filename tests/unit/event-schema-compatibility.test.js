@@ -14,7 +14,7 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
-import { getEventById, getPublishedEventCityNames, getPublishedEvents } from "@/lib/events";
+import { filterEvents, getEventById, getPublishedEventCityNames, getPublishedEvents } from "@/lib/events";
 
 const event = {
   id: "event-1",
@@ -45,6 +45,20 @@ describe("event schema compatibility", () => {
   beforeEach(() => {
     mocks.findMany.mockReset();
     mocks.findFirst.mockReset();
+  });
+
+  it("exposes and filters all selected categories while keeping marker text out of public tags", async () => {
+    mocks.findMany.mockResolvedValue([{ ...event, category: { id: "community", name: "Community", slug: "community" }, tags: [
+      { name: "Event Category: Outdoor", slug: "outdoor-marker" },
+      { name: "Event Category: Food & Drink", slug: "food-marker" },
+      { name: "Free Admission", slug: "free" },
+    ] }]);
+    const events = await getPublishedEvents();
+    expect(events[0].categoryTags.map((category) => category.name)).toEqual(["Community", "Outdoor", "Food & Drink"]);
+    expect(events[0].tags).toEqual(["Community", "Outdoor", "Food & Drink", "Free Admission"]);
+    expect(filterEvents(events, { category: "Outdoor" })).toHaveLength(1);
+    expect(filterEvents(events, { category: "Food & Drink" })).toHaveLength(1);
+    expect(filterEvents(events, { category: "Live Music" })).toHaveLength(0);
   });
 
   it("loads non-recurring events from a database without recurrence or soft-delete columns", async () => {

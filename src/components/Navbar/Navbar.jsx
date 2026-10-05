@@ -6,9 +6,9 @@ import NavbarMobileMenu from "./NavbarMobileMenu";
 import styles from "./Navbar.module.css";
 
 const DEFAULT_LINKS = [
-  { href: "/results", label: "BUSINESSES" },
+  { href: "/results", label: "SEARCH" },
   { href: "/about", label: "ABOUT" },
-  { href: "/post-your-business", label: "ADD LISTING" },
+  { href: "/post-your-business", label: "ADVERTISE" },
 ];
 
 /**

@@ -16,7 +16,7 @@ export default async function EventResultsPage({ searchParams }) {
     location: params?.loc ?? "",
     category: params?.category ?? "",
     date: params?.date ?? "",
-    sort: params?.sort ?? "upcoming",
+    sort: params?.sort ?? "city",
     saved: params?.saved === "1",
   };
   const user = await getCurrentUser().catch(() => null);

@@ -5,7 +5,7 @@ import styles from "./EventLandingHeader.module.css";
 const LINKS = [
   { href: "/events", label: "Explore" },
   { href: "/about", label: "About" },
-  { href: "/post-your-business", label: "Add Listing" },
+  { href: "/post-your-business", label: "Advertise" },
 ];
 
 export default function EventLandingHeader() {

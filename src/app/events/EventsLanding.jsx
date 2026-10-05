@@ -141,9 +141,9 @@ export default function EventsLanding({
           <div className="container nav">
             <Logo />
             <nav className="nav-links" aria-label="Main navigation">
-              <Link href="/results">Businesses</Link>
+              <Link href="/results">Search</Link>
               <Link href="/about">About</Link>
-              <Link href="/post-your-business">Add Listing</Link>
+              <Link href="/post-your-business">Advertise</Link>
             </nav>
             <Link href={isLoggedIn ? dashboardPath : "/login"} className="login-btn">
               {isLoggedIn ? "Dashboard" : "Login"}
@@ -153,10 +153,10 @@ export default function EventsLanding({
                 theme="dark"
                 links={[
                   { href: "/", label: "Home" },
-                  { href: "/results", label: "Businesses" },
+                  { href: "/results", label: "Search" },
                   { href: "/events", label: "Happenings" },
                   { href: "/about", label: "About" },
-                  { href: "/post-your-business", label: "Add Listing" },
+                  { href: "/post-your-business", label: "Advertise" },
                 ]}
                 activeHref="/events"
                 pillHref={isLoggedIn ? dashboardPath : "/login"}

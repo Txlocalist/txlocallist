@@ -12,7 +12,18 @@ describe("shared result ordering", () => {
   });
   it("limits special sorts to their supported pages", () => {
     expect(normalizeSort("popular")).toBe("newest");
+    expect(normalizeSort("city")).toBe("newest");
+    expect(normalizeSort("city", "newest", ["city"])).toBe("city");
+    expect(normalizeSort("upcoming", "city", ["city"])).toBe("city");
     expect(normalizeSort("anything", "upcoming", ["upcoming"])).toBe("upcoming");
     expect(resultOrderBy("name-desc", { name: "sortName" })).toEqual([{ sortName: "desc" }, { id: "asc" }]);
+  });
+  it("sorts business city relations and event city names alphabetically with stable ties", () => {
+    const businesses = [{ id: "c", city: { name: "Dallas" } }, { id: "b", city: { name: "austin" } }, { id: "a", city: { name: "Austin" } }];
+    expect(sortResults(businesses, "city", { extras: ["city"] }).map((row) => row.id)).toEqual(["a", "b", "c"]);
+    expect(resultOrderBy("city", { cityOrderBy: { city: { name: "asc" } }, extras: ["city"] })).toEqual([{ city: { name: "asc" } }, { id: "asc" }]);
+    const events = [{ id: "d", city: "Dallas", startDate: "2030-01-01" }, { id: "a", city: "Austin", startDate: "2030-01-03" }, { id: "b", city: "Austin", startDate: "2030-01-02" }];
+    expect(sortResults(events, "city", { cityDate: (event) => event.startDate, extras: ["city"] }).map((row) => row.id)).toEqual(["b", "a", "d"]);
+    expect(resultOrderBy("city", { cityDate: "startDate", extras: ["city"] })).toEqual([{ city: "asc" }, { startDate: "asc" }, { id: "asc" }]);
   });
 });

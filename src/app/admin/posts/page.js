@@ -458,7 +458,7 @@ export default async function AdminPostsPage({ searchParams }) {
                       <p className={styles.businessMeta}>{formatDate(event.createdAt)}</p>
                       <p className={styles.businessMeta}>
                         {event.postingMethod === "ONE_TIME"
-                          ? "One-time post"
+                          ? "Event post"
                           : event.postingMethod === "ADMIN"
                             ? "Staff post"
                             : "Membership post"}

@@ -347,6 +347,15 @@
     opacity 420ms var(--ease-snap);
 }
 
+.homepageHero .heroTagline {
+  width: min(100%, 42rem);
+  max-width: none;
+  margin-inline: auto;
+  line-height: 1.5;
+  text-align: center;
+  text-wrap: balance;
+}
+
 @media (min-width: 768px) {
   .heroTagline {
     font-size: 1.5rem;

@@ -31,7 +31,8 @@ function App() {
   }] : events;
   const cities = ["Austin", "Dallas", localStorage.getItem("fixtureCity") || "Empty Town"];
   const eventCategories = [...EVENT_CATEGORIES, ...(localStorage.getItem("fixtureEventCategory") ? [localStorage.getItem("fixtureEventCategory")] : [])].map((name) => ({ id: `event-${name}`, name }));
-  const businessCategories = ["Shopping", ...(localStorage.getItem("fixtureBusinessCategory") ? [localStorage.getItem("fixtureBusinessCategory")] : [])].map((name) => ({ id: `business-${name}`, name }));
+  const businessCategories = ["Accountant", "Antique Shop", "Arcade", "Art Studio", "BBQ", "Bakery", "Bookstore", "Boutique", "Cafe", "Campground", "Cinema", "Contractor", "Craft Store", "Diner", "Farmers Market", "Food Truck", "Gallery", "Gym", "Hair Salon", "Hotel", "Museum", "Park", "Restaurant", "Shopping", "Theater", ...(localStorage.getItem("fixtureBusinessCategory") ? [localStorage.getItem("fixtureBusinessCategory")] : [])].map((name) => ({ id: `business-${name}`, name }));
+  const businessTags = ["Accessible", "Delivery", "Dog Friendly", "Family Owned", "Free Parking", "Handmade", "Local Produce", "Outdoor Seating", "Takeout", "Veteran Owned", "Walk-ins Welcome", "Women Owned"].map((name) => ({ id: `tag-${name}`, name }));
   const resultEvents = localStorage.getItem("fixturePagedEvents")
     ? Array.from({ length: 25 }, (_, index) => ({ ...calendarEvents[index % calendarEvents.length], id: String(index), title: `Event ${String(index).padStart(2, "0")}` }))
     : calendarEvents;
@@ -54,6 +55,7 @@ function App() {
     businesses={[{ id: "fixture-business", name: "Town Hall" }]} hasMembership={!params.has("oneTime")} oneTimePostingEnabled eventPostPrice="$10"
     cities={cities.map((name) => ({ id: name, name }))}
     categories={eventCategories}
+    tagOptions={["Food", "Family", "Outdoor", "Music", "Free Admission", "Event Category: Community"].map((name) => ({ id: name, name }))}
     mode={path.endsWith("edit") ? "edit" : "create"}
     initialEvent={{ title: "Weekly Open Mic", description: "Join your neighbors for live music every Thursday night.", categoryId: "event-Live Music", address: "123 Main Street", city: "Austin", zipCode: "78701", businessId: "fixture-business", startDate: "2030-01-10T19:00", endDate: "2030-01-10T22:00", timezone: "America/Chicago", ...(path.endsWith("edit") ? { id: "fixture-event", postingMethod: params.has("oneTime") ? "ONE_TIME" : "SUBSCRIPTION", recurrence: params.has("oneTime") ? "NONE" : "WEEKLY", recurrenceUntil: "2030-02-07" } : {}) }}
   /></main>;
@@ -69,8 +71,8 @@ function App() {
   }
   if (path === "/city") return <main style={{ maxWidth: 720, padding: 24, margin: "auto" }}><h1>Add a Texas city</h1><CityCreateForm /></main>;
   if (path === "/manage-cities") return <main style={{ maxWidth: 900, padding: 24, margin: "auto" }}><h1>Cities</h1><CityManagementList cities={[...cities, "Uncategorized"].map((name) => ({ id: name, name, slug: name.toLowerCase().replaceAll(" ", "-"), _count: { businesses: name === "Austin" ? 3 : 0 } }))} /></main>;
-  if (path === "/new-business") return <main style={{ maxWidth: 900, padding: 20, margin: "auto" }}><CreateBusinessForm cities={cities.map((name) => ({ id: name, name }))} categories={businessCategories} tags={[]} /></main>;
-  if (path === "/edit-business") return <main style={{ maxWidth: 900, padding: 20, margin: "auto" }}><EditBusinessForm business={{ id: "fixture", name: "Town Market", description: "A local market serving the community.", cityId: "Austin", categories: [], tags: [] }} cities={cities.map((name) => ({ id: name, name }))} categories={businessCategories} tags={[]} /></main>;
+  if (path === "/new-business") return <main style={{ maxWidth: 900, padding: 20, margin: "auto" }}><CreateBusinessForm cities={cities.map((name) => ({ id: name, name }))} categories={businessCategories} tags={businessTags} /></main>;
+  if (path === "/edit-business") return <main style={{ maxWidth: 900, padding: 20, margin: "auto" }}><EditBusinessForm business={{ id: "fixture", name: "Town Market", description: "A local market serving the community.", cityId: "Austin", categories: params.has("selected") ? [{ categoryId: "business-Shopping" }, { categoryId: "business-Bakery" }] : [], tags: params.has("selected") ? [{ tagId: "tag-Family Owned" }] : [] }} cities={cities.map((name) => ({ id: name, name }))} categories={businessCategories} tags={businessTags} /></main>;
   return <main style={{ maxWidth: 800, margin: "auto", padding: 24 }}><h1>My listings</h1><p>Town Market</p><DeleteListingButton id="fixture" name="Town Market" kind={params.get("kind") || "business"} /><button style={{ margin: 20 }}>Outside dialog</button></main>;
 }
 createRoot(document.getElementById("root")).render(<App />);

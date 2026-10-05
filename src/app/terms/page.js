@@ -1,12 +1,7 @@
 import Link from "next/link";
 
 import { StaticPageLayout } from "@/components/StaticPageLayout/StaticPageLayout";
-import {
-  EVENT_MAX_CALENDAR_DAYS,
-  EVENT_POST_REFUND_DISCLOSURE,
-  EVENT_POST_REVIEW_DISCLOSURE,
-  EVENT_POST_TAX_DISCLOSURE,
-} from "@/lib/pricing";
+import { EVENT_POST_REFUND_DISCLOSURE } from "@/lib/pricing";
 import styles from "@/components/StaticPageLayout/StaticPageLayout.module.css";
 
 export const metadata = {
@@ -40,26 +35,19 @@ export default function TermsPage() {
       </div>
 
       <div className={styles.sectionCard}>
-        <h2 className={styles.sectionTitle}>One-time event posts and refunds</h2>
+        <h2 className={styles.sectionTitle}>Refunds</h2>
         <div className={styles.sectionBody}>
-          <p>
-            A standalone Event Calendar Post costs exactly $10. One purchase covers one continuous
-            event lasting from 1 to {EVENT_MAX_CALENDAR_DAYS} consecutive calendar days. Recurring
-            dates or separate occurrences require separate event posts and payments.
-          </p>
-          <p>{EVENT_POST_REVIEW_DISCLOSURE}</p>
-          <p>
-            Only submissions approved by an admin are published. Material changes to a published
-            event return it to review and temporarily remove it from public results until approval.
-          </p>
           <p>{EVENT_POST_REFUND_DISCLOSURE}</p>
-          <p>{EVENT_POST_TAX_DISCLOSURE}</p>
         </div>
       </div>
 
       <div className={styles.sectionCard}>
         <h2 className={styles.sectionTitle}>Listings and user content</h2>
         <div className={styles.sectionBody}>
+          <p>
+            Only submissions approved by an admin are published. Material changes to a published
+            event return it to review and temporarily remove it from public results until approval.
+          </p>
           <p>
             You are responsible for the content you submit, including business descriptions, images,
             contact information, links, and hours. By submitting content, you confirm you have the
@@ -75,6 +63,10 @@ export default function TermsPage() {
       <div className={styles.sectionCard}>
         <h2 className={styles.sectionTitle}>Plans, payments, and changes</h2>
         <div className={styles.sectionBody}>
+          <p>
+            Cancel anytime from the business owner&apos;s dashboard before the first of the month
+            to prevent another charge. No refunds or prorations if cancelled mid month.
+          </p>
           <p>
             Paid plans, billing tools, and related features may change over time. When billing is active,
             charges, renewal timing, and cancellation rules will be presented during the subscription flow.

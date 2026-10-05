@@ -189,7 +189,6 @@ export function deriveUserStatusTags({
   stripeSubscriptionId,
   legacySubscriptions = [],
   ownedBusinessCount = 0,
-  hasPaidEventPayment = false,
   includeBillingHealth = false,
   currentPeriodEnd = null,
   cancelAtPeriodEnd = false,
@@ -212,9 +211,6 @@ export function deriveUserStatusTags({
   }
   if (ownedBusinessCount > 0) {
     tags.push({ key: "owner", label: "Business Owner", tone: "neutral" });
-  }
-  if (hasPaidEventPayment) {
-    tags.push({ key: "one-time", label: "One-Time Event Buyer", tone: "neutral" });
   }
 
   if (includeBillingHealth) {

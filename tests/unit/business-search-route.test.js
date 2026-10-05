@@ -39,4 +39,14 @@ describe("business hiring search", () => {
     expect(where.jobs).toBeUndefined();
     expect(where.isHiring).toBeUndefined();
   });
+
+  it("orders by city before fetching a page and retains search filters", async () => {
+    await GET({ nextUrl: new URL("http://localhost/api/search?sort=city&page=2&limit=3&q=cafe") });
+    expect(mocks.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      orderBy: [{ city: { name: "asc" } }, { id: "asc" }],
+      skip: 3,
+      take: 3,
+      where: expect.objectContaining({ OR: expect.arrayContaining([{ name: { mode: "insensitive", contains: "cafe" } }]) }),
+    }));
+  });
 });

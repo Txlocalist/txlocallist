@@ -8,23 +8,15 @@ import { redirect } from "next/navigation";
 
 import {
   resubmitEventAction,
-  retryEventCheckoutAction,
 } from "@/app/actions/events";
 import { getCurrentSession } from "@/lib/auth/session";
 import { formatEventDateRange, isEventPast } from "@/lib/event-dates";
 import { getNextEventOccurrence, getRecurrenceLabel, isRecurringEvent } from "@/lib/event-recurrence";
 import { prisma } from "@/lib/prisma";
 import { isMissingPrismaTableError } from "@/lib/prisma-errors";
-import {
-  EVENT_POST_PRICE_CENTS,
-  formatWholeDollarPrice,
-  isEventPostingEnabled,
-} from "@/lib/pricing";
 
 import { DashboardLayout } from "../DashboardShell";
 import styles from "../dashboard.module.css";
-
-const EVENT_POST_PRICE = formatWholeDollarPrice(EVENT_POST_PRICE_CENTS);
 
 function getEventStatusClass(status) {
   if (status === "PUBLISHED") return "statusACTIVE";
@@ -48,7 +40,6 @@ export default async function DashboardEventsPage({ searchParams }) {
   const paymentUnavailable = params?.payment === "unavailable";
   const resubmitted = params?.resubmitted === "1";
   const resubmitError = params?.resubmit;
-  const eventPostingEnabled = isEventPostingEnabled();
 
   let events = [];
   let schemaNotice = null;
@@ -103,7 +94,7 @@ export default async function DashboardEventsPage({ searchParams }) {
       </div>
 
       <ResultsSort />
-      {!access?.hasCreatorAccess && <p role="status">Membership happenings are suspended while your subscription is inactive. You can still delete them. Separately purchased happenings keep their posting access.</p>}
+      {!access?.hasCreatorAccess && <p role="status">Membership happenings are suspended while your subscription is inactive. You can still delete them.</p>}
       {created && <div className={styles.successBanner}>Your happening was submitted for admin review.</div>}
       {updated && <div className={styles.successBanner}>Your happening changes were saved.</div>}
       {resubmitted && <div className={styles.successBanner}>Your corrected happening was resubmitted for admin review.</div>}
@@ -115,7 +106,7 @@ export default async function DashboardEventsPage({ searchParams }) {
       ) : null}
       {paymentUnavailable ? (
         <div className={`${styles.noticeBanner} ${styles.noticeError}`}>
-          Stripe Checkout could not start. Please try again.
+          Event purchases are unavailable. Post happenings through your active business membership.
         </div>
       ) : null}
       {resubmitError ? (
@@ -199,7 +190,7 @@ export default async function DashboardEventsPage({ searchParams }) {
                     <p className={styles.businessName}>{event.title}</p>
                     {event.business ? <p className={styles.businessMeta}>{event.business.name}</p> : null}
                     <p className={styles.businessMeta}>
-                      {event.recurrenceLabel || (event.postingMethod === "ONE_TIME" ? "One-time post" : "Membership post")}
+                      {event.recurrenceLabel || "Happening"}
                       {latestPayment?.status ? ` | Payment: ${latestPayment.status}` : ""}
                     </p>
                     {hasUnresolvedRefund ? (
@@ -271,22 +262,6 @@ export default async function DashboardEventsPage({ searchParams }) {
                       <Link href={`/dashboard/events/${event.id}/edit`} className={styles.actionButton}>
                         Edit
                       </Link>
-                    ) : null}
-                    {event.postingMethod === "ONE_TIME" &&
-                    event.status === "DRAFT" &&
-                    event.endDate &&
-                    eventPostingEnabled &&
-                    !hasPaidPayment &&
-                    !paymentNeedsAdminReview &&
-                    !hasUnresolvedRefund &&
-                    !paymentIsStillProcessing &&
-                    !isEventPast(event) ? (
-                      <form action={retryEventCheckoutAction}>
-                        <input type="hidden" name="eventId" value={event.id} />
-                        <button type="submit" className={styles.actionButton}>
-                          Pay {EVENT_POST_PRICE}
-                        </button>
-                      </form>
                     ) : null}
                     {changesRequested && (event.postingMethod === "ONE_TIME" || access?.hasCreatorAccess) && !isEventPast(event) ? (
                       <form action={resubmitEventAction}>

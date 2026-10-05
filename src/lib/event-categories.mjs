@@ -1,4 +1,7 @@
 // Initial seed values only. Live forms load EventCategory rows from the database.
+export const EVENT_CATEGORY_LIMIT = 3;
+export const EVENT_TAG_LIMIT = 10;
+
 export const EVENT_CATEGORIES = [
   "Live Music",
   "Family Friendly",

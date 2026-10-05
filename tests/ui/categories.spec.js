@@ -7,11 +7,17 @@ test("admin event categories appear in event forms and stay out of business cate
   await expect(page.getByRole("status")).toContainText("Robotics Workshops is now available in event forms");
   for (const route of ["/event-form", "/event-form-edit"]) {
     await page.goto(route);
-    await page.getByLabel("Happening Category *", { exact: true }).selectOption({ label: "Robotics Workshops" });
+    await page.getByRole("button", { name: "Choose happening categories", exact: true }).click();
+    await page.getByRole("checkbox", { name: "Live Music", exact: true }).uncheck();
+    await page.getByLabel("Search happening categories", { exact: true }).fill("Robotics");
+    await page.getByRole("checkbox", { name: "Robotics Workshops", exact: true }).check();
+    await page.getByLabel("Search happening categories", { exact: true }).press("Escape");
     await page.getByRole("button", { name: route.endsWith("edit") ? "Save Changes" : "Continue", exact: true }).click();
-    await expect.poll(() => page.evaluate(() => window.eventSubmissions?.[0]?.categoryId)).toBe("event-Robotics Workshops");
+    await expect.poll(() => page.evaluate(() => window.eventSubmissions?.[0]?.categoryIds)).toEqual(["event-Robotics Workshops"]);
   }
   await page.goto("/edit-business");
+  await page.getByRole("button", { name: "Choose business categories", exact: true }).click();
+  await page.getByLabel("Search business categories", { exact: true }).fill("Robotics");
   await expect(page.getByText("Robotics Workshops", { exact: true })).toHaveCount(0);
   await page.goto("/manage-categories/event");
   await page.getByRole("button", { name: "Edit Live Music", exact: true }).click();
@@ -36,11 +42,17 @@ test("admin business categories stay separate and failed renames preserve the dr
   await page.getByRole("button", { name: /Next/ }).click();
   await page.getByLabel("City *", { exact: true }).selectOption("Austin");
   await page.getByRole("button", { name: /Next/ }).click();
+  await page.getByRole("button", { name: "Choose business categories", exact: true }).click();
+  await page.getByLabel("Search business categories", { exact: true }).fill("Pet Grooming");
   await expect(page.getByRole("checkbox", { name: "Pet Grooming", exact: true })).toBeVisible();
   await page.goto("/edit-business");
+  await page.getByRole("button", { name: "Choose business categories", exact: true }).click();
+  await page.getByLabel("Search business categories", { exact: true }).fill("Pet Grooming");
   await expect(page.getByRole("checkbox", { name: "Pet Grooming", exact: true })).toBeVisible();
   await page.goto("/event-form");
-  await expect(page.locator("#category option").filter({ hasText: "Pet Grooming" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Choose happening categories", exact: true }).click();
+  await page.getByLabel("Search happening categories", { exact: true }).fill("Pet Grooming");
+  await expect(page.getByRole("checkbox", { name: "Pet Grooming", exact: true })).toHaveCount(0);
   await page.goto("/manage-categories/business");
   await page.getByRole("button", { name: "Edit Shopping", exact: true }).click();
   const edit = page.getByRole("form", { name: "Rename Shopping" });

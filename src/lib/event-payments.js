@@ -598,7 +598,7 @@ async function recoverSessionlessCheckoutReservation(payment) {
 
 async function createEventCheckoutSessionInternal({ eventId, userId }) {
   if (!isEventPostingEnabled()) {
-    throw new Error("One-time event posting is not enabled yet.");
+    throw new Error("Event purchases are unavailable. Use an active business membership to post happenings.");
   }
 
   if (!isStripeConfigured()) {
