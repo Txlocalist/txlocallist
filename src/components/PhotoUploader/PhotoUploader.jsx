@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { FaRegImage } from "react-icons/fa6";
 
 import { getBlobImageUrl } from "@/lib/blob";
 import { MAX_BUSINESS_PHOTOS } from "@/lib/business-photos.mjs";
@@ -19,6 +20,8 @@ import styles from "./PhotoUploader.module.css";
 export function PhotoUploader({
   photos = [],
   onChange,
+  onUploadingChange,
+  disabled = false,
   maxPhotos = MAX_BUSINESS_PHOTOS,
   uploadEndpoint = "/api/business-photos/upload",
   acceptedTypes = "image/*",
@@ -46,6 +49,7 @@ export function PhotoUploader({
     const filesToUpload = selectedFiles.slice(0, remainingSlots);
 
     setUploading(true);
+    onUploadingChange?.(true);
     setUploadError(null);
 
     try {
@@ -73,6 +77,7 @@ export function PhotoUploader({
       setUploadError(error instanceof Error ? error.message : "Upload failed. Please try again.");
     } finally {
       setUploading(false);
+      onUploadingChange?.(false);
     }
   }
 
@@ -82,18 +87,12 @@ export function PhotoUploader({
         <div className={styles.grid}>
           {photos.map((photo, index) => (
             <div key={photo.url} className={styles.thumb}>
-              <Image
-                src={getBlobImageUrl(photo.url)}
-                alt={photo.name || `Photo ${index + 1}`}
-                fill
-                sizes="160px"
-                className={styles.thumbImg}
-              />
+              <PhotoPreview photo={photo} index={index} />
               <button
                 type="button"
                 className={styles.removeBtn}
                 onClick={() => handleRemove(photo.url)}
-                disabled={uploading}
+                disabled={uploading || disabled}
                 aria-label="Remove photo"
               >
                 x
@@ -118,7 +117,7 @@ export function PhotoUploader({
               multiple={remainingSlots > 1}
               className={styles.fileInput}
               onChange={handleFileChange}
-              disabled={uploading}
+              disabled={uploading || disabled}
             />
             <span className={styles.uploadEyebrow}>Photo upload</span>
             <span className={styles.uploadTitle}>
@@ -137,5 +136,29 @@ export function PhotoUploader({
       {uploading ? <p className={styles.uploadingMsg} role="status">Uploading...</p> : null}
       {uploadError ? <p className={styles.errorMsg} role="alert">{uploadError}</p> : null}
     </div>
+  );
+}
+
+function PhotoPreview({ photo, index }) {
+  const [unavailable, setUnavailable] = useState(false);
+  if (unavailable || !photo.url) {
+    return (
+      <div className={styles.previewFallback} role="status">
+        <FaRegImage aria-hidden="true" />
+        <strong>Photo preview unavailable</strong>
+        <span>This saved link couldn’t load as a photo. Remove it to upload a replacement.</span>
+      </div>
+    );
+  }
+  return (
+    <Image
+      src={getBlobImageUrl(photo.url)}
+      alt={photo.name || `Photo ${index + 1}`}
+      fill
+      sizes="160px"
+      className={styles.thumbImg}
+      unoptimized
+      onError={() => setUnavailable(true)}
+    />
   );
 }

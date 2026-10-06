@@ -64,7 +64,7 @@ export function getRecurrenceUntilInput(event) {
   return new Date(finalStart).toISOString().slice(0, 10);
 }
 
-export function validateEventRecurrence({ recurrence = "NONE", until = "", schedule, now = new Date() }) {
+export function validateEventRecurrence({ recurrence = "NONE", until = "", schedule, now = new Date(), allowPast = false }) {
   if (!["NONE", "WEEKLY"].includes(recurrence)) throw new Error("Choose a valid repeat schedule.");
   if (recurrence === "NONE") return { recurrence, recurrenceUntil: null };
   const zone = schedule.timezone;
@@ -85,6 +85,6 @@ export function validateEventRecurrence({ recurrence = "NONE", until = "", sched
     if (!recurrenceUntil || !wallTimeToInstant(finalStart, zone)) throw new Error("The final occurrence falls in a daylight-saving time gap. Choose another week.");
   }
   const result = { recurrence, recurrenceUntil };
-  if (!getNextEventOccurrence({ ...schedule, ...result }, now)) throw new Error("The recurring series must have an upcoming occurrence.");
+  if (!allowPast && !getNextEventOccurrence({ ...schedule, ...result }, now)) throw new Error("The recurring series must have an upcoming occurrence.");
   return result;
 }

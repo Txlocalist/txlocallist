@@ -169,61 +169,53 @@
   box-shadow: none !important;
 }
 
-/* ────────────────────────────────────────
-   STATS BAR
-──────────────────────────────────────── */
-.statsBar {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 1rem;
-  background-color: var(--background-panel);
-  border: 3px solid var(--retro-brown);
-  border-radius: 1rem;
-  padding: 1rem 1.5rem;
-  margin-top: 1.25rem;
-  flex-wrap: wrap;
+/* Full-width contact actions share the cover's outline and warm palette. */
+.heroTop { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
+.heroBadges { align-items: center; }
+.hiringBadge {
+  display: inline-flex; align-items: center; gap: .65rem; min-height: 44px;
+  padding: .65rem 1rem; border: 2px solid var(--retro-brown); border-radius: 999px;
+  background: var(--retro-yellow); color: var(--retro-brown); box-shadow: 3px 3px 0 var(--retro-brown);
+  font-family: var(--font-accent), sans-serif; font-size: .72rem; text-transform: uppercase;
+  text-decoration: none; white-space: nowrap;
 }
-
-.statsRight {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  max-width: 100%;
-  flex-wrap: wrap;
+.hiringBadge svg { width: .8rem; height: .8rem; }
+.contactActions {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  margin-top: 1.25rem; border: 2px solid var(--retro-brown); border-radius: 1.25rem;
+  background: var(--background-panel); box-shadow: var(--shadow-stack-md); overflow: hidden;
 }
-
-.statLink {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-family: var(--font-accent), cursive;
-  font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--retro-red);
-  text-decoration: none;
-  overflow-wrap: anywhere;
-  transition: color 0.13s ease;
+.contactAction {
+  display: flex; align-items: center; gap: 1rem; min-width: 0;
+  padding: 1.35rem 1.5rem; color: var(--retro-brown); text-decoration: none;
 }
-.statLink:hover { color: var(--retro-brown); }
-
-.statDivider {
-  width: 1px;
-  height: 1.25rem;
-  background-color: rgba(45, 36, 30, 0.2);
+.contactAction + .contactAction { border-left: 1px solid rgba(45, 36, 30, .25); }
+.contactIcon {
+  display: grid; place-items: center; width: 48px; height: 48px; flex: 0 0 48px;
+  border-radius: 50%; color: var(--retro-red-ink); background: rgba(214, 73, 51, .09);
 }
-
-/* ────────────────────────────────────────
-   PHOTO GALLERY
-──────────────────────────────────────── */
-.galleryHeader {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  margin-bottom: 1.25rem;
-  gap: 1rem;
+.contactIcon svg { width: 1.1rem; height: 1.1rem; }
+.contactCopy { display: grid; gap: .35rem; min-width: 0; flex: 1; }
+.contactCopy strong { font-family: var(--font-accent), sans-serif; font-size: .9rem; font-weight: 400; text-transform: uppercase; }
+.contactCopy > span { color: var(--retro-brown-soft); font-size: .95rem; overflow-wrap: anywhere; }
+.contactArrow { width: 1rem; height: 1rem; flex: 0 0 1rem; color: var(--retro-red-ink); }
+.srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.contactAction:focus-visible { outline: 3px solid var(--retro-red-ink); outline-offset: -5px; }
+.hiringBadge:focus-visible, .hiringApplyBtn:focus-visible { outline: 3px solid var(--retro-red-ink); outline-offset: 4px; }
+.hiringSectionAnchor { scroll-margin-top: 2rem; }
+@media (hover: hover) {
+  .contactAction:hover { background: rgba(214, 73, 51, .055); }
+  .hiringBadge:hover { background: var(--background-panel); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .contactArrow { transition: transform .18s ease; }
+  .contactAction:hover .contactArrow { transform: translateX(3px); }
+}
+@media (max-width: 600px) {
+  .contactActions { grid-template-columns: 1fr; }
+  .contactAction { padding: 1.1rem; gap: .8rem; }
+  .contactAction + .contactAction { border-left: 0; border-top: 1px solid rgba(45, 36, 30, .25); }
+  .heroTop { gap: .75rem; }
 }
 
 .eyebrow {
@@ -232,45 +224,31 @@
   font-weight: 800;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--retro-orange);
+  color: var(--retro-red-ink);
   margin: 0 0 0.35rem;
 }
-
-.gallerySectionTitle {
-  font-family: var(--font-display), cursive;
-  font-size: clamp(1.8rem, 3.5vw, 2.8rem);
-  font-weight: 900;
-  letter-spacing: -0.025em;
-  text-transform: uppercase;
-  color: var(--retro-brown);
-  margin: 0;
-  line-height: 1;
-}
-
-.viewAllBtn {
-  display: inline-block;
-  border-bottom: 3px solid var(--retro-red);
-  font-family: var(--font-accent), cursive;
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--retro-red);
-  padding: 0 0 0.2rem;
-  white-space: nowrap;
-  align-self: flex-end;
-}
-
-/* Gallery strip is now handled by PhotoGallery.module.css */
 
 /* ────────────────────────────────────────
    BENTO GRID
 ──────────────────────────────────────── */
 .bentoGrid {
   display: grid;
-  grid-template-columns: 1fr 340px;
+  grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr);
   gap: 1.5rem;
   align-items: start;
+}
+
+.detailColumn {
+  display: grid;
+  align-content: start;
+  gap: 1.5rem;
+  min-width: 0;
+}
+
+.detailColumn > *,
+.detailColumn section > * {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 /* ── About card ── */
@@ -278,7 +256,7 @@
   background-color: var(--background-panel);
   border: 3px solid var(--retro-brown);
   border-radius: 1.25rem;
-  padding: 2.5rem 2.25rem;
+  padding: clamp(1.25rem, 2.5vw, 2rem);
   box-shadow: var(--shadow-stack-lg);
 }
 
@@ -294,6 +272,8 @@
 }
 
 .aboutDesc {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
   font-size: 1.05rem;
   line-height: 1.75;
   color: var(--retro-brown-soft);
@@ -335,7 +315,7 @@
   align-items: center;
   padding: 0.35rem 0.9rem;
   background-color: transparent;
-  color: var(--retro-teal);
+  color: color-mix(in srgb, var(--retro-teal) 50%, var(--retro-brown));
   border: 2px solid var(--retro-teal);
   border-radius: 999px;
   font-family: var(--font-accent), cursive;
@@ -345,7 +325,7 @@
   transition: all 0.13s ease;
 }
 .chipTag:hover {
-  background-color: var(--retro-teal);
+  background-color: color-mix(in srgb, var(--retro-teal) 50%, var(--retro-brown));
   color: white;
   transform: translateY(-2px);
 }
@@ -397,7 +377,7 @@
   background-color: var(--background-dark);
   border: 3px solid var(--retro-brown);
   border-radius: 1.25rem;
-  padding: 2rem 1.75rem;
+  padding: clamp(1.25rem, 2.5vw, 2rem);
   box-shadow: var(--shadow-stack-lg);
   color: white;
 }
@@ -421,6 +401,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 1rem;
   padding: 0.55rem 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.09);
   font-family: var(--font-accent), cursive;
@@ -431,10 +412,11 @@
 .hoursRow:last-child { border-bottom: none; }
 
 .hoursDay { color: rgba(255, 255, 255, 0.45); }
-.hoursVal { color: white; font-weight: 700; }
+.hoursVal { color: white; font-weight: 700; text-align: right; }
 
 .socialRow {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.6rem;
   margin-top: 1.5rem;
   padding-top: 1.25rem;
@@ -478,15 +460,16 @@
   align-items: center;
   justify-content: space-between;
   gap: 1.25rem;
-  background: linear-gradient(135deg, #fff6de 0%, #fff1cd 100%);
+  background: var(--background-panel);
   border: 3px solid var(--retro-brown);
   border-radius: 1.25rem;
-  padding: 1.5rem 1.75rem;
+  padding: clamp(1.25rem, 2.5vw, 2rem);
   box-shadow: var(--shadow-stack-lg);
   flex-wrap: wrap;
 }
 
 .hiringTitle {
+  line-height: 1.15;
   font-family: var(--font-display), cursive;
   font-size: clamp(1.5rem, 3vw, 2.2rem);
   font-weight: 900;
@@ -497,6 +480,7 @@
 }
 
 .hiringDescription {
+  line-height: 1.65;
   margin: 0;
   color: var(--retro-brown-soft);
   font-size: 0.95rem;
@@ -525,8 +509,7 @@
   text-transform: uppercase;
 }
 
-.hiringApplyBtn,
-.hiringApplyBtnDisabled {
+.hiringApplyBtn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -543,7 +526,8 @@
 }
 
 .hiringApplyBtn {
-  background-color: var(--retro-red);
+  gap: 1rem;
+  background-color: var(--retro-red-ink);
   color: white;
   transition: transform 0.13s ease, box-shadow 0.13s ease;
 }
@@ -552,18 +536,11 @@
   box-shadow: var(--shadow-stack-sm);
 }
 
-.hiringApplyBtnDisabled {
-  background-color: rgba(45, 36, 30, 0.12);
-  color: var(--retro-brown-soft);
-  opacity: 0.8;
-  cursor: not-allowed;
-}
-
 /* ────────────────────────────────────────
    LOCATION
 ──────────────────────────────────────── */
 .locationCard {
-  width: min(100%, 620px);
+  width: 100%;
   border: 3px solid var(--retro-brown);
   border-radius: 1.25rem;
   overflow: hidden;
@@ -572,7 +549,7 @@
 
 .locationInfo {
   background-color: var(--background-panel);
-  padding: 2.5rem 2rem;
+  padding: clamp(1.25rem, 2.5vw, 2rem);
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -580,12 +557,12 @@
 
 .locationTitle {
   font-family: var(--font-display), cursive;
-  font-size: clamp(2rem, 3.5vw, 3rem);
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
   font-weight: 900;
   letter-spacing: -0.025em;
   text-transform: uppercase;
   color: var(--retro-red);
-  margin: 0.25rem 0 2rem;
+  margin: 0.25rem 0 1.25rem;
   line-height: 1.05;
 }
 
@@ -593,7 +570,7 @@
   display: flex;
   gap: 0.75rem;
   align-items: flex-start;
-  margin-bottom: 2rem;
+  margin-bottom: 1.25rem;
 }
 
 .addressText {
@@ -610,7 +587,7 @@
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--retro-red);
+  color: var(--retro-red-ink);
   text-decoration: none;
   border-bottom: 2px solid var(--retro-red);
   padding-bottom: 0.1rem;
@@ -623,7 +600,7 @@
 
 .mapsBtn {
   display: inline-block;
-  background-color: var(--retro-red);
+  background-color: var(--retro-red-ink);
   color: white;
   border: 2px solid var(--retro-brown);
   border-radius: 999px;
@@ -759,22 +736,13 @@
     gap: 0.5rem;
   }
 
-  .statsBar {
-    justify-content: flex-start;
-  }
-
   .aboutCard,
   .hoursCard {
     box-shadow: var(--shadow-stack-md);
   }
+}
 
-  .galleryItemFirst {
-    width: 260px;
-    height: 260px;
-  }
-
-  .galleryItem {
-    width: 160px;
-    height: 160px;
-  }
+@media (prefers-reduced-motion: reduce) {
+  .hiringApplyBtn { transition: none; }
+  .hiringApplyBtn:hover { transform: none; }
 }

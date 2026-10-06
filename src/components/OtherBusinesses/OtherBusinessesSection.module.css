@@ -86,12 +86,12 @@
 }
 
 .pagination button:disabled { opacity: 0.45; cursor: default; }
-.pagination button:focus-visible, .error button:focus-visible, .close:focus-visible, .signup:focus-visible { outline: 3px solid var(--retro-red-ink); outline-offset: 3px; }
+.pagination button:focus-visible, .error button:focus-visible, .close:focus-visible, .signup:focus-visible, .pricing:focus-visible { outline: 3px solid var(--retro-red-ink); outline-offset: 3px; }
 .error { padding: 1rem; border: var(--stroke-thin); border-radius: var(--radius-md); background: var(--panel); }
 .error p { margin: 0 0 0.75rem; }
 
 .dialog {
-  width: min(460px, calc(100vw - 2rem));
+  width: min(620px, calc(100vw - 2rem));
   max-height: calc(100dvh - 2rem);
   margin: auto;
   padding: 0;
@@ -108,13 +108,20 @@
 .close { position: absolute; top: 0.4rem; right: 0.4rem; display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: var(--radius-sm); background: transparent; color: inherit; cursor: pointer; }
 .businessName { margin: 0 0 0.75rem; color: var(--muted); font-size: 0.875rem; font-weight: 700; overflow-wrap: anywhere; }
 .dialog h2 { margin: 0; font-family: var(--font-display); font-size: clamp(1.75rem, 7vw, 2.5rem); line-height: 1.1; }
-.invitation { margin: 1rem 0 1.5rem; font-size: 1.1rem; font-weight: 700; }
+.invitation { margin: 1.25rem 0 0.75rem; font-size: 1.1rem; font-weight: 700; line-height: 1.5; }
+.promise { margin: 0 0 0.75rem; color: var(--retro-red-ink); font-weight: 700; line-height: 1.5; }
+.description { margin: 0; color: var(--muted); font-size: 0.95rem; line-height: 1.65; }
+.dialogActions { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; margin-top: 1.5rem; }
 .signup { display: inline-flex; justify-content: center; align-items: center; gap: 0.65rem; min-height: 48px; padding: 0.75rem 1.1rem; border: var(--stroke-thin); border-radius: var(--radius-pill); background: var(--retro-yellow); color: var(--retro-brown); font-weight: 700; text-decoration: none; box-shadow: var(--shadow-stack-sm); }
 .signup span { font-size: 1.1rem; }
+.pricing { display: inline-flex; justify-content: center; align-items: center; min-height: 48px; padding: 0.75rem 1.1rem; border: var(--stroke-thin); border-radius: var(--radius-pill); color: var(--foreground); font-weight: 700; text-decoration: none; }
+.signup:hover { background: var(--background-panel); }
+.pricing:hover { background: var(--panel); }
 
 @media (max-width: 480px) {
   .row { padding: 0.9rem; gap: 0.65rem; }
   .dialogContent { padding: 3rem 1rem 1.5rem; }
+  .dialogActions { flex-direction: column; }
 }
 
 @media (prefers-reduced-motion: reduce) { .row { transition: none; } }

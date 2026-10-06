@@ -1,8 +1,11 @@
 import { createRoot } from "react-dom/client";
+import ListingUpdatesFixture from "./ListingUpdatesFixture";
 import { usePathname, useSearchParams } from "next/navigation";
 import DeleteListingButton from "@/components/DeleteListingButton/DeleteListingButton";
 import ResultsExperience from "@/app/results/ResultsExperience";
 import OtherBusinessesSection from "@/components/OtherBusinesses/OtherBusinessesSection";
+import CraftYourLookAdvice from "@/app/post-your-business/CraftYourLookAdvice";
+import advertiseStyles from "@/app/post-your-business/post.module.css";
 import DashboardFrame from "@/app/dashboard/DashboardFrame";
 import dashboardStyles from "@/app/dashboard/DashboardShell.module.css";
 import Link from "next/link";
@@ -24,6 +27,8 @@ const favorites = names.map((name, index) => ({ id: String(index), businessId: S
 const events = names.map((title, index) => ({ id: String(index), title, description: "A community gathering with food and music.", createdAt: `2026-01-0${index+1}`, startDate: `2030-01-${10+index}T16:00:00Z`, dateKey: `2030-01-${10+index}`, dateKeys: [`2030-01-${10+index}`], shortDateRangeLabel: `Jan ${10+index}`, timeLabel: "10:00 AM", startHour: 10, city: "Austin", state: "TX", cityLabel: "Austin, TX", venue: "Town Hall", categoryTags: [{ name: "Community" }], tags: [], type: "Community" }));
 function App() {
   const path = usePathname(); const params = useSearchParams();
+  if (path.startsWith("/listing-updates/")) return <ListingUpdatesFixture path={path} params={params} />;
+  if (path === "/advertise-advice") return <div className={advertiseStyles.pageShell}><main className={advertiseStyles.page}><h1>Craft Your Look</h1><CraftYourLookAdvice /><button type="button">Outside dialog</button></main></div>;
   const calendarEvents = localStorage.getItem("fixtureRecurring") ? [{
     ...events[0], title: "Weekly Open Mic", recurrence: "WEEKLY", recurrenceLabel: "Every Thursday", timezone: "America/Chicago",
     endDate: "2030-01-10T18:00:00Z", dateKeys: ["2030-01-10", "2030-01-17", "2030-01-24"],

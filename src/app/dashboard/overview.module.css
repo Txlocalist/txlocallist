@@ -107,7 +107,7 @@
 .lowerGrid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 0;
+  gap: 1rem;
   margin-bottom: 1rem;
 }
 
@@ -166,6 +166,7 @@
 }
 
 .listingName {
+  overflow-wrap: anywhere;
   margin: 0;
   font-size: 1rem;
   font-weight: 800;
@@ -192,6 +193,47 @@
 .statusACTIVE {
   background: rgba(13, 123, 119, 0.12);
   color: #0d7b77;
+}
+
+.statusPUBLISHED {
+  background: rgba(13, 123, 119, 0.12);
+  color: #0d7b77;
+}
+
+.sectionDescription {
+  margin: 0 0 1rem;
+  color: rgba(45, 36, 30, 0.8);
+  line-height: 1.6;
+}
+
+.eventEditAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 0.65rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--retro-brown) 40%, transparent);
+  border-radius: 0.65rem;
+  background: var(--retro-yellow);
+  color: var(--retro-brown);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.eventEditAction svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.eventEditAction:hover {
+  background: #ffdf79;
+}
+
+.eventEditAction:focus-visible {
+  outline: 3px solid var(--retro-brown);
+  outline-offset: 3px;
 }
 
 .statusDRAFT {

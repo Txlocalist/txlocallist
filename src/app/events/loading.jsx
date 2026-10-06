@@ -1,30 +1,5 @@
-import styles from "./loading.module.css";
-
-const cards = Array.from({ length: 4 }, (_, index) => index);
+import EventSkeleton from "./EventSkeleton";
 
 export default function EventsLoading() {
-  return (
-    <main className={styles.page} aria-busy="true">
-      <div className={styles.shell} role="status" aria-live="polite" aria-label="Loading happenings">
-        <span className={styles.status}>Loading local happenings</span>
-        <div className={`${styles.line} ${styles.logo}`} />
-        <div className={styles.search} />
-        <div className={`${styles.line} ${styles.heading}`} />
-        <div className={styles.grid} aria-hidden="true">
-          {cards.map((card) => (
-            <article key={card} className={styles.card} style={{ "--delay": `${card * 90}ms` }}>
-              <div className={styles.ticket} />
-              <div className={styles.image} />
-              <div className={styles.copy}>
-                <div className={`${styles.line} ${styles.short}`} />
-                <div className={`${styles.line} ${styles.title}`} />
-                <div className={styles.line} />
-                <div className={`${styles.line} ${styles.medium}`} />
-              </div>
-            </article>
-          ))}
-        </div>
-      </div>
-    </main>
-  );
+  return <EventSkeleton />;
 }

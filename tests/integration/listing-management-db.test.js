@@ -522,7 +522,8 @@ describe.skipIf(!db)("listing management against PostgreSQL", () => {
     input.set("startDate", "2026-01-01T19:00");
     input.set("endDate", "2026-01-01T21:00");
     await expect(updateEventAction(null, input)).rejects.toThrow("updated=1");
-    expect((await db.event.findUnique({ where: { id: series.id } })).status).toBe("PENDING");
+    expect((await db.event.findUnique({ where: { id: series.id } })).status).toBe("PUBLISHED");
+    expect(await getEventById(series.id)).not.toBeNull();
 
     input.set("recurrence", "NONE");
     input.set("startDate", "2030-01-10T19:00");

@@ -1,15 +1,6 @@
 import { getPublicBusinessWhere } from "@/lib/listing-visibility";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import {
-  FaFacebookF,
-  FaInstagram,
-  FaLinkedinIn,
-  FaTiktok,
-  FaXTwitter,
-  FaYoutube,
-} from "react-icons/fa6";
-import { FaLink } from "react-icons/fa";
 
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -22,6 +13,9 @@ import ListingReturnButton from "@/components/ListingReturn/ListingReturnButton"
 
 import ShareButton from "./ShareButton";
 import PhotoGallery from "./PhotoGallery";
+import BusinessDetails from "./BusinessDetails";
+import BusinessContactActions from "./BusinessContactActions";
+import HiringBadge from "./HiringBadge";
 import styles from "./page.module.css";
 
 export async function generateMetadata({ params }) {
@@ -45,27 +39,6 @@ export async function generateMetadata({ params }) {
 // Keep the route dynamic so new slugs and ISR revalidation never switch a static
 // render to a cookie-backed dynamic render at runtime.
 export const dynamic = "force-dynamic";
-
-const SOCIAL_ICONS = {
-  instagram: FaInstagram,
-  facebook: FaFacebookF,
-  twitter: FaXTwitter,
-  x: FaXTwitter,
-  tiktok: FaTiktok,
-  youtube: FaYoutube,
-  linkedin: FaLinkedinIn,
-};
-
-function getSocialLabel(platform) {
-  if (platform?.toLowerCase() === "x") return "X (formerly Twitter)";
-  const value = platform?.trim() || "social profile";
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
-
-function getDomain(url) {
-  try { return new URL(url).hostname.replace(/^www\./, ""); }
-  catch { return url; }
-}
 
 function parseHiringRoles(raw) {
   if (!raw) return [];
@@ -171,7 +144,7 @@ export default async function BusinessDetailPage({ params }) {
   const showSocials = features.SHOW_SOCIALS;
   const isPaid      = !!(business.plan?.slug && business.plan.slug !== "free");
 
-  const [heroPhoto, ...galleryPhotos] = business.photos;
+  const [heroPhoto] = business.photos;
   const hoursRows = getBusinessHoursDisplayRows(businessHours);
 
   const mapsQuery = encodeURIComponent(`${business.address}, ${business.city.name}, TX`);
@@ -184,7 +157,7 @@ export default async function BusinessDetailPage({ params }) {
     <>
       <Navbar />
 
-      <div className={styles.pageWrapper}>
+      <main className={styles.pageWrapper}>
 
         <div className={styles.returnRow}>
           <ListingReturnButton fallbackHref="/results" fallbackLabel="Back to Businesses" />
@@ -205,12 +178,14 @@ export default async function BusinessDetailPage({ params }) {
             )}
 
             <div className={styles.heroOverlay}>
-              {/* Top-left badges */}
-              <div className={styles.heroBadges}>
-                <span className={styles.badgeCity}>{business.city.name}, Texas</span>
-                {isPaid && (
-                  <span className={styles.badgeTier}>{business.plan.slug.toUpperCase()}</span>
-                )}
+              <div className={styles.heroTop}>
+                <div className={styles.heroBadges}>
+                  <span className={styles.badgeCity}>{business.city.name}, Texas</span>
+                  {isPaid && (
+                    <span className={styles.badgeTier}>{business.plan.slug.toUpperCase()}</span>
+                  )}
+                </div>
+                {business.isHiring ? <HiringBadge /> : null}
               </div>
 
               {/* Bottom row: title + actions */}
@@ -245,198 +220,24 @@ export default async function BusinessDetailPage({ params }) {
             </div>
           </div>
 
-          {/* Contact stats bar */}
-          {showContact && (business.phone || (showWebsite && business.website)) && (
-            <div className={styles.statsBar}>
-              <div className={styles.statsRight}>
-                {business.phone && (
-                  <a href={`tel:${business.phone}`} className={styles.statLink}>
-                    <span className="material-icons" style={{ fontSize: "1.1rem" }}>call</span>
-                    {business.phone}
-                  </a>
-                )}
-                {business.phone && showWebsite && business.website && (
-                  <div className={styles.statDivider} />
-                )}
-                {showWebsite && business.website && (
-                  <a
-                    href={business.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={styles.statLink}
-                  >
-                    <span className="material-icons" style={{ fontSize: "1.1rem" }}>language</span>
-                    {getDomain(business.website)}
-                  </a>
-                )}
-              </div>
-            </div>
-          )}
+          {showContact ? (
+            <BusinessContactActions
+              phone={business.phone}
+              website={showWebsite ? business.website : null}
+              businessName={business.name}
+            />
+          ) : null}
         </section>
 
-        {/* ── BENTO: About + Hours ── */}
-        <section className={styles.bentoSection}>
-          <div className={styles.bentoGrid}>
-
-            {/* About card */}
-            <div className={styles.aboutCard}>
-              <h2 className={styles.aboutTitle}>About {business.name}</h2>
-              <p className={styles.aboutDesc}>{business.description}</p>
-
-              {(business.categories.length > 0 || business.tags.length > 0) && (
-                <div className={styles.chipRow}>
-                  {business.categories.map((bc) => (
-                    <Link
-                      key={bc.category.id}
-                      href={`/categories/${bc.category.slug}`}
-                      className={styles.chip}
-                    >
-                      {bc.category.name}
-                    </Link>
-                  ))}
-                  {business.tags.map((bt) => (
-                    <Link
-                      key={bt.tag.id}
-                      href={`/results?q=${encodeURIComponent(bt.tag.name)}`}
-                      className={styles.chipTag}
-                    >
-                      #{bt.tag.name}
-                    </Link>
-                  ))}
-                </div>
-              )}
-
-              {!showContact && (
-                <div className={styles.upgradeNudge}>
-                  <span
-                    className="material-icons"
-                    style={{ fontSize: "1.5rem", color: "var(--retro-yellow)", flexShrink: 0 }}
-                  >
-                    lock
-                  </span>
-                  <div>
-                    <p className={styles.upgradeNudgeTitle}>Contact info hidden</p>
-                    <p className={styles.upgradeNudgeDesc}>
-                      This business hasn&apos;t upgraded yet. Know the owner?
-                    </p>
-                  </div>
-                  <Link href="/about#pricing" className={styles.upgradeNudgeBtn}>
-                    View Plans →
-                  </Link>
-                </div>
-              )}
-            </div>
-
-            {/* Hours + Social card (dark) */}
-            <div className={styles.hoursCard}>
-              <h3 className={styles.hoursTitle}>Service Hours</h3>
-              <div className={styles.hoursList}>
-                {hoursRows.map((day) => (
-                  <div key={day.dayOfWeek} className={styles.hoursRow}>
-                    <span className={styles.hoursDay}>{day.label}</span>
-                    <span className={styles.hoursVal}>{day.value}</span>
-                  </div>
-                ))}
-              </div>
-
-              {showSocials && business.socialLinks.length > 0 && (
-                <div className={styles.socialRow}>
-                  {business.socialLinks.map((link) => (
-                    (() => {
-                      const Icon = SOCIAL_ICONS[link.platform?.toLowerCase()] ?? FaLink;
-                      const label = getSocialLabel(link.platform);
-                      return (
-                        <a
-                          key={link.id}
-                          href={link.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={styles.socialIcon}
-                          aria-label={`Visit ${business.name} on ${label}`}
-                          title={label}
-                        >
-                          <Icon aria-hidden="true" focusable="false" />
-                        </a>
-                      );
-                    })()
-                  ))}
-                </div>
-              )}
-            </div>
-
-          </div>
-        </section>
-
-        {/* HIRING */}
-        {business.isHiring && (
-          <section className={styles.hiringSection}>
-            <div className={styles.hiringCard}>
-              <div>
-                <p className={styles.eyebrow}>Now Hiring</p>
-                <h2 className={styles.hiringTitle}>{business.name} is hiring</h2>
-                <p className={styles.hiringDescription}>
-                  Interested in joining the team? Apply to available roles or reach out directly.
-                </p>
-                {hiringRoles.length > 0 && (
-                  <div className={styles.hiringRolesRow}>
-                    {hiringRoles.map((role) => (
-                      <span key={role} className={styles.hiringRoleChip}>
-                        {role}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <Link href={hiringApplyHref} className={styles.hiringApplyBtn}>
-                Apply
-              </Link>
-            </div>
-          </section>
-        )}
-
-        {/* LOCATION */}
-        {business.address ? <section className={styles.locationSection}>
-          <div className={styles.locationCard}>
-
-            <div className={styles.locationInfo}>
-              <p className={styles.eyebrow}>Visit Us</p>
-              <h2 className={styles.locationTitle}>Find the Spot</h2>
-
-              <div className={styles.addressBlock}>
-                <span
-                  className="material-icons"
-                  style={{ fontSize: "1.6rem", color: "var(--retro-red)", flexShrink: 0, marginTop: "0.1rem" }}
-                >
-                  location_on
-                </span>
-                <div>
-                  <p className={styles.addressText}>
-                    {business.address},<br />{business.city.name}, TX
-                  </p>
-                  <a
-                    href={mapsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={styles.directionsLink}
-                  >
-                    Get Directions
-                  </a>
-                </div>
-              </div>
-
-              <a
-                href={mapsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={styles.mapsBtn}
-              >
-                Open in Google Maps
-              </a>
-            </div>
-
-          </div>
-        </section> : null}
+        <BusinessDetails
+          business={business}
+          showContact={showContact}
+          showSocials={showSocials}
+          hoursRows={hoursRows}
+          hiringRoles={hiringRoles}
+          hiringApplyHref={hiringApplyHref}
+          mapsUrl={mapsUrl}
+        />
 
         {/* ── JOBS ── */}
         {features.JOB_POSTINGS > 0 && business.jobs.length > 0 && (
@@ -467,21 +268,12 @@ export default async function BusinessDetailPage({ params }) {
 
         {/* PHOTO GALLERY */}
         {business.photos.length > 0 && (
-          <section className={styles.gallerySection}>
-            <div className={styles.galleryHeader}>
-              <div>
-                <p className={styles.eyebrow}>The Atmosphere</p>
-                <h2 className={styles.gallerySectionTitle}>Photo Gallery</h2>
-              </div>
-              <span className={styles.viewAllBtn}>
-                View All {business.photos.length} Photo{business.photos.length !== 1 ? "s" : ""}
-              </span>
-            </div>
+          <section className={styles.gallerySection} aria-label="Business photos">
             <PhotoGallery photos={business.photos} businessName={business.name} />
           </section>
         )}
 
-      </div>
+      </main>
 
       <Footer />
     </>

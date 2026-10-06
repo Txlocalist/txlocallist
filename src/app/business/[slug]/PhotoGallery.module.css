@@ -1,214 +1,283 @@
-/* ─────────────────────────────────────────────
-   Photo Gallery — strip + lightbox
-───────────────────────────────────────────── */
-
-/* Outer wrapper: holds arrows + scroll strip */
-.galleryWrap {
-  position: relative;
+/* Preserve the Texas brand: design variance 6, motion 3, density 4.
+   One featured photo and two supporting views; native dialog owns focus. */
+.galleryHeader {
   display: flex;
   align-items: center;
-  gap: 0;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
 }
-
-/* Scroll container */
-.galleryScroll {
+.galleryTitle {
+  font-family: var(--font-display), serif;
+  font-size: clamp(1.7rem, 3.3vw, 2.6rem);
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  margin: 0;
+  color: var(--retro-brown);
+}
+.viewPhotos {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  min-height: 44px;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--retro-brown);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--retro-brown);
+  font-family: var(--font-sans), sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.galleryGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+  grid-template-rows: repeat(2, clamp(145px, 19vw, 230px));
+  gap: 0.8rem;
+}
+.galleryItem {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid var(--retro-brown);
+  border-radius: 1rem;
+  background: var(--background-panel);
+  cursor: zoom-in;
+}
+.galleryItem:first-child {
+  grid-row: span 2;
+}
+.galleryGrid[data-count="1"] {
+  grid-template-columns: 1fr;
+  grid-template-rows: clamp(250px, 40vw, 500px);
+}
+.galleryGrid[data-count="1"] .galleryItem {
+  grid-row: auto;
+}
+.galleryGrid[data-count="2"] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: clamp(230px, 32vw, 380px);
+}
+.galleryGrid[data-count="2"] .galleryItem {
+  grid-row: auto;
+}
+.galleryImg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.expandIcon {
+  position: absolute;
+  right: 0.8rem;
+  bottom: 0.8rem;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--background);
+  color: var(--retro-brown);
+  border: 1px solid var(--retro-brown);
+  opacity: 0;
+}
+.galleryItem:focus-visible .expandIcon {
+  opacity: 1;
+}
+.galleryItem:focus-visible,
+.viewPhotos:focus-visible {
+  outline: 3px solid var(--retro-red-ink);
+  outline-offset: 4px;
+}
+.lightbox {
+  width: min(1080px, calc(100vw - 32px));
+  max-width: none;
+  max-height: calc(100dvh - 32px);
+  margin: auto;
+  padding: 0;
+  border: 1px solid rgba(246, 232, 200, 0.3);
+  border-radius: 1.25rem;
+  background: var(--background-dark);
+  color: var(--background);
+  overflow: auto;
+}
+.lightbox::backdrop {
+  background: rgba(20, 16, 13, 0.92);
+}
+.lightboxContent {
+  padding: 1.25rem;
+}
+.lightboxHeader {
   display: flex;
-  gap: 0.85rem;
-  overflow-x: auto;
-  scroll-behavior: smooth;
-  scrollbar-width: none;
-  padding: 0.25rem 0.1rem 0.5rem;
-  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.lightboxHeader p {
+  font-family: var(--font-sans), sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  margin: 0 0 0.2rem;
+  overflow-wrap: anywhere;
+}
+.lightboxHeader span {
+  font-size: 0.8rem;
+  color: #c6b79c;
+}
+.lightboxStage {
+  display: grid;
+  place-items: center;
+  min-height: 160px;
+}
+.lightboxImg {
+  display: block;
+  width: 100%;
+  height: min(62dvh, 650px);
+  object-fit: contain;
+  border-radius: 0.5rem;
+}
+.iconButton {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(246, 232, 200, 0.4);
+  border-radius: 50%;
+  color: var(--background);
+  background: transparent;
+  cursor: pointer;
+}
+.iconButton svg {
+  width: 1rem;
+  height: 1rem;
+}
+.lightboxFooter {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.lightboxFooter:empty {
+  display: none;
+}
+.thumbnails {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
   min-width: 0;
 }
-.galleryScroll::-webkit-scrollbar { display: none; }
-
-/* Individual photo tile */
-.galleryItem {
-  flex-shrink: 0;
-  width: 240px;
-  height: 240px;
-  border-radius: 1rem;
-  overflow: hidden;
-  border: 3px solid var(--retro-brown);
-  box-shadow: 3px 3px 0 var(--retro-brown);
+.thumbnail {
+  width: 64px;
+  height: 48px;
+  min-width: 0;
+  padding: 2px;
+  border: 2px solid transparent;
+  border-radius: 0.5rem;
+  background: transparent;
   cursor: pointer;
-  padding: 0;
-  background: none;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-  display: block;
+  opacity: 0.55;
 }
-.galleryItem:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 5px 5px 0 var(--retro-brown);
+.thumbnail[aria-pressed="true"] {
+  border-color: var(--retro-yellow);
+  opacity: 1;
 }
-
-.galleryImg {
+.thumbnail img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform 0.5s ease;
+  border-radius: 0.2rem;
 }
-.galleryItem:hover .galleryImg {
-  transform: scale(1.06);
+.iconButton:focus-visible,
+.thumbnail:focus-visible {
+  outline: 2px solid var(--retro-yellow);
+  outline-offset: 3px;
 }
-
-/* Scroll arrows */
-.scrollArrow {
-  flex-shrink: 0;
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: white;
-  border: 3px solid var(--retro-brown);
-  box-shadow: 3px 3px 0 var(--retro-brown);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: var(--retro-brown);
-  transition: background 0.13s ease, transform 0.13s ease, opacity 0.2s ease;
-  z-index: 2;
+@media (hover: hover) {
+  .viewPhotos:hover {
+    background: var(--background-panel);
+  }
+  .galleryItem:hover .expandIcon {
+    opacity: 1;
+  }
+  .iconButton:hover {
+    background: rgba(246, 232, 200, 0.12);
+  }
+  .thumbnail:hover {
+    opacity: 1;
+  }
 }
-.scrollArrow:hover {
-  background: var(--retro-brown);
-  color: white;
-  transform: scale(1.08);
+@media (prefers-reduced-motion: no-preference) {
+  .galleryImg {
+    transition: transform 0.3s ease;
+  }
+  .expandIcon {
+    transition: opacity 0.2s ease;
+  }
+  .galleryItem:hover .galleryImg {
+    transform: scale(1.025);
+  }
 }
-.scrollArrowLeft  { margin-right: 0.65rem; }
-.scrollArrowRight { margin-left: 0.65rem; }
-
-.scrollArrowHidden {
-  opacity: 0;
-  pointer-events: none;
-}
-
-/* ─────────────────────────────────────────────
-   LIGHTBOX
-───────────────────────────────────────────── */
-.lightboxOverlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.88);
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  animation: fadeIn 0.18s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-.lightboxInner {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  max-width: min(90vw, 1100px);
-  max-height: 90vh;
-  width: 100%;
-}
-
-.lightboxImg {
-  max-width: 100%;
-  max-height: 85vh;
-  object-fit: contain;
-  border-radius: 1rem;
-  border: 3px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  display: block;
-  animation: scaleIn 0.18s ease;
-}
-
-@keyframes scaleIn {
-  from { transform: scale(0.96); opacity: 0; }
-  to   { transform: scale(1);    opacity: 1; }
-}
-
-/* Close button */
-.lightboxClose {
-  position: absolute;
-  top: -1rem;
-  right: -1rem;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: white;
-  border: 3px solid var(--retro-brown);
-  color: var(--retro-brown);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 10;
-  transition: background 0.13s ease, color 0.13s ease;
-}
-.lightboxClose:hover {
-  background: var(--retro-brown);
-  color: white;
-}
-
-/* Prev / Next nav buttons */
-.lightboxNav {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
-  border: 2px solid rgba(255, 255, 255, 0.5);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 10;
-  transition: background 0.13s ease;
-}
-.lightboxNav:hover {
-  background: rgba(255, 255, 255, 0.25);
-}
-.lightboxPrev { left: -4rem; }
-.lightboxNext { right: -4rem; }
-
-/* Counter */
-.lightboxCounter {
-  position: absolute;
-  bottom: -2.5rem;
-  left: 50%;
-  transform: translateX(-50%);
-  color: rgba(255, 255, 255, 0.65);
-  font-family: var(--font-accent), cursive;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  white-space: nowrap;
-}
-
-/* ── Mobile ── */
 @media (max-width: 600px) {
-  .galleryItem {
-    width: 180px;
-    height: 180px;
+  .galleryHeader {
+    align-items: flex-start;
+    gap: 0.8rem;
   }
-
-  .scrollArrow {
-    width: 36px;
-    height: 36px;
+  .galleryTitle {
+    width: 100%;
   }
-
-  .lightboxPrev { left: -0.5rem; }
-  .lightboxNext { right: -0.5rem; }
-
-  .lightboxClose {
-    top: 0.5rem;
+  .galleryGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: 230px 130px;
+    gap: 0.6rem;
+  }
+  .galleryItem:first-child {
+    grid-column: span 2;
+    grid-row: auto;
+  }
+  .galleryGrid[data-count="2"] {
+    grid-template-rows: 210px;
+  }
+  .galleryGrid[data-count="2"] .galleryItem:first-child {
+    grid-column: auto;
+  }
+  .galleryGrid[data-count="1"] .galleryItem:first-child {
+    grid-column: auto;
+  }
+  .lightboxContent {
+    padding: 0.85rem;
+  }
+  .lightboxFooter {
+    gap: 0.5rem;
+  }
+  .thumbnail {
+    width: 48px;
+    height: 44px;
+  }
+  .thumbnails {
+    gap: 0.25rem;
+  }
+  .lightboxImg {
+    height: min(57dvh, 500px);
+  }
+  .expandIcon {
+    opacity: 1;
+    width: 30px;
+    height: 30px;
     right: 0.5rem;
-    position: fixed;
+    bottom: 0.5rem;
   }
 }

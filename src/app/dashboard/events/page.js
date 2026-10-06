@@ -1,6 +1,5 @@
 import { getOwnedEventWhere } from "@/lib/listing-visibility";
 import { getAccountAccess } from "@/lib/account-access";
-import DeleteListingButton from "@/components/DeleteListingButton/DeleteListingButton";
 import ResultsSort from "@/components/ResultsSort/ResultsSort";
 import { resultOrderBy } from "@/lib/results-sort";
 import Link from "next/link";
@@ -17,6 +16,8 @@ import { isMissingPrismaTableError } from "@/lib/prisma-errors";
 
 import { DashboardLayout } from "../DashboardShell";
 import styles from "../dashboard.module.css";
+import eventStyles from "./events.module.css";
+import HappeningActions from "./HappeningActions";
 
 function getEventStatusClass(status) {
   if (status === "PUBLISHED") return "statusACTIVE";
@@ -81,7 +82,7 @@ export default async function DashboardEventsPage({ searchParams }) {
       <div className={styles.pageHeader}>
         <div>
           <h1 className={styles.pageTitle}>My Happenings</h1>
-          <p className={styles.pageSubtitle}>Manage the happenings connected to your dashboard.</p>
+          <p className={styles.pageSubtitle}>Edit your existing happenings, update their details and photos, or post something new.</p>
         </div>
         <div className={styles.pageActions}>
           <Link
@@ -145,7 +146,7 @@ export default async function DashboardEventsPage({ searchParams }) {
 
       {!schemaNotice && events.length > 0 && (
         <div className={styles.businessesTable}>
-          <div className={styles.tableHeader}>
+          <div className={`${styles.tableHeader} ${eventStyles.eventRow}`}>
             <div className={styles.tableCol} style={{ flex: 2 }}>
               Title
             </div>
@@ -184,7 +185,7 @@ export default async function DashboardEventsPage({ searchParams }) {
               );
 
               return (
-              <div key={event.id} className={styles.tableRow}>
+              <div key={event.id} className={`${styles.tableRow} ${eventStyles.eventRow}`}>
                 <div className={styles.tableCol} style={{ flex: 2 }} data-label="Title">
                   <div>
                     <p className={styles.businessName}>{event.title}</p>
@@ -252,17 +253,7 @@ export default async function DashboardEventsPage({ searchParams }) {
                   </span>
                 </div>
                 <div className={styles.tableCol} style={{ flex: 1 }} data-label="Actions">
-                  <div className={styles.actionButtons}>
-                    {event.status === "PUBLISHED" && (event.postingMethod === "ONE_TIME" || (access?.hasCreatorAccess && (!event.business || event.business.status === "ACTIVE"))) ? (
-                      <Link href={`/events/${event.id}`} className={styles.actionButton} target="_blank">
-                        View
-                      </Link>
-                    ) : null}
-                    {(event.postingMethod === "ONE_TIME" || access?.hasCreatorAccess) && !(["CANCELLED", "DENIED"].includes(event.status)) && !isEventPast(event) ? (
-                      <Link href={`/dashboard/events/${event.id}/edit`} className={styles.actionButton}>
-                        Edit
-                      </Link>
-                    ) : null}
+                  <HappeningActions event={event} hasCreatorAccess={access?.hasCreatorAccess}>
                     {changesRequested && (event.postingMethod === "ONE_TIME" || access?.hasCreatorAccess) && !isEventPast(event) ? (
                       <form action={resubmitEventAction}>
                         <input type="hidden" name="eventId" value={event.id} />
@@ -271,8 +262,7 @@ export default async function DashboardEventsPage({ searchParams }) {
                         </button>
                       </form>
                     ) : null}
-                    <DeleteListingButton id={event.id} name={event.title} kind="event" />
-                  </div>
+                  </HappeningActions>
                 </div>
               </div>
               );

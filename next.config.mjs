@@ -13,6 +13,15 @@ const nextConfig = {
       {
         pathname: "/api/blob-image",
       },
+      {
+        pathname: "/addvertise-1.webp",
+      },
+      {
+        pathname: "/welcome.webp",
+      },
+      {
+        pathname: "/cowboy.webp",
+      },
     ],
     remotePatterns: [
       {

@@ -47,6 +47,7 @@ export function CreateEventForm({
       : [],
   );
   const [description, setDescription] = useState(initialEvent?.description ?? "");
+  const [isUploading, setIsUploading] = useState(false);
   const [recurrence, setRecurrence] = useState(initialEvent?.recurrence ?? "NONE");
   const isEditing = mode === "edit";
   const selectedCity = cities.find((city) => city.name.toLowerCase() === initialEvent?.city?.toLowerCase() && ["tx", "texas"].includes((initialEvent?.state ?? "TX").toLowerCase()) && ["us", "usa", "united states"].includes((initialEvent?.country ?? "US").toLowerCase()));
@@ -84,7 +85,7 @@ export function CreateEventForm({
         </div>
       ) : (
         <div className={styles.paymentNotice}>
-          Published happening changes return to admin review.
+          Update the details or replace the cover photo below. Published happenings stay live, and saved changes appear immediately.
         </div>
       )}
 
@@ -144,11 +145,13 @@ export function CreateEventForm({
           <PhotoUploader
             photos={photos}
             onChange={setPhotos}
+            onUploadingChange={setIsUploading}
+            disabled={isPending}
             maxPhotos={1}
             uploadEndpoint="/api/event-images/upload"
             acceptedTypes="image/jpeg,image/png,image/webp"
             supportedTypesLabel="JPG, PNG, and WEBP"
-            limitMessage="One happening cover image is allowed."
+            limitMessage="Remove the current photo to upload a replacement."
           />
           <p className={styles.uploadHint}>Add one optional raster cover image.</p>
           <FieldError id="imageUrl-error" message={fieldErrors.imageUrl} />
@@ -199,7 +202,7 @@ export function CreateEventForm({
             <label className={styles.label} htmlFor="recurrenceUntil">Last Occurrence (optional)</label>
             <input id="recurrenceUntil" name="recurrenceUntil" type="date" className={styles.input}
               defaultValue={initialEvent?.recurrenceUntil ?? ""} />
-            <p className={styles.helpText}>Leave blank to keep repeating, or choose the same weekday as the first occurrence. Editing changes the whole series and sends it back to review. Failed payments hide the happening; a canceled membership hides it when paid access ends.</p>
+            <p className={styles.helpText}>Leave blank to keep repeating, or choose the same weekday as the first occurrence. Editing changes the whole series. Published happenings stay published when you save. Failed payments hide the happening; a canceled membership hides it when paid access ends.</p>
           </> : null}
         </div>
 
@@ -348,8 +351,9 @@ export function CreateEventForm({
       </div>
 
       <div className={styles.formNavigation}>
-        <button type="submit" className={styles.buttonPrimary} disabled={isPending}>
-          {isPending
+        <Link href="/dashboard/events" className={styles.buttonSecondary}>Cancel</Link>
+        <button type="submit" className={styles.buttonPrimary} disabled={isPending || isUploading}>
+          {isUploading ? "Uploading photo..." : isPending
             ? isEditing ? "Saving..." : "Continuing..."
             : isEditing ? "Save Changes" : "Continue"}
         </button>

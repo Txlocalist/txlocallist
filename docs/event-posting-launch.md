@@ -225,7 +225,7 @@ because the automated preflight exits successfully.
 - Organizer or admin cancellation does not create an automatic refund.
 - Cancellation first expires any open Checkout session. If Stripe has already confirmed payment, the payment is recorded before cancellation and remains subject to the no-automatic-refund policy. An asynchronous payment still processing must settle before cancellation can finish.
 - A paid event cannot be moved outside its originally purchased date range. A new date range requires a new post.
-- Material edits return a published event to the review queue.
+- Owners can update published event details and replace or remove the cover photo without taking the event offline. Drafts and pending posts keep their existing review status. Ownership, membership, date-range, and upload checks still apply.
 - An event paused by a payment dispute remains hidden even after a favorable resolution. An administrator must explicitly restore an eligible event to the review queue. Ended dispute-paused events remain in Payment Exceptions for an explicit support decision.
 - The approved implementation uses Stripe Tax for Texas only, with tax code `txcd_10701000` (Website Advertising) and exclusive tax behavior. Keep the documented tax-adviser approval with the release record.
 - Monitor `REVIEW_REQUIRED`, `REFUND_FAILED`, `REFUND_PENDING`, `DISPUTED`, and webhook rows with `lastError` as operational alerts.

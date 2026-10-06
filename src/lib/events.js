@@ -172,6 +172,7 @@ function normalizeEvent(event, now = new Date()) {
 
   return {
     id: event.id,
+    ...(event.creatorId ? { creatorId: event.creatorId } : {}),
     slug: event.id,
     title: event.title || "Untitled Event",
     description: event.description || "Local event details coming soon.",
@@ -457,6 +458,7 @@ export async function getEventById(id, occurrenceDate = null) {
       },
       select: {
         id: true,
+        creatorId: true,
         title: true,
         createdAt: true,
         description: true,

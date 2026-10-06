@@ -54,7 +54,17 @@
   padding: 1rem 0 4rem;
 }
 
-.returnRow { margin: 0 0 1rem 0.25rem; }
+.returnRow { margin: 0 0 1rem 0.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+.editLink {
+  padding: .7rem 1.1rem;
+  border: 1px solid var(--event-teal);
+  border-radius: 999px;
+  color: var(--event-cream);
+  font-weight: 700;
+  text-decoration: none;
+}
+.editLink:hover { background: rgba(21, 156, 160, .15); }
+.editLink:focus-visible { outline: 2px solid var(--event-cream); outline-offset: 4px; }
 
 .hero {
   display: grid;

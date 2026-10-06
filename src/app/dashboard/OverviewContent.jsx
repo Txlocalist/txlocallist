@@ -1,4 +1,7 @@
 import Link from "next/link";
+import EventEditLink, { canEditHappening } from "./events/EventEditLink";
+import { formatEventDateRange } from "@/lib/event-dates";
+import { getNextEventOccurrence } from "@/lib/event-recurrence";
 
 import styles from "./overview.module.css";
 
@@ -6,6 +9,8 @@ export function OverviewContent({
   canCreateListing,
   greetingName,
   recentBusinesses,
+  recentEvents = [],
+  eventsUnavailable = false,
   stats,
   subtitle,
 }) {
@@ -51,6 +56,51 @@ export function OverviewContent({
       </section>
 
       <section className={styles.lowerGrid}>
+        <div className={styles.sectionCard}>
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>Recent Happenings</h2>
+            <Link href="/dashboard/events" className={styles.sectionLink}>
+              Manage all happenings
+            </Link>
+          </div>
+          <p className={styles.sectionDescription}>
+            Update your event details and cover photo. Published happenings stay live when you save.
+          </p>
+          {recentEvents.length > 0 ? (
+            <div className={styles.listingList}>
+              {recentEvents.map((event) => {
+                const occurrence = getNextEventOccurrence(event) || event;
+                const status = event.status === "PUBLISHED" && event.postingMethod !== "ONE_TIME"
+                  && (!canCreateListing || (event.business && event.business.status !== "ACTIVE"))
+                  ? "SUSPENDED" : event.status;
+                return (
+                  <div key={event.id} className={styles.listingItem}>
+                    <div>
+                      <h3 className={styles.listingName}>{event.title}</h3>
+                      <p className={styles.listingMeta}>
+                        {event.city} · {formatEventDateRange(occurrence.startDate, occurrence.endDate, event.timezone, { compact: true })}
+                      </p>
+                      <span className={`${styles.listingStatus} ${styles[`status${status}`] || styles.statusPAUSED}`}>
+                        {status}
+                      </span>
+                    </div>
+                    {canEditHappening(event, canCreateListing) ? (
+                      <EventEditLink event={event} hasCreatorAccess={canCreateListing} className={styles.eventEditAction} />
+                    ) : (
+                      <Link href="/dashboard/events" className={styles.listingAction}>Manage happening</Link>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className={styles.inlineEmptyPanel}>
+              {eventsUnavailable ? "Happenings are temporarily unavailable." : (
+                <>No happenings yet. <Link href="/dashboard/events/new" className={styles.sectionLink}>Post your first happening</Link>.</>
+              )}
+            </div>
+          )}
+        </div>
         <div
           className={`${styles.sectionCard} ${
             recentBusinesses.length > 0 ? styles.listingSectionFilled : styles.listingSectionCompact

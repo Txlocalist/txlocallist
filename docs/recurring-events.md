@@ -9,7 +9,8 @@ series continues indefinitely. Each occurrence must finish before the next
 week begins. Overnight events are supported.
 
 The series is one Event record: the URL, photos, reviews, likes, and saves are
-shared. Edits apply to the whole series and published edits return to review.
+shared. Edits apply to the whole series. Published series stay live when their
+details or cover photo are updated; drafts and pending posts keep their review status.
 Organizers can disable recurrence by choosing **Does not repeat** and entering
 a future single-event range. Canceling/deleting the listing stops the series.
 Individual skipped dates, daily/monthly rules, and per-occurrence editing are

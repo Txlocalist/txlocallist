@@ -1,9 +1,8 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { DashboardLayout } from "./DashboardShell";
 import { OverviewContent } from "./OverviewContent";
-import styles from "./overview.module.css";
 import { getAccountAccess } from "@/lib/account-access";
+import { getOwnedEventWhere } from "@/lib/listing-visibility";
 import { prisma } from "@/lib/prisma";
 import { getCurrentSession } from "@/lib/auth/session";
 import { isMissingPrismaTableError } from "@/lib/prisma-errors";
@@ -37,10 +36,8 @@ export default async function DashboardPage() {
     redirect("/dashboard/favorites");
   }
 
-  let businesses = [];
-
-  try {
-    businesses = await prisma.business.findMany({
+  const [businessResult, eventResult] = await Promise.allSettled([
+    prisma.business.findMany({
       where: { ownerId: user.id, deletedAt: null, status: { not: "ARCHIVED" } },
       include: {
         city: true,
@@ -50,14 +47,22 @@ export default async function DashboardPage() {
         categories: { include: { category: true } },
       },
       orderBy: { createdAt: "desc" },
-    });
-  } catch (error) {
-    if (!isMissingPrismaTableError(error)) {
-      throw error;
+    }),
+    prisma.event.findMany({
+      where: getOwnedEventWhere(user.id),
+      orderBy: { updatedAt: "desc" },
+      take: 5,
+      include: { business: { select: { status: true } } },
+    }),
+  ]);
+  for (const result of [businessResult, eventResult]) {
+    if (result.status === "rejected" && !isMissingPrismaTableError(result.reason)) {
+      throw result.reason;
     }
-
-    console.warn("Dashboard listings are unavailable because the database schema is incomplete.");
   }
+  const businesses = businessResult.status === "fulfilled" ? businessResult.value : [];
+  const recentEvents = eventResult.status === "fulfilled" ? eventResult.value : [];
+  const eventsUnavailable = eventResult.status === "rejected";
 
   const stats = {
     total: businesses.length,
@@ -82,137 +87,12 @@ export default async function DashboardPage() {
         canCreateListing={canCreateListing}
         greetingName={greetingName}
         recentBusinesses={recentBusinesses}
+        recentEvents={recentEvents}
+        eventsUnavailable={eventsUnavailable}
         stats={stats}
         subtitle={subtitle}
       />
     </DashboardLayout>
   );
 
-  return (
-    <DashboardLayout activeTab="overview">
-      <div className={styles.pageHeader}>
-        <div>
-          <h1 className={styles.pageTitle}>Welcome back, {user.email}!</h1>
-          <p className={styles.pageSubtitle}>
-            Manage your listings, billing, and account settings.
-          </p>
-        </div>
-      </div>
-
-      {/* Stats Grid */}
-      <div className={styles.statsGrid}>
-        <StatCard label="Total Listings" value={stats.total} color="brown" />
-        <StatCard label="Active" value={stats.active} color="teal" />
-        <StatCard label="Draft" value={stats.draft} color="orange" />
-        <StatCard label="Paused" value={stats.paused} color="gray" />
-        <StatCard label="Paid Plans" value={stats.paidPlans} color="yellow" />
-      </div>
-
-      {/* Recent Listings */}
-      <div className={styles.card}>
-        <div className={styles.cardHeader}>
-          <h2 className={styles.cardTitle}>Recent Listings</h2>
-          <Link href="/dashboard/businesses" className={styles.link}>
-            View All →
-          </Link>
-        </div>
-
-        {recentBusinesses.length > 0 ? (
-          <div className={styles.listContainer}>
-            {recentBusinesses.map((business) => (
-              <div key={business.id} className={styles.listItem}>
-                <div>
-                  <h3 className={styles.listItemTitle}>{business.name}</h3>
-                  <p className={styles.listItemMeta}>
-                    {business.city.name} •{" "}
-                    <span className={styles[`status${business.status}`]}>
-                      {business.status}
-                    </span>
-                  </p>
-                </div>
-                <Link
-                  href={`/dashboard/businesses/${business.id}/edit`}
-                  className={styles.link}
-                >
-                  Edit →
-                </Link>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className={styles.emptyState}>
-            <h3 className={styles.emptyStateTitle}>No listings yet</h3>
-            <p className={styles.emptyStateDescription}>
-              Create your first listing to get started!
-            </p>
-            <Link
-              href="/dashboard/businesses/new"
-              className={styles.emptyStateAction}
-            >
-              Create Listing
-            </Link>
-          </div>
-        )}
-      </div>
-
-      {/* Quick Actions */}
-      <div className={styles.card}>
-        <h2 className={styles.cardTitle}>Quick Actions</h2>
-        <div className={styles.actionsGrid}>
-          <QuickActionCard
-            title="Create Listing"
-            description="Add a new business to the directory"
-            href="/dashboard/businesses/new"
-          />
-          <QuickActionCard
-            title="Manage Subscriptions"
-            description="View and update your billing"
-            href="/dashboard/billing"
-          />
-          <QuickActionCard
-            title="Account Settings"
-            description="Update your profile and preferences"
-            href="/dashboard/settings"
-          />
-          <QuickActionCard
-            title="Help & Support"
-            description="Browse FAQs and contact support"
-            href="/help"
-          />
-        </div>
-      </div>
-    </DashboardLayout>
-  );
-}
-
-function StatCard({ label, value, color }) {
-  const colorMap = {
-    brown: "--retro-brown",
-    teal: "--retro-teal",
-    orange: "--retro-orange",
-    yellow: "--retro-yellow",
-    gray: "#999",
-  };
-
-  return (
-    <div
-      className={styles.statCard}
-      style={{
-        borderLeftColor: `var(${colorMap[color]})`,
-      }}
-    >
-      <p className={styles.statLabel}>{label}</p>
-      <p className={styles.statValue}>{value}</p>
-    </div>
-  );
-}
-
-function QuickActionCard({ title, description, href }) {
-  return (
-    <Link href={href} className={styles.actionCard}>
-      <h3 className={styles.actionTitle}>{title}</h3>
-      <p className={styles.actionDescription}>{description}</p>
-      <span className={styles.actionArrow}>→</span>
-    </Link>
-  );
 }

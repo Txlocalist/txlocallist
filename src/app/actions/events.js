@@ -26,7 +26,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { resolveEventCity } from "@/lib/cities.server";
 import { isEventPast } from "@/lib/event-dates";
-import { isRecurringEvent, validateEventRecurrence } from "@/lib/event-recurrence";
+import { validateEventRecurrence } from "@/lib/event-recurrence";
 
 function getTextValue(formData, key) {
   return formData.get(key)?.toString().trim() ?? "";
@@ -55,6 +55,7 @@ function revalidateEventPaths(eventId = null) {
   revalidatePath("/events/results");
   revalidatePath("/results");
   revalidatePath("/dashboard/events");
+  revalidatePath("/dashboard");
   revalidatePath("/admin/events");
   revalidatePath("/admin/posts");
   if (eventId) revalidatePath(`/events/${eventId}`);
@@ -105,7 +106,7 @@ async function getValidatedEventInput(formData, user, existingEvent = null) {
       startDate: values.startDateRaw,
       endDate: values.endDateRaw,
       timeZone: values.timezone,
-      allowPast: isRecurringEvent(existingEvent) && values.recurrence === "WEEKLY",
+      allowPast: Boolean(existingEvent),
     });
   } catch (error) {
     const message = error instanceof EventDateValidationError
@@ -118,7 +119,7 @@ async function getValidatedEventInput(formData, user, existingEvent = null) {
   let recurrence = { recurrence: "NONE", recurrenceUntil: null };
   if (schedule) {
     try {
-      recurrence = validateEventRecurrence({ recurrence: values.recurrence, until: values.recurrenceUntil, schedule });
+      recurrence = validateEventRecurrence({ recurrence: values.recurrence, until: values.recurrenceUntil, schedule, allowPast: Boolean(existingEvent) });
     } catch (error) {
       fieldErrors.recurrence = error.message;
     }
@@ -412,9 +413,9 @@ export async function updateEventAction(prevState, formData) {
     return { error: "Event not found.", fieldErrors: {} };
   }
 
-  if (["CANCELLED", "DENIED"].includes(event.status) || isEventPast(event)) {
+  if (["CANCELLED", "DENIED"].includes(event.status)) {
     return {
-      error: "Ended, canceled, or denied events cannot be reused. Create a new event post instead.",
+      error: "Canceled or denied events cannot be reused. Create a new event post instead.",
       fieldErrors: {},
     };
   }
@@ -510,7 +511,7 @@ export async function updateEventAction(prevState, formData) {
           timezone: input.schedule.timezone,
           ...input.recurrence,
           eventUrl: input.values.eventUrl || null,
-          status: event.status === "PUBLISHED" ? "PENDING" : event.status,
+          status: event.status,
           publishedAt: event.publishedAt,
         },
       });

@@ -3,7 +3,6 @@ import Link from "next/link";
 
 import aboutBadgeImage from "@/app/assets/about-badge.webp";
 import danceHallImage from "@/app/assets/texas-dance-hall.webp";
-import landscapeImage from "@/app/assets/vintage Texas landscape.png";
 import { Footer, Navbar } from "@/components";
 import PricingCards from "@/components/PricingCards/PricingCards";
 
@@ -57,8 +56,8 @@ export default function AboutPage() {
 
             <div className={styles.heroMedia} aria-hidden="true">
               <Image
-                src={landscapeImage}
-                alt=""
+                src="/cowboy.webp"
+                alt="A cowboy's boots walking beside a horse across the Texas countryside"
                 fill
                 priority
                 sizes="(max-width: 760px) calc(100vw - 40px), 520px"

@@ -153,9 +153,14 @@ function OtherBusinessesList({ q, loc, category, citySlug }) {
         <div className={styles.dialogContent}>
           <button ref={closeRef} type="button" className={styles.close} aria-label="Close business invitation" onClick={closeDialog}><span className="material-icons" aria-hidden="true">close</span></button>
           <p className={styles.businessName}>{selected?.name}</p>
-          <h2 id={dialogTitleId}>Is this your business?</h2>
-          <p id={dialogDescriptionId} className={styles.invitation}>Join the Localist</p>
-          <Link href={OWNER_SIGNUP} className={styles.signup}>Create an account<span className="material-icons" aria-hidden="true">arrow_forward</span></Link>
+          <h2 id={dialogTitleId}>Hey friend, are you down for some local business?</h2>
+          <p className={styles.invitation}>Advertise your service and products on The Texas Localist</p>
+          <p className={styles.promise}>Be seen. Build trust. Earn more local customers in your community.</p>
+          <p id={dialogDescriptionId} className={styles.description}>Register an account and create a full business profile to give local customers another reason to choose you.</p>
+          <div className={styles.dialogActions}>
+            <Link href={OWNER_SIGNUP} className={styles.signup}>Advertise My Business<span className="material-icons" aria-hidden="true">arrow_forward</span></Link>
+            <Link href="/post-your-business" className={styles.pricing}>View Pricing</Link>
+          </div>
         </div>
       </dialog>
     </section>

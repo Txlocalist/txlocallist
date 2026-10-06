@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 
 import { Footer, Navbar } from "@/components";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -164,6 +165,11 @@ export default async function EventDetailPage({ params, searchParams }) {
       <main className={styles.shell}>
         <div className={styles.returnRow}>
           <ListingReturnButton fallbackHref="/events/results" fallbackLabel="Back to Happenings" theme="dark" />
+          {user && user.id === event.creatorId ? (
+            <Link href={`/dashboard/events/${event.id}/edit`} className={styles.editLink}>
+              Edit happening
+            </Link>
+          ) : null}
         </div>
 
         <section className={styles.hero} aria-labelledby="event-title">

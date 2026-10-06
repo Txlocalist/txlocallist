@@ -98,7 +98,7 @@ export default async function EditEventPage({ params }) {
         <div>
           <h1 className={styles.pageTitle}>Edit Happening</h1>
           <p className={styles.pageSubtitle}>
-            Material changes to a published happening return it to admin review.
+            Update your happening’s details and cover photo. Published happenings stay live when you save.
           </p>
         </div>
       </div>

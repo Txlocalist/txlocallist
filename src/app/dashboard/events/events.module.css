@@ -1,0 +1,120 @@
+.eventRow[class] {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr) minmax(240px, 1.5fr);
+}
+
+.eventRow[class] > [data-label="Date"] {
+  display: flex;
+}
+
+.eventRow > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.editAction,
+.viewAction,
+.deleteAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-width: 4rem;
+  min-height: 44px;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid transparent;
+  border-radius: 0.65rem;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+  touch-action: manipulation;
+}
+
+.editAction {
+  background: var(--retro-yellow);
+  color: var(--retro-brown);
+  border-color: color-mix(in srgb, var(--retro-brown) 40%, transparent);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--retro-brown) 12%, transparent);
+}
+
+.editAction svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  flex-shrink: 0;
+}
+
+.editAction:hover {
+  background: color-mix(in srgb, var(--retro-yellow) 78%, white);
+  border-color: var(--retro-brown);
+}
+
+.viewAction {
+  background: var(--surface, #fffaf2);
+  color: var(--retro-brown-soft);
+  border-color: color-mix(in srgb, var(--retro-brown-soft) 30%, transparent);
+}
+
+.viewAction:hover {
+  background: color-mix(in srgb, var(--retro-brown-soft) 8%, var(--surface, #fffaf2));
+  border-color: var(--retro-brown-soft);
+}
+
+.deleteAction {
+  background: transparent;
+  color: var(--retro-red-ink);
+  border-color: color-mix(in srgb, var(--retro-red-ink) 35%, transparent);
+}
+
+.deleteAction:hover {
+  background: color-mix(in srgb, var(--retro-red-ink) 7%, transparent);
+  border-color: var(--retro-red-ink);
+}
+
+.editAction:focus-visible,
+.viewAction:focus-visible,
+.deleteAction:focus-visible {
+  outline: 3px solid var(--retro-brown);
+  outline-offset: 3px;
+}
+
+.editAction:active,
+.viewAction:active,
+.deleteAction:active {
+  box-shadow: inset 0 1px 3px color-mix(in srgb, var(--retro-brown) 15%, transparent);
+}
+
+@media (max-width: 768px) {
+  .eventRow[class] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .eventRow[class] > [data-label="Date"] {
+    display: grid;
+  }
+
+  .eventRow > [data-label="Actions"] {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.65rem;
+    padding-top: 0.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .editAction,
+  .viewAction,
+  .deleteAction {
+    transition: none;
+  }
+}
