@@ -6,6 +6,8 @@ import formStyles from "./form.module.css";
 import { createBusinessFromFormAction, publishBusinessAction } from "@/app/actions/businesses";
 import { BusinessHoursEditor } from "../BusinessHoursEditor";
 import BusinessTaxonomyFields from "../BusinessTaxonomyFields";
+import BusinessOffersEditor from "../BusinessOffersEditor";
+import { normalizeBusinessOffers, getOfferStatus } from "@/lib/business-offers";
 import { PhotoUploader } from "@/components/PhotoUploader";
 import { MAX_BUSINESS_PHOTOS } from "@/lib/business-photos.mjs";
 import { createBusinessHoursFormState, getBusinessHoursDisplayRows } from "@/lib/business-hours";
@@ -44,6 +46,7 @@ export function CreateBusinessForm({ cities, categories, tags }) {
     newTags: "",
     isHiring: false,
     hiringRoles: [""],
+    offers: [],
     
     // Step 4: Photos (placeholder)
     photos: [],
@@ -115,6 +118,10 @@ export function CreateBusinessForm({ cities, categories, tags }) {
         return false;
       }
     }
+    if (step === 3 || step === 5) {
+      try { normalizeBusinessOffers(formData.offers); }
+      catch (error) { setError(error.message); return false; }
+    }
     setError(null);
     return true;
   };
@@ -158,6 +165,7 @@ export function CreateBusinessForm({ cities, categories, tags }) {
         newTags: formData.newTags,
         isHiring: formData.isHiring,
         hiringRoles: formData.hiringRoles,
+        offers: formData.offers,
         photos: formData.photos,
       });
 
@@ -453,6 +461,7 @@ export function CreateBusinessForm({ cities, categories, tags }) {
               </button>
             </div>
           )}
+          <BusinessOffersEditor offers={formData.offers} onChange={(offers) => setFormData((prev) => ({ ...prev, offers }))} disabled={loading} />
         </div>
       )}
 
@@ -544,6 +553,20 @@ export function CreateBusinessForm({ cities, categories, tags }) {
                 <strong>{day.shortLabel}:</strong> {day.value}
               </p>
             ))}
+          </div>
+
+          <div className={formStyles.reviewCard}>
+            <h3>Coupons & Special Offers</h3>
+            {formData.offers.length ? formData.offers.map((offer, index) => (
+              <div key={offer.editorKey || index}>
+                <p><strong>{offer.headline}</strong> · {getOfferStatus(offer)}</p>
+                <p>{offer.description}</p>
+                <p>{offer.instructions}</p>
+                {offer.code && <p>Code: {offer.code}</p>}
+                {offer.terms && <p>{offer.terms}</p>}
+                <p>{offer.startDate ? `From ${offer.startDate}` : "Starts immediately"}{offer.endDate ? ` through ${offer.endDate}` : ", ongoing"} (Central Time)</p>
+              </div>
+            )) : <p>No offers added</p>}
           </div>
 
           <div className={formStyles.formGroup}>

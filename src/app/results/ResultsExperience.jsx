@@ -12,6 +12,9 @@ import DirectoryImage from "@/components/DirectoryImage";
 import NavbarMobileMenu from "@/components/Navbar/NavbarMobileMenu";
 import { formatEventDateRange } from "@/lib/event-dates";
 import { isBusinessHiring } from "@/lib/business-search";
+import { getActiveOffers } from "@/lib/business-offers";
+import OfferBadge from "@/components/BusinessOffers/OfferBadge";
+import useOfferDate from "@/components/BusinessOffers/useOfferDate";
 
 import {
   ArrowRightIcon,
@@ -115,6 +118,7 @@ function BusinessCard({ biz, saved, count, saving, onSave, isLoggedIn }) {
         </div>
       )}
       <div className="category-tag">{biz.city?.name ?? biz.city}</div>
+      <div className="business-badges">
       {isBusinessHiring(biz) && (
         <div className="hiring-tag">
           <span className="material-icons" aria-hidden="true">work</span>
@@ -123,6 +127,8 @@ function BusinessCard({ biz, saved, count, saving, onSave, isLoggedIn }) {
             : "Hiring Now"}
         </div>
       )}
+      <OfferBadge slug={biz.slug} offers={biz.offerWindows} compact />
+      </div>
       <h4 className="gem-name">{biz.name}</h4>
       <p className="gem-desc">{biz.description || ""}</p>
       <div className="gem-footer">
@@ -202,6 +208,7 @@ function BusinessRow({ biz, saved, count, saving, onSave, isLoggedIn }) {
             </span>
           )}
         </div>
+        <OfferBadge slug={biz.slug} offers={biz.offerWindows} compact />
         <h4 className="list-item-name">{biz.name}</h4>
         <p className="list-item-desc">
           {biz.description?.slice(0, 160)}{biz.description?.length > 160 ? "..." : ""}
@@ -329,6 +336,7 @@ export default function ResultsExperience({
   initialCategory = "",
   initialBrowseAll = false,
   initialJobsOnly = false,
+  initialOffersOnly = false,
   user = null,
   dashboardPath = null,
   savedIds = EMPTY_ITEMS,
@@ -356,6 +364,8 @@ export default function ResultsExperience({
     initialJobsOnly ? "jobs" : initialBrowseAll ? "all" : initialQuery || initialLocation ? "search" : ""
   );
   const [jobsOnly, setJobsOnly] = useState(initialJobsOnly);
+  const [offersOnly, setOffersOnly] = useState(initialOffersOnly);
+  const offerToday = useOfferDate();
   const [favoriteBusinesses, setFavoriteBusinesses] = useState(initialFavoriteBusinesses);
 
   // Saved state: tracks { [businessId]: { saved, count } } for optimistic UI
@@ -395,6 +405,7 @@ export default function ResultsExperience({
     category = urlParams.get("category") || "",
     type = urlParams.get("tab") === "events" ? "events" : "businesses",
     jobs = urlParams.get("jobs") === "1",
+    offers = urlParams.get("offers") === "1",
     browse = urlParams.get("browse") || "",
     sort = activeSort,
     page = 1,
@@ -405,6 +416,7 @@ export default function ResultsExperience({
     if (category) params.set("category", category);
     if (type && type !== "businesses") params.set("tab", type);
     if (jobs) params.set("jobs", "1");
+    if (offers && type === "businesses") params.set("offers", "1");
     if (["all", "popular", "favorites"].includes(browse)) params.set("browse", browse);
     const extras = type === "events" || browse === "favorites" ? ["city"] : ["popular", "city"];
     params.set("sort", normalizeSort(sort, type === "events" ? "city" : browse === "popular" ? "popular" : "newest", extras));
@@ -426,12 +438,13 @@ export default function ResultsExperience({
     const loc = urlParams.get("loc") || "";
     const category = urlParams.get("category") || "";
     const jobs = urlParams.get("jobs") === "1";
+    const offers = urlParams.get("offers") === "1" && urlParams.get("tab") !== "events";
     const browse = urlParams.get("browse");
-    const mode = ["favorites", "popular", "all"].includes(browse) ? browse : jobs ? "jobs" : q || loc || category ? "search" : "new";
+    const mode = ["favorites", "popular", "all"].includes(browse) ? browse : offers ? "all" : jobs ? "jobs" : q || loc || category ? "search" : "new";
     const type = urlParams.get("tab") === "events" ? "events" : "businesses";
     const extras = type === "events" || mode === "favorites" ? ["city"] : ["popular", "city"];
     const sort = normalizeSort(urlParams.get("sort"), type === "events" ? "city" : mode === "popular" ? "popular" : "newest", extras);
-    runSearch(q, loc, sort, mode, jobs, mode === "new" ? INITIAL_RECENT_BUSINESS_LIMIT : undefined, category, Math.max(1, parseInt(urlParams.get("page"), 10) || 1), type);
+    runSearch(q, loc, sort, mode, jobs, mode === "new" ? INITIAL_RECENT_BUSINESS_LIMIT : undefined, category, Math.max(1, parseInt(urlParams.get("page"), 10) || 1), type, offers);
     return () => {
       requestVersion.current += 1;
       searchController.current?.abort();
@@ -476,7 +489,8 @@ export default function ResultsExperience({
     limit,
     category = "",
     page = 1,
-    type = "businesses"
+    type = "businesses",
+    nextOffersOnly = false
   ) {
     const version = ++requestVersion.current;
     searchController.current?.abort();
@@ -490,6 +504,7 @@ export default function ResultsExperience({
     setActiveSort(sort);
     setActiveBrowseTab(browseTab);
     setJobsOnly(nextJobsOnly);
+    setOffersOnly(nextOffersOnly);
 
     if (browseTab === "favorites") { setIsSearching(false); return; }
     const bizP = new URLSearchParams();
@@ -498,6 +513,7 @@ export default function ResultsExperience({
     if (loc)  bizP.set("loc",  loc);
     if (sort) bizP.set("sort", sort);
     if (nextJobsOnly) bizP.set("jobs", "1");
+    if (nextOffersOnly) bizP.set("offers", "1");
     if (limit) bizP.set("limit", String(limit));
     if (category) bizP.set("category", category);
 
@@ -538,7 +554,7 @@ export default function ResultsExperience({
   function clearSearch() {
     setActiveTab("businesses");
     setViewMode("card");
-    replaceResultsUrl({ query: "", location: "", category: "", type: "businesses", jobs: false, browse: "", sort: "newest" });
+    replaceResultsUrl({ query: "", location: "", category: "", type: "businesses", jobs: false, offers: false, browse: "", sort: "newest" });
 
   }
 
@@ -546,7 +562,7 @@ export default function ResultsExperience({
     setActiveTab("businesses");
     setViewMode("card");
     setJobsOnly(false);
-    replaceResultsUrl({ query: "", location: "", category: "", type: "businesses", jobs: false, browse: "", sort: "newest" });
+    replaceResultsUrl({ query: "", location: "", category: "", type: "businesses", jobs: false, offers: false, browse: "", sort: "newest" });
 
   }
 
@@ -554,7 +570,7 @@ export default function ResultsExperience({
     setActiveTab("businesses");
     setViewMode("card");
     setJobsOnly(false);
-    replaceResultsUrl({ query: "", location: lastSearch.loc, category: "", type: "businesses", jobs: false, browse: "popular", sort: "popular" });
+    replaceResultsUrl({ query: "", location: lastSearch.loc, category: "", type: "businesses", jobs: false, offers: false, browse: "popular", sort: "popular" });
 
   }
 
@@ -570,7 +586,7 @@ export default function ResultsExperience({
     setJobsOnly(false);
     setActiveBrowseTab("favorites");
     setHasSearched(true);
-    replaceResultsUrl({ query: "", location: "", category: "", type: "businesses", jobs: false, browse: "favorites", sort: "newest" });
+    replaceResultsUrl({ query: "", location: "", category: "", type: "businesses", jobs: false, offers: false, browse: "favorites", sort: "newest" });
   }
 
   function removeQueryFilter() { replaceResultsUrl({ query: "" }); }
@@ -646,10 +662,14 @@ export default function ResultsExperience({
         return (!lastSearch.q || text.includes(lastSearch.q.toLowerCase())) &&
           (!location || city.includes(location) || item.city?.slug === location) &&
           (!selectedCategory || item.categories?.some((category) => category.slug === selectedCategory)) &&
-          (!jobsOnly || isBusinessHiring(item));
+          (!jobsOnly || isBusinessHiring(item)) &&
+          (!offersOnly || getActiveOffers(item.offerWindows, offerToday).length > 0);
       }), activeSort, { date: (item) => item.savedAt, extras: ["city"] });
 
   const activeFilterChips = [];
+  if (hasSearched && offersOnly && activeTab === "businesses") {
+    activeFilterChips.push({ key: "offers", label: "Coupons/Special Offer", tone: "offers", onRemove: () => replaceResultsUrl({ offers: false }) });
+  }
 
   if (hasSearched) {
     activeFilterChips.push({
@@ -937,6 +957,11 @@ export default function ResultsExperience({
               {user ? "DASHBOARD" : "LOGIN"}
             </Link>
 
+            <button type="button" className={"font-accent nav-link nav-link-btn offer-filter-link" + (offersOnly ? " offer-filter-active" : "")} aria-pressed={offersOnly} onClick={() => applyBusinessFilter({ offers: !offersOnly })}>
+              <div className="nav-icon-wrapper offer-filter-icon"><span className="material-icons" aria-hidden="true">local_offer</span></div>
+              <span>Coupons/Special Offer</span>
+            </button>
+
             <div className="sidebar-browse-tabs">
               <button
                 type="button"
@@ -1000,7 +1025,7 @@ export default function ResultsExperience({
               initialQuery={lastSearch.q}
               initialLocation={lastSearch.loc}
               defaultLocation={
-                activeBrowseTab === "favorites" || activeBrowseTab === "all" || jobsOnly
+                activeBrowseTab === "favorites" || activeBrowseTab === "all" || jobsOnly || offersOnly
                   ? ""
                   : "Austin, TX"
               }
@@ -1089,7 +1114,7 @@ export default function ResultsExperience({
               <ResultsPanel />
               <ResultsPagination className={toolbarStyles.mobilePagination} />
 
-              {urlParams.get("tab") !== "events" && urlParams.get("browse") !== "favorites" && urlParams.get("jobs") !== "1" ? (
+              {urlParams.get("tab") !== "events" && urlParams.get("browse") !== "favorites" && urlParams.get("jobs") !== "1" && urlParams.get("offers") !== "1" ? (
                 <OtherBusinessesSection
                   q={urlParams.get("q") || ""}
                   loc={urlParams.get("loc") || ""}
@@ -1196,7 +1221,7 @@ export default function ResultsExperience({
             </button>
           </div>
           <div className="business-filter-content">
-            <button className="business-filter-reset" type="button" onClick={() => applyBusinessFilter({ query: "", location: "", category: "", jobs: false, browse: "all", sort: "newest" })}>
+            <button className="business-filter-reset" type="button" onClick={() => applyBusinessFilter({ query: "", location: "", category: "", jobs: false, offers: false, browse: "all", sort: "newest" })}>
               <span className="material-icons" aria-hidden="true">storefront</span>
               <span><strong>All Businesses</strong><small>Clear every filter</small></span>
             </button>
@@ -1225,6 +1250,12 @@ export default function ResultsExperience({
               <div className="business-filter-options">
                 <button type="button" className="business-filter-option" aria-pressed={!jobsOnly} onClick={() => applyBusinessFilter({ jobs: false })}>Any Business</button>
                 <button type="button" className="business-filter-option" aria-pressed={jobsOnly} onClick={() => applyBusinessFilter({ jobs: true })}>Hiring Now</button>
+              </div>
+            </fieldset>
+            <fieldset className="business-filter-group">
+              <legend>Coupons & Special Offers</legend>
+              <div className="business-filter-options">
+                <button type="button" className="business-filter-option" aria-pressed={offersOnly} onClick={() => applyBusinessFilter({ offers: !offersOnly })}>Coupons/Special Offer</button>
               </div>
             </fieldset>
           </div>

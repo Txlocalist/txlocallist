@@ -16,6 +16,9 @@ import PhotoGallery from "./PhotoGallery";
 import BusinessDetails from "./BusinessDetails";
 import BusinessContactActions from "./BusinessContactActions";
 import HiringBadge from "./HiringBadge";
+import BusinessOffers from "@/components/BusinessOffers/BusinessOffers";
+import OfferBadge from "@/components/BusinessOffers/OfferBadge";
+import { getActiveOfferWhere, getOfferDateKey } from "@/lib/business-offers";
 import styles from "./page.module.css";
 
 export async function generateMetadata({ params }) {
@@ -55,6 +58,7 @@ export default async function BusinessDetailPage({ params }) {
   const { slug } = await params;
 
   const user = await getCurrentUser().catch(() => null);
+  const offerToday = getOfferDateKey();
 
   const coreBusiness = await prisma.business.findFirst({
     where: {
@@ -65,6 +69,7 @@ export default async function BusinessDetailPage({ params }) {
       city:        { select: { id: true, name: true, slug: true } },
       plan:        { select: { slug: true, features: true } },
       photos:      { orderBy: { order: "asc" } },
+      offers:      { where: getActiveOfferWhere(offerToday), orderBy: { order: "asc" } },
       categories:  { select: { category: { select: { id: true, name: true, slug: true } } } },
       tags:        { select: { tag: { select: { id: true, name: true, slug: true } } } },
     },
@@ -185,7 +190,10 @@ export default async function BusinessDetailPage({ params }) {
                     <span className={styles.badgeTier}>{business.plan.slug.toUpperCase()}</span>
                   )}
                 </div>
-                {business.isHiring ? <HiringBadge /> : null}
+                <div className={styles.heroOfferBadges}>
+                  {business.isHiring ? <HiringBadge /> : null}
+                  <OfferBadge slug={slug} offers={business.offers} today={offerToday} />
+                </div>
               </div>
 
               {/* Bottom row: title + actions */}
@@ -267,6 +275,8 @@ export default async function BusinessDetailPage({ params }) {
         )}
 
         {/* PHOTO GALLERY */}
+        <BusinessOffers offers={business.offers} today={offerToday} />
+
         {business.photos.length > 0 && (
           <section className={styles.gallerySection} aria-label="Business photos">
             <PhotoGallery photos={business.photos} businessName={business.name} />

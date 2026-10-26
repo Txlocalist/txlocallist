@@ -6,6 +6,7 @@ import { isMissingPrismaTableError } from "@/lib/prisma-errors";
 import { mergeCityNames } from "@/lib/cities";
 import { getImportedBusinessCategories } from "@/lib/imported-businesses";
 import ResultsExperience from "./ResultsExperience";
+import { OFFER_WINDOW_SELECT } from "@/lib/business-offers";
 
 export const metadata = {
   title: "Explore | Texas Localist",
@@ -31,6 +32,7 @@ function toBusinessResult(business, extra = {}) {
     isLiked: Boolean(business.likes?.length),
     activeJobCount: business._count?.jobs ?? 0,
     isHiring: business.isHiring,
+    offerWindows: business.offers ?? [],
     showContact: planFeatures.SHOW_CONTACT,
     showWebsite: planFeatures.SHOW_WEBSITE,
     phone: planFeatures.SHOW_CONTACT ? business.phone : null,
@@ -51,6 +53,7 @@ function getFavoriteBusinessInclude(userId, includeLikes = true) {
         phone: true,
         website: true,
         isHiring: true,
+        offers: { where: { enabled: true }, select: OFFER_WINDOW_SELECT },
         city: { select: { id: true, name: true, slug: true } },
         plan: { select: { slug: true, features: true } },
         photos: { take: 1, orderBy: { order: "asc" } },
@@ -106,6 +109,7 @@ export default async function ResultsPage({ searchParams }) {
   const initialCategory = params?.category ?? "";
   const initialBrowseAll = params?.browse === "all";
   const initialJobsOnly = params?.jobs === "1";
+  const initialOffersOnly = params?.offers === "1";
   const [regularCategories, importedCategories, managedCities, publishedEventCities, user] = await Promise.all([
     getAvailableCategories(),
     getImportedBusinessCategories(),
@@ -177,6 +181,7 @@ export default async function ResultsPage({ searchParams }) {
       initialCategory={initialCategory}
       initialBrowseAll={initialBrowseAll}
       initialJobsOnly={initialJobsOnly}
+      initialOffersOnly={initialOffersOnly}
       user={user}
       dashboardPath={dashboardPath}
       savedIds={savedIds}

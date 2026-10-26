@@ -321,6 +321,7 @@ model Business {
   likes        Like[]
   events       Event[]
   applications BusinessApplication[]
+  offers       BusinessOffer[]
 
   @@unique([slug, cityId]) // slug is unique per city, not global
   @@index([ownerId])
@@ -328,6 +329,27 @@ model Business {
   @@index([status])
   @@index([planId])
   @@index([publishedAt])
+}
+
+// Date-only offers use America/Chicago calendar dates; order is constrained to 0..2 in SQL.
+model BusinessOffer {
+  id           String   @id @default(cuid())
+  businessId   String
+  business     Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  headline     String   @db.VarChar(100)
+  description  String   @db.VarChar(600)
+  instructions String   @db.VarChar(400)
+  code         String?  @db.VarChar(60)
+  terms        String?  @db.VarChar(500)
+  startDate    String?  @db.VarChar(10)
+  endDate      String?  @db.VarChar(10)
+  enabled      Boolean  @default(true)
+  order        Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([businessId, order])
+  @@index([enabled, startDate, endDate])
 }
 
 // Spreadsheet entries have no owner, subscription, slug, or landing page.

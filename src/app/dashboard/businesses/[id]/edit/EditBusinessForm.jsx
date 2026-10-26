@@ -6,6 +6,8 @@ import formStyles from "../../new/form.module.css";
 import { updateBusinessAction } from "@/app/actions/businesses";
 import { BusinessHoursEditor } from "../../BusinessHoursEditor";
 import BusinessTaxonomyFields from "../../BusinessTaxonomyFields";
+import BusinessOffersEditor from "../../BusinessOffersEditor";
+import { normalizeBusinessOffers } from "@/lib/business-offers";
 import { createBusinessHoursFormState } from "@/lib/business-hours";
 import { PhotoUploader } from "@/components/PhotoUploader";
 import { MAX_BUSINESS_PHOTOS } from "@/lib/business-photos.mjs";
@@ -54,6 +56,7 @@ export function EditBusinessForm({ business, cities, categories, tags }) {
     newTags: "",
     isHiring: business.isHiring ?? false,
     hiringRoles: parseHiringRoles(business.hiringRoles),
+    offers: business.offers || [],
     photos: business.photos?.map((photo) => ({ url: photo.url, name: photo.alt || business.name })) || [],
   });
 
@@ -120,6 +123,7 @@ export function EditBusinessForm({ business, cities, categories, tags }) {
 
     setLoading(true);
     try {
+      normalizeBusinessOffers(formData.offers);
       const result = await updateBusinessAction(business.id, {
         name: formData.name,
         description: formData.description,
@@ -137,6 +141,7 @@ export function EditBusinessForm({ business, cities, categories, tags }) {
         newTags: formData.newTags,
         isHiring: formData.isHiring,
         hiringRoles: formData.hiringRoles,
+        offers: formData.offers,
         ...(photosChanged ? { photos: formData.photos } : {}),
       });
 
@@ -405,6 +410,7 @@ export function EditBusinessForm({ business, cities, categories, tags }) {
             </button>
           </div>
         )}
+        <BusinessOffersEditor offers={formData.offers} onChange={(offers) => setFormData((prev) => ({ ...prev, offers }))} disabled={loading} />
       </div>
 
       <div className={formStyles.formNavigation}>

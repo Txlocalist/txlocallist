@@ -172,6 +172,7 @@
 /* Full-width contact actions share the cover's outline and warm palette. */
 .heroTop { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
 .heroBadges { align-items: center; }
+.heroOfferBadges { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem; }
 .hiringBadge {
   display: inline-flex; align-items: center; gap: .65rem; min-height: 44px;
   padding: .65rem 1rem; border: 2px solid var(--retro-brown); border-radius: 999px;

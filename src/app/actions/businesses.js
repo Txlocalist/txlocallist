@@ -8,6 +8,7 @@ import { getAccountAccess } from "@/lib/account-access";
 import { sendNewApplicationEmail } from "@/lib/email";
 import { normalizeBusinessHoursInput } from "@/lib/business-hours";
 import { MAX_BUSINESS_PHOTOS } from "@/lib/business-photos.mjs";
+import { normalizeBusinessOffers } from "@/lib/business-offers";
 import { isEventCategoryTagName } from "@/lib/event-categories.mjs";
 import { getPublicBusinessWhere } from "@/lib/listing-visibility";
 import { prisma } from "@/lib/prisma";
@@ -191,6 +192,14 @@ export async function createBusinessAction(_prevState, formData) {
   ];
 
   const fieldErrors = {};
+  let offers;
+  if (formData.has("offers")) {
+    try {
+      offers = normalizeBusinessOffers(JSON.parse(formData.get("offers")));
+    } catch (error) {
+      fieldErrors.offers = error instanceof SyntaxError ? "Enter a valid list of offers." : error.message;
+    }
+  }
 
   // Validation
   if (name.length < MIN_NAME_LENGTH) {
@@ -299,6 +308,7 @@ export async function createBusinessAction(_prevState, formData) {
       ownerId: user.id,
       planId: billingState.activePlanId,
       status: "DRAFT",
+      ...(offers !== undefined ? { offers: { create: offers } } : {}),
       // Attach categories
       categories:
         categoryIds.length > 0
@@ -485,6 +495,12 @@ export async function createBusinessFromFormAction(data) {
   if (socialLinks.some((link) => !isValidHttpUrl(link.url))) return { success: false, message: "Enter valid social links starting with http:// or https://." };
   const photoError = validateBusinessPhotos(data.photos);
   if (photoError) return { success: false, message: photoError };
+  let offers;
+  try {
+    offers = normalizeBusinessOffers(data.offers);
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
 
   if (isHiring && hiringRoles.length === 0) {
     return { success: false, message: "Add at least one hiring role when hiring is enabled." };
@@ -577,6 +593,7 @@ export async function createBusinessFromFormAction(data) {
           ownerId: user.id,
           planId: billingState.activePlanId,
           status: "DRAFT",
+          ...(offers !== undefined ? { offers: { create: offers } } : {}),
           categories:
             categoryIds.length > 0
               ? {
@@ -696,6 +713,12 @@ export async function updateBusinessAction(businessId, data) {
 
   const photoError = validateBusinessPhotos(data.photos);
   if (photoError) return { success: false, message: photoError };
+  let offers;
+  try {
+    offers = normalizeBusinessOffers(data.offers);
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
 
   if (isHiring && hiringRoles.length === 0) {
     return { success: false, message: "Add at least one hiring role when hiring is enabled." };
@@ -772,6 +795,7 @@ export async function updateBusinessAction(businessId, data) {
               : {}),
           },
           tags: { deleteMany: {} },
+          ...(offers !== undefined ? { offers: { deleteMany: {}, create: offers } } : {}),
           ...(data.photos !== undefined ? {
             photos: {
               deleteMany: {},

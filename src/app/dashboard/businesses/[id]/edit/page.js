@@ -45,6 +45,7 @@ export default async function EditBusinessPage({ params }) {
         tags: { include: { tag: true } },
         socialLinks: { orderBy: { order: "asc" } },
         photos: { orderBy: { order: "asc" } },
+        offers: { orderBy: { order: "asc" } },
       },
     });
 

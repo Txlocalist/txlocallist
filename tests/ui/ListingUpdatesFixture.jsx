@@ -1,5 +1,8 @@
 import BusinessContactActions from "@/app/business/[slug]/BusinessContactActions";
 import HiringBadge from "@/app/business/[slug]/HiringBadge";
+import OfferBadge from "@/components/BusinessOffers/OfferBadge";
+import BusinessOffers from "@/components/BusinessOffers/BusinessOffers";
+import { fixtureOffers } from "./offer-fixtures";
 import PhotoGallery from "@/app/business/[slug]/PhotoGallery";
 import danceHall from "@/app/assets/texas-dance-hall.webp";
 import store from "@/app/assets/hero-how-it-works.webp";
@@ -113,7 +116,10 @@ export default function ListingUpdatesFixture({ path, params }) {
             <div className={businessStyles.heroOverlay}>
               <div className={businessStyles.heroTop}>
                 <span className={businessStyles.badgeCity}>Houston, Texas</span>
-                {business.isHiring ? <HiringBadge /> : null}
+                <div className={businessStyles.heroOfferBadges}>
+                  {business.isHiring ? <HiringBadge /> : null}
+                  {params.has("offers") && <OfferBadge slug="town-market" offers={fixtureOffers} />}
+                </div>
               </div>
               <div className={businessStyles.heroBottom}>
                 <h1 className={businessStyles.heroTitle}>{business.name}</h1>
@@ -138,6 +144,7 @@ export default function ListingUpdatesFixture({ path, params }) {
         hiringApplyHref="/apply"
         mapsUrl="https://maps.google.com"
       />
+      {params.has("offers") && <BusinessOffers offers={fixtureOffers.slice(0, Number(params.get("offers") || 3))} />}
       {path.endsWith("business-polish") ? (
         <section
           className={businessStyles.gallerySection}

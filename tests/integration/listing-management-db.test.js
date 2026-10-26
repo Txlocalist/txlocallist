@@ -52,6 +52,7 @@ import { getAccountAccess } from "@/lib/account-access";
 import { syncStripeSubscriptionObject } from "@/lib/billing";
 import { getPublicBusinessWhere, getPublicEventAccessWhere, getOwnedEventWhere } from "@/lib/listing-visibility";
 import { resultOrderBy } from "@/lib/results-sort";
+import { getActiveOfferWhere, getOfferDateKey } from "@/lib/business-offers";
 import { getEventsPageData, getEventById, filterEvents } from "@/lib/events";
 import { GET as searchBusinesses } from "@/app/api/search/route";
 import { GET as searchEvents } from "@/app/api/events/route";
@@ -128,6 +129,55 @@ describe.skipIf(!db)("listing management against PostgreSQL", () => {
       expect((await tx.$queryRawUnsafe('SELECT "deletedAt" FROM "Event"'))[0].deletedAt).toBeNull();
       expect(await tx.$queryRawUnsafe('SELECT "id" FROM "User" ORDER BY "sortName", "id"')).toEqual([{ id: "unnamed" }, { id: "named" }]);
     });
+  });
+
+  it("persists, pauses, replaces and removes offers while preserving omitted edits", async () => {
+    const offer = { headline: "Free coffee", description: "With breakfast.", instructions: "Show this coupon.", enabled: true };
+    expect((await updateBusinessAction(business.id, { ...businessInput(), offers: [offer, offer, offer] })).success).toBe(true);
+    expect(await db.businessOffer.count({ where: { businessId: business.id } })).toBe(3);
+    await updateBusinessAction(business.id, businessInput());
+    expect(await db.businessOffer.count({ where: { businessId: business.id } })).toBe(3);
+    await updateBusinessAction(business.id, { ...businessInput(), offers: [{ ...offer, enabled: false }] });
+    expect(await db.businessOffer.findMany({ where: { businessId: business.id, ...getActiveOfferWhere() } })).toEqual([]);
+    const invalid = await updateBusinessAction(business.id, { ...businessInput(), name: "Must not save", offers: Array(4).fill(offer) });
+    expect(invalid.success).toBe(false);
+    expect((await db.business.findUnique({ where: { id: business.id } })).name).toBe("Updated business");
+    await updateBusinessAction(business.id, { ...businessInput(), offers: [] });
+    expect(await db.businessOffer.count({ where: { businessId: business.id } })).toBe(0);
+    harness.userId = other.id;
+    const created = await createBusinessFromFormAction({ ...businessInput(), offers: [offer] });
+    expect(created.success).toBe(true);
+    expect(await db.businessOffer.count({ where: { businessId: created.data.id } })).toBe(1);
+    await db.business.delete({ where: { id: created.data.id } });
+    expect(await db.businessOffer.count({ where: { businessId: created.data.id } })).toBe(0);
+  });
+
+  it("filters active offers before pagination and hides them after access loss or moderation", async () => {
+    const today = getOfferDateKey();
+    const input = { ...businessInput(), isHiring: true, hiringRoles: ["Barista"], offers: [
+      { headline: "Today only", description: "A local deal.", instructions: "Show this offer.", startDate: today, endDate: today, enabled: true },
+      { headline: "Expired", description: "Old deal.", instructions: "Show this.", endDate: "2000-01-01", enabled: true },
+      { headline: "Future", description: "Future deal.", instructions: "Show this.", startDate: "2099-01-01", enabled: true },
+    ] };
+    expect((await updateBusinessAction(business.id, input)).success).toBe(true);
+    const search = async (page = 1) => (await (await searchBusinesses({ nextUrl: new URL(`http://localhost/api/search?offers=1&jobs=1&q=Updated&loc=${city.slug}&limit=1&page=${page}`) })).json()).data;
+    expect(await search()).toMatchObject({ total: 1, hasMore: false, results: [{ id: business.id }] });
+    expect(await search(2)).toMatchObject({ total: 1, results: [] });
+    expect(await db.businessOffer.findMany({ where: { businessId: business.id, ...getActiveOfferWhere(today) } })).toHaveLength(1);
+    await db.user.update({ where: { id: owner.id }, data: { billingStatus: "PAST_DUE" } });
+    expect((await search()).total).toBe(0);
+    expect((await updateBusinessAction(business.id, input)).success).toBe(false);
+    await db.user.update({ where: { id: owner.id }, data: { billingStatus: "ACTIVE" } });
+    await db.business.update({ where: { id: business.id }, data: { status: "SUSPENDED" } });
+    expect((await search()).total).toBe(0);
+  });
+
+  it("enforces three database offer slots even for concurrent edits", async () => {
+    const offer = { headline: "20% off", description: "Local special.", instructions: "Show this." };
+    const updates = await Promise.all([1, 2].map(() => updateBusinessAction(business.id, { ...businessInput(), offers: Array(3).fill(offer) })));
+    expect(updates.some((result) => result.success)).toBe(true);
+    expect(await db.businessOffer.count({ where: { businessId: business.id } })).toBe(3);
+    await expect(db.businessOffer.create({ data: { ...offer, businessId: business.id, order: 3 } })).rejects.toThrow();
   });
 
   it("handles simultaneous deletion retries with one audit record per listing", async () => {
@@ -577,9 +627,11 @@ describe.skipIf(!db)("listing management against PostgreSQL", () => {
   it("rejects recurring one-time purchases at the action and database boundaries", async () => {
     const input = eventInput();
     input.set("recurrence", "WEEKLY");
+    await db.user.update({ where: { id: owner.id }, data: { billingStatus: "PAST_DUE" } });
     expect((await createEventAction(null, input)).error).toContain("membership");
+    await db.user.update({ where: { id: owner.id }, data: { billingStatus: "ACTIVE" } });
     await db.event.update({ where: { id: event.id }, data: { postingMethod: "ONE_TIME" } });
-    expect((await updateEventAction(null, input)).error).toContain("One-time");
+    expect((await updateEventAction(null, input)).fieldErrors.recurrence).toContain("membership");
     await expect(db.event.update({ where: { id: event.id }, data: { recurrence: "WEEKLY" } })).rejects.toThrow();
   });
 

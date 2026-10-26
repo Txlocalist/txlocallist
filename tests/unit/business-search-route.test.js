@@ -15,6 +15,19 @@ beforeEach(() => {
 });
 
 describe("business hiring search", () => {
+  it("combines active offers with hiring, keyword, city and category before pagination", async () => {
+    const response = await GET({ nextUrl: new URL("http://localhost/api/search?offers=1&jobs=1&q=cafe&loc=Austin&category=food&page=2&limit=3") });
+    expect(response.status).toBe(200);
+    const { where, select, skip, take } = mocks.findMany.mock.calls[0][0];
+    expect(where.offers.some).toMatchObject({ enabled: true, AND: expect.any(Array) });
+    expect(where.AND[0].OR).toContainEqual({ isHiring: true });
+    expect(where.OR).toContainEqual({ name: { mode: "insensitive", contains: "cafe" } });
+    expect(where.city.OR).toContainEqual({ slug: "austin" });
+    expect(where.categories).toEqual({ some: { category: { slug: "food" } } });
+    expect(mocks.count).toHaveBeenCalledWith({ where });
+    expect([skip, take]).toEqual([3, 3]);
+    expect(select.offers.select).toEqual({ enabled: true, startDate: true, endDate: true });
+  });
   it("accepts the hiring flag or active jobs while retaining other filters", async () => {
     const response = await GET({ nextUrl: new URL("http://localhost/api/search?jobs=1&q=cafe&loc=Austin&category=food") });
     expect(response.status).toBe(200);

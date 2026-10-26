@@ -10,6 +10,7 @@ import { getPublicBusinessWhere } from "@/lib/listing-visibility";
  *   - loc (optional): city slug or name (searched in city.slug or city.name)
  *   - category (optional): category slug
  *   - jobs (optional): set to 1 for businesses marked hiring or with active jobs
+ *   - offers (optional): set to 1 for businesses with a currently active offer
  *   - page (optional): page number (default 1)
  *   - limit (optional): results per page (default 12, maximum 15)
  *
@@ -29,6 +30,7 @@ import { getPublicBusinessWhere } from "@/lib/listing-visibility";
 
 import { getCurrentUser } from "@/lib/auth/session";
 import { getBusinessSearchPageSize } from "@/lib/business-search";
+import { getActiveOfferWhere, getOfferDateKey, OFFER_WINDOW_SELECT } from "@/lib/business-offers";
 import { prisma } from "@/lib/prisma";
 import { isMissingPrismaTableError } from "@/lib/prisma-errors";
 
@@ -42,6 +44,7 @@ function getBusinessSelect(userId, includeLikes = true) {
     phone: true,
     website: true,
     isHiring: true,
+    offers: { where: { enabled: true }, select: OFFER_WINDOW_SELECT },
     city: { select: { id: true, name: true, slug: true } },
     plan: { select: { slug: true, features: true } },
     photos: { take: 1, orderBy: { order: "asc" } },
@@ -74,6 +77,8 @@ export async function GET(request) {
     const category = searchParams.get("category")?.trim() || "";
     const sort     = searchParams.get("sort")?.trim()     || "";
     const jobsOnly = searchParams.get("jobs") === "1";
+    const offersOnly = searchParams.get("offers") === "1";
+    const offerToday = getOfferDateKey();
     const page     = Math.max(1, parseInt(searchParams.get("page")) || 1);
     const pageSize = getBusinessSearchPageSize(searchParams.get("limit"));
 
@@ -119,6 +124,7 @@ export async function GET(request) {
         }];
       }
 
+      if (offersOnly) where.offers = { some: getActiveOfferWhere(offerToday) };
       return where;
     }
 
@@ -176,6 +182,7 @@ export async function GET(request) {
       isLiked: Boolean(business.likes?.length),
       activeJobCount: business._count?.jobs ?? 0,
       isHiring: business.isHiring,
+      offerWindows: business.offers ?? [],
       // Tier-gated fields
       showContact: JSON.parse(business.plan?.features || "{}").SHOW_CONTACT,
       showWebsite: JSON.parse(business.plan?.features || "{}").SHOW_WEBSITE,
