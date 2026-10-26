@@ -401,10 +401,6 @@
 
 .business-badges { position: absolute; top: .5rem; left: .5rem; right: .5rem; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; }
 .business-badges .hiring-tag { position: static; min-height: 32px; }
-.offer-filter-link { text-align: left; line-height: 1.6; font-size: .68rem; }
-.offer-filter-link > span { min-width: 0; }
-.offer-filter-link .offer-filter-icon { background: var(--retro-orange); color: var(--retro-brown); }
-.offer-filter-active { background: var(--background-panel); }
 .active-filter-chip-offers { background: var(--retro-orange); color: var(--retro-brown); }
 
 .hiring-tag .material-icons {
@@ -665,6 +661,10 @@
 
 .sidebar-browse-icon-favorites {
   background: linear-gradient(180deg, #f86d5d 0%, #f45f4e 100%);
+}
+
+.sidebar-browse-icon-offers {
+  background: var(--retro-orange);
 }
 
 .sidebar-browse-label {

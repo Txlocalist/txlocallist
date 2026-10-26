@@ -207,8 +207,8 @@ function BusinessRow({ biz, saved, count, saving, onSave, isLoggedIn }) {
                 : "HIRING NOW"}
             </span>
           )}
+          <OfferBadge slug={biz.slug} offers={biz.offerWindows} variant="tag" />
         </div>
-        <OfferBadge slug={biz.slug} offers={biz.offerWindows} compact />
         <h4 className="list-item-name">{biz.name}</h4>
         <p className="list-item-desc">
           {biz.description?.slice(0, 160)}{biz.description?.length > 160 ? "..." : ""}
@@ -957,11 +957,6 @@ export default function ResultsExperience({
               {user ? "DASHBOARD" : "LOGIN"}
             </Link>
 
-            <button type="button" className={"font-accent nav-link nav-link-btn offer-filter-link" + (offersOnly ? " offer-filter-active" : "")} aria-pressed={offersOnly} onClick={() => applyBusinessFilter({ offers: !offersOnly })}>
-              <div className="nav-icon-wrapper offer-filter-icon"><span className="material-icons" aria-hidden="true">local_offer</span></div>
-              <span>Coupons/Special Offer</span>
-            </button>
-
             <div className="sidebar-browse-tabs">
               <button
                 type="button"
@@ -994,6 +989,18 @@ export default function ResultsExperience({
                   <span className="material-icons">bookmark</span>
                 </span>
                 <span className="sidebar-browse-label">YOUR SAVED BUSINESSES</span>
+              </button>
+
+              <button
+                type="button"
+                className={"font-accent sidebar-browse-tab" + (offersOnly ? " sidebar-browse-tab-active" : "")}
+                aria-pressed={offersOnly}
+                onClick={() => applyBusinessFilter({ offers: !offersOnly })}
+              >
+                <span className="sidebar-browse-icon sidebar-browse-icon-offers">
+                  <span className="material-icons" aria-hidden="true">confirmation_number</span>
+                </span>
+                <span className="sidebar-browse-label">Coupons/<wbr />Special Offer</span>
               </button>
             </div>
           </nav>

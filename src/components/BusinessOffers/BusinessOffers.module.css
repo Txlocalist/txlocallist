@@ -26,6 +26,8 @@
 .badge svg { flex-shrink: 0; width: 1em; height: 1em; }
 .badge:hover { transform: translateY(-2px); }
 .compact { padding: .35rem .65rem; min-height: 32px; font-size: .6rem; }
+.tag { gap: .3rem; min-height: 0; padding: .05rem .4rem; border: 1.5px solid var(--retro-brown); border-radius: .25rem; box-shadow: none; font-size: .62rem; letter-spacing: .06em; }
+.tag:hover { transform: none; text-decoration: underline; text-underline-offset: .15em; }
 .status { background: var(--background); border: 1px solid var(--retro-brown); border-radius: var(--radius-pill); padding: .2rem .5rem; }
 @media (max-width: 600px) { .grid { grid-template-columns: minmax(0, 1fr); } .section { margin: 2rem auto; padding: 0 1.5rem; } }
 @media (prefers-reduced-motion: reduce) { .badge { transition: none; } .badge:hover { transform: none; } }
