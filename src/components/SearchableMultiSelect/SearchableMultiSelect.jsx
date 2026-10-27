@@ -85,7 +85,10 @@ export default function SearchableMultiSelect({
       className={styles.field}
       ref={rootRef}
       onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) setIsOpen(false);
+        // Touching label text or dismissing a mobile keyboard can blur the search
+        // without focusing another element. Keep the panel mounted for the tap's
+        // checkbox change; outside taps are handled by pointerdown above.
+        if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget)) setIsOpen(false);
       }}
       onKeyDown={(event) => {
         if (event.key === "Enter" && event.target.type === "checkbox") event.preventDefault();

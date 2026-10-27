@@ -1,5 +1,55 @@
 import { test, expect } from "@playwright/test";
 
+for (const route of ["/event-form", "/event-form-edit"]) {
+  test(`category and tag label taps persist through submission on ${route}`, async ({ page, isMobile }) => {
+    const activate = (locator) => isMobile ? locator.tap() : locator.click();
+    await page.goto(route);
+    await activate(page.getByRole("button", { name: "Remove Live Music", exact: true }));
+
+    for (const { label, option, searchLabel } of [
+      { label: "Happening Categories", option: "Family Friendly", searchLabel: "Search happening categories" },
+      { label: "Tags", option: "Free Admission", searchLabel: "Search tags" },
+    ]) {
+      const group = page.getByRole("group", { name: label, exact: true });
+      const trigger = group.getByRole("button", { name: `Choose ${label.toLowerCase()}`, exact: true });
+      await activate(trigger);
+      await group.getByLabel(searchLabel, { exact: true }).fill(option);
+      // Tap the label text, as a finger would, rather than checking the input directly.
+      await activate(group.getByText(option, { exact: true }));
+      await expect(trigger).toHaveAttribute("aria-expanded", "true");
+      await expect(group.getByRole("checkbox", { name: option, exact: true })).toBeChecked();
+
+      // Dismissing a mobile keyboard can blur the search with no focus destination.
+      await group.getByLabel(searchLabel, { exact: true }).focus();
+      await group.getByLabel(searchLabel, { exact: true }).evaluate((input) => input.blur());
+      await expect(trigger).toHaveAttribute("aria-expanded", "true");
+      await activate(group.getByRole("button", { name: "Done", exact: true }));
+      await expect(trigger).toHaveAttribute("aria-expanded", "false");
+      await expect(group.getByRole("button", { name: `Remove ${option}`, exact: true })).toBeVisible();
+    }
+
+    // Outside taps and keyboard navigation must still dismiss an open picker.
+    const categories = page.getByRole("button", { name: "Choose happening categories", exact: true });
+    await activate(categories);
+    await activate(page.getByRole("heading", { name: "Happening Details", exact: true }));
+    await expect(categories).toHaveAttribute("aria-expanded", "false");
+    await categories.focus();
+    await categories.press("Enter");
+    const categorySearch = page.getByLabel("Search happening categories", { exact: true });
+    await categorySearch.fill("Family Friendly");
+    await categorySearch.press("Tab");
+    await page.getByRole("checkbox", { name: "Family Friendly", exact: true }).press("Tab");
+    await page.getByRole("button", { name: "Done", exact: true }).press("Tab");
+    await page.getByRole("button", { name: "Remove Family Friendly", exact: true }).press("Tab");
+    await expect(page.getByLabel("Happening Title *", { exact: true })).toBeFocused();
+    await expect(categories).toHaveAttribute("aria-expanded", "false");
+
+    await activate(page.getByRole("button", { name: route.endsWith("edit") ? "Save Changes" : "Continue", exact: true }));
+    await expect.poll(() => page.evaluate(() => window.eventSubmissions?.[0]?.categoryIds)).toEqual(["event-Family Friendly"]);
+    expect(await page.evaluate(() => window.eventSubmissions[0].tags)).toBe("Free Admission");
+  });
+}
+
 test("organizers search categories, choose three, and keep selections after validation", async ({ page }, info) => {
   await page.addInitScript(() => { window.eventSubmissionError = "Please review your event details."; });
   await page.goto("/event-form");

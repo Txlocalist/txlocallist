@@ -4,6 +4,10 @@ export default defineConfig({
   workers: 2,
   outputDir: "test-results/listing-ui", reporter: "list",
   use: { baseURL: "http://127.0.0.1:3199", trace: "retain-on-failure" },
-  projects: [{ name: "desktop", use: { ...devices["Desktop Chrome"] } }, { name: "mobile", use: { ...devices["iPhone 13"], defaultBrowserType: "chromium" } }],
+  projects: [
+    { name: "desktop", use: { ...devices["Desktop Chrome"] } },
+    { name: "mobile", use: { ...devices["iPhone 13"], defaultBrowserType: "chromium" } },
+    { name: "mobile-safari", testMatch: "event-taxonomy.spec.js", use: { ...devices["iPhone 13"] } },
+  ],
   webServer: { command: "npx vite --config tests/ui/vite.config.mjs", url: "http://127.0.0.1:3199", reuseExistingServer: false },
 });
