@@ -180,7 +180,8 @@ export default function BusinessImportManager({ initialState, taxonomy }) {
 
     <section className={styles.card} aria-labelledby="prepare-list-title">
       <div className={styles.sectionHeading}><span className={styles.step} aria-hidden="true">1</span><h2 id="prepare-list-title">Prepare your spreadsheet</h2></div>
-      <p>Start with a template or export the current list. Keep the three columns <strong>Name</strong>, <strong>City</strong>, and <strong>Category</strong>, with one business and one category per row. Save this as your master spreadsheet and reuse it for every upload.</p>
+      <p>Start with a template or export the current list. Include <strong>Name</strong>, <strong>City</strong>, and <strong>Category</strong>, with one business and one category per row. You can also include <strong>Phone</strong>, <strong>Email</strong>, and <strong>Address</strong>. Save this as your master spreadsheet and reuse it for every upload.</p>
+      <p>Contact details are stored for administrators and included in exports. Leave unavailable details blank. Blank contact cells clear saved values; older files without those columns keep existing contacts for matching businesses.</p>
       {downloadButtons("template")}
       <p>Use the city and business category names below. Excel templates include dropdowns. Add any new cities or categories in the admin panel before uploading.</p>
       <details className={styles.taxonomy}>
@@ -221,8 +222,8 @@ export default function BusinessImportManager({ initialState, taxonomy }) {
       {preview.rows.length ? <div className={styles.tableWrap} tabIndex={0} role="region" aria-label="Spreadsheet preview">
         <table className={styles.table}>
           <caption>{preview.rows.length < preview.summary.total ? `First ${number(preview.rows.length)} of ${number(preview.summary.total)} businesses` : `${number(preview.rows.length)} businesses in this spreadsheet`}</caption>
-          <thead><tr><th scope="col">Name</th><th scope="col">City</th><th scope="col">Category</th></tr></thead>
-          <tbody>{preview.rows.map((row, index) => <tr key={`${row.name}-${row.city}-${index}`}><td>{row.name}</td><td>{row.city}</td><td>{row.category}</td></tr>)}</tbody>
+          <thead><tr>{["Name", "City", "Category", "Phone", "Email", "Address"].map((label) => <th key={label} scope="col">{label}</th>)}</tr></thead>
+          <tbody>{preview.rows.map((row, index) => <tr key={`${row.name}-${row.city}-${index}`}><td>{row.name}</td><td>{row.city}</td><td>{row.category}</td><td>{row.phone || "—"}</td><td>{row.email || "—"}</td><td>{row.address || "—"}</td></tr>)}</tbody>
         </table>
       </div> : null}
       {preview.canPublish ? <div className={styles.publishPanel}>
