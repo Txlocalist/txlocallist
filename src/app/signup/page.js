@@ -73,11 +73,11 @@ export default async function SignupPage({ searchParams }) {
                   You can review plans from billing after signup, or visit{" "}
                   <Link href="/about#pricing">pricing</Link> first.
                 </p>
-                <p className={styles.authFootnote}>
-                  By signing up you agree to our <Link href="/terms">terms of service</Link>.
-                </p>
               </>
             ) : null}
+            <p className={styles.authFootnote}>
+              By signing up you agree to our <Link href="/terms">terms of service</Link>.
+            </p>
           </div>
         </aside>
       </section>
