@@ -1,12 +1,12 @@
 import { test, expect } from "@playwright/test";
 
-const CSV = "name,city,category\nTown Market,Austin,Shops\nCorner Store,Austin,Shops\n";
+const CSV = "Name,City,Category,Phone,Email,Address\nTown Market,Austin,Shops,512-555-0100,contact@example.test,123 Main St\nCorner Store,Austin,Shops,,,\n";
 const FILE = { name: "complete-master.csv", mimeType: "text/csv", buffer: Buffer.from(CSV) };
 const HASH = "a".repeat(64);
 const TAXONOMY_HASH = "b".repeat(64);
 const PREVIEW = {
   fileHash: HASH, revision: 7, taxonomyDigest: TAXONOMY_HASH, canPublish: true, issues: [], issueCount: 0,
-  rows: [{ name: "Town Market", city: "Austin", category: "Shops" }, { name: "Corner Store", city: "Austin", category: "Shops" }],
+  rows: [{ name: "Town Market", city: "Austin", category: "Shops", phone: "512-555-0100", email: "contact@example.test", address: "123 Main St" }, { name: "Corner Store", city: "Austin", category: "Shops", phone: "", email: "", address: "" }],
   summary: { total: 2, added: 1, changed: 1, removed: 1, unchanged: 0, hidden: 1 },
 };
 
@@ -33,6 +33,8 @@ test("admin reviews changes and publishes the exact file with its preview proof"
   await preparePreview(page);
   await expect(page.getByText("Each upload replaces the entire “Other businesses” list.", { exact: true })).toBeVisible();
   await expect(page.getByRole("cell", { name: "Town Market", exact: true })).toBeVisible();
+  for (const label of ["Phone", "Email", "Address"]) await expect(page.getByRole("columnheader", { name: label, exact: true })).toBeVisible();
+  for (const value of ["512-555-0100", "contact@example.test", "123 Main St"]) await expect(page.getByRole("cell", { name: value, exact: true })).toBeVisible();
   await expect(page.getByText("Publishing will replace the current list", { exact: false })).toContainText("remove 1 business missing");
   await page.screenshot({ path: test.info().outputPath("business-import-admin.png"), fullPage: true });
   await page.getByRole("button", { name: "Publish replacement list" }).click();

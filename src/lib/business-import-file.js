@@ -8,8 +8,9 @@ export const MAX_IMPORT_ROWS = 10_000;
 export const MAX_IMPORT_FILE_BYTES = 3 * 1024 * 1024;
 const MAX_ARCHIVE_BYTES = 32 * 1024 * 1024;
 const MAX_ISSUES = 100;
-const HEADERS = ["Name", "City", "Category"];
-const FIELD_LIMITS = { name: 200, city: 100, category: 100 };
+const HEADERS = ["Name", "City", "Category", "Phone", "Email", "Address"];
+const REQUIRED_FIELDS = ["name", "city", "category"];
+const FIELD_LIMITS = { name: 200, city: 100, category: 100, phone: 50, email: 254, address: 500 };
 
 function invalidFile(message) {
   return Object.assign(new Error(message), { status: 400 });
@@ -189,11 +190,11 @@ function createRowReader(issues) {
       values.forEach((value, index) => {
         const label = cellText(value, row, "Headers").toLowerCase();
         if (!label) return;
-        if (!Object.hasOwn(FIELD_LIMITS, label)) addIssue(row, "Headers", `Unexpected header "${label}". Use only Name, City, Category.`);
+        if (!Object.hasOwn(FIELD_LIMITS, label)) addIssue(row, "Headers", `Unexpected header "${label}". Use only ${HEADERS.join(", ")}.`);
         else if (Object.hasOwn(header, label)) addIssue(row, "Headers", `The ${label} header appears more than once.`);
         else header[label] = index;
       });
-      for (const label of Object.keys(FIELD_LIMITS)) {
+      for (const label of REQUIRED_FIELDS) {
         if (!Object.hasOwn(header, label)) addIssue(row, "Headers", `The ${label} header is required.`);
       }
       return;
@@ -203,15 +204,17 @@ function createRowReader(issues) {
     const before = issueCount;
     const output = { row };
     for (const [field, maxLength] of Object.entries(FIELD_LIMITS)) {
+      // Omitted contact columns preserve existing values; explicit blanks clear them.
+      if (!REQUIRED_FIELDS.includes(field) && !Object.hasOwn(header, field)) continue;
       const value = cellText(values[header[field]], row, field);
       output[field] = value;
-      if (!value) addIssue(row, field, `${HEADERS.find((label) => label.toLowerCase() === field)} is required.`);
+      if (!value && REQUIRED_FIELDS.includes(field)) addIssue(row, field, `${HEADERS.find((label) => label.toLowerCase() === field)} is required.`);
       else if (value.length > maxLength) addIssue(row, field, `Use ${maxLength} characters or fewer.`);
     }
     const knownColumns = new Set(Object.values(header));
     values.forEach((value, index) => {
       if (!knownColumns.has(index) && value != null && !(typeof value === "string" && !value.trim())) {
-        addIssue(row, "Columns", "Remove extra values outside the Name, City, Category columns.");
+        addIssue(row, "Columns", `Remove extra values outside the ${HEADERS.join(", ")} columns.`);
       }
     });
     if (before === issueCount) rows.push(output);
@@ -283,7 +286,7 @@ export async function parseBusinessSpreadsheet(file) {
 }
 
 export async function createBusinessSpreadsheet({ format, cities = [], categories = [], rows = [] }) {
-  const values = rows.map((row) => [row.name, row.city, row.category].map((value) => String(value ?? "")));
+  const values = rows.map((row) => HEADERS.map((header) => String(row[header.toLowerCase()] ?? "")));
   if (format === "csv") {
     return Buffer.from(stringify([HEADERS, ...values.map((row) => row.map(escapeCsvText))], { bom: true, quoted: true, record_delimiter: "\r\n" }), "utf8");
   }
@@ -291,9 +294,9 @@ export async function createBusinessSpreadsheet({ format, cities = [], categorie
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "TX Localist";
   const businesses = workbook.addWorksheet("Businesses", { views: [{ state: "frozen", ySplit: 1 }] });
-  businesses.columns = HEADERS.map((header, index) => ({ header, width: index === 0 ? 44 : 30, style: { numFmt: "@" } }));
+  businesses.columns = HEADERS.map((header, index) => ({ header, width: [44, 30, 30, 24, 40, 60][index], style: { numFmt: "@" } }));
   businesses.addRows(values);
-  businesses.autoFilter = "A1:C1";
+  businesses.autoFilter = "A1:F1";
   businesses.getRow(1).height = 26;
   businesses.getRow(1).eachCell((cell) => {
     cell.font = { bold: true, color: { argb: "FFFAF5ED" } };
@@ -306,7 +309,10 @@ export async function createBusinessSpreadsheet({ format, cities = [], categorie
   [
     "TX Localist — Other businesses",
     "Enter businesses on the Businesses worksheet. Uploading and publishing replaces the complete imported directory across every city.",
-    "Use the Name, City, Category headers. Each business must have one city and one category from the Reference worksheet.",
+    "Name, City, Category are required. Phone, Email, Address are optional. Use one city and one category from Reference.",
+    "Contact details are stored for administrators and included in exports; free public listings show only the business name.",
+    "Blank contact cells clear stored values. Omitted contact columns in older files preserve contacts for matching names and cities.",
+    "Text limits: Name 200, City/Category 100, Phone 50, Email 254, Address 500 characters. Leave unpublished contact details blank.",
     "Use the City and Category dropdowns. Names are matched without regard to case and surrounding whitespace is removed.",
     "Include no more than 10,000 businesses. File uploads must be 3 MiB or smaller. Blank rows are ignored.",
     "Use plain text. Paste formula results as values. Do not include duplicate business names within the same city.",
