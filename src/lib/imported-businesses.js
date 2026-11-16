@@ -61,9 +61,9 @@ async function resolveRows(db, rows) {
   if (!rows.length) return [];
   return db.$queryRaw`
     SELECT r."row", btrim(r."name") AS "name", lower(btrim(r."name")) AS "nameKey",
-      r."city", r."category", c."id" AS "cityId", k."id" AS "categoryId"
+      r."city", r."category", r."phone", r."email", r."address", c."id" AS "cityId", k."id" AS "categoryId"
     FROM jsonb_to_recordset(${JSON.stringify(rows)}::jsonb)
-      AS r("row" integer, "name" text, "city" text, "category" text)
+      AS r("row" integer, "name" text, "city" text, "category" text, "phone" text, "email" text, "address" text)
     LEFT JOIN "City" c ON lower(btrim(c."name")) = lower(btrim(r."city"))
     LEFT JOIN "Category" k ON lower(btrim(k."name")) = lower(btrim(r."category"))
     ORDER BY r."row"`;
@@ -91,7 +91,7 @@ function validateResolvedRows(parsed, rows) {
 async function getPreview(db, parsed) {
   const [taxonomy, state, rows, oldRows] = await Promise.all([
     getImportTaxonomy(db), importState(db), resolveRows(db, parsed.rows),
-    db.$queryRaw`SELECT "name", lower(btrim("name")) AS "nameKey", "cityId", "categoryId" FROM "ImportedBusiness"`,
+    db.$queryRaw`SELECT "name", lower(btrim("name")) AS "nameKey", "cityId", "categoryId", "phone", "email", "address" FROM "ImportedBusiness"`,
   ]);
   const validation = validateResolvedRows(parsed, rows);
   const key = (row) => JSON.stringify([row.cityId, row.nameKey]);
@@ -104,8 +104,12 @@ async function getPreview(db, parsed) {
   const summary = { total: rows.length, added: 0, changed: 0, removed: 0, unchanged: 0, hidden: 0 };
   for (const row of rows) {
     const previous = old.get(key(row))?.shift();
+    for (const field of ["phone", "email", "address"]) {
+      row[field] ??= previous?.[field] ?? "";
+    }
     if (!previous) summary.added++;
-    else if (previous.name !== row.name || previous.categoryId !== row.categoryId) summary.changed++;
+    else if (previous.name !== row.name || previous.categoryId !== row.categoryId
+      || ["phone", "email", "address"].some((field) => (previous[field] ?? "") !== row[field])) summary.changed++;
     else summary.unchanged++;
   }
   summary.removed = [...old.values()].reduce((total, group) => total + group.length, 0);
@@ -119,7 +123,7 @@ async function getPreview(db, parsed) {
   return {
     fileHash: parsed.fileHash, revision: state.revision, taxonomyDigest: taxonomyDigest(taxonomy),
     canPublish: validation.issueCount === 0 && rows.length > 0, ...validation, summary,
-    rows: rows.slice(0, PREVIEW_LIMIT).map(({ row, name, city, category }) => ({ row, name, city, category })),
+    rows: rows.slice(0, PREVIEW_LIMIT).map(({ row, name, city, category, phone, email, address }) => ({ row, name, city, category, phone, email, address })),
     resolvedRows: rows,
   };
 }
@@ -163,7 +167,9 @@ export async function publishImportedBusinesses(file, expected, admin) {
       await tx.importedBusiness.deleteMany();
       for (let start = 0; start < preview.resolvedRows.length; start += 1000) {
         await tx.importedBusiness.createMany({ data: preview.resolvedRows.slice(start, start + 1000)
-          .map(({ name, cityId, categoryId }) => ({ name, cityId, categoryId })) });
+          .map(({ name, cityId, categoryId, phone, email, address }) => ({
+            name, cityId, categoryId, phone: phone || null, email: email || null, address: address || null,
+          })) });
       }
       const metadata = {
         lastImportedAt: new Date(), lastFileName: file.name.slice(0, 255),
@@ -190,10 +196,12 @@ export async function publishImportedBusinesses(file, expected, admin) {
 export async function exportImportedBusinesses() {
   try {
     const rows = await prisma.importedBusiness.findMany({
-      select: { name: true, city: { select: { name: true } }, category: { select: { name: true } } },
+      select: { name: true, phone: true, email: true, address: true, city: { select: { name: true } }, category: { select: { name: true } } },
       orderBy: [{ name: "asc" }, { cityId: "asc" }, { id: "asc" }],
     });
-    return rows.map(({ name, city, category }) => ({ name, city: city.name, category: category.name }));
+    return rows.map(({ name, city, category, phone, email, address }) => ({
+      name, city: city.name, category: category.name, phone: phone ?? "", email: email ?? "", address: address ?? "",
+    }));
   } catch (error) { return handleImportError(error); }
 }
 

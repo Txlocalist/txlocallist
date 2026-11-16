@@ -84,7 +84,7 @@ describe("business spreadsheet parsing", () => {
   it.each([
     ["Name,City,Kind\nShop,Austin,Food", "category header is required"],
     ["Name,City,Category,Name\nShop,Austin,Food,Other", "name header appears more than once"],
-    ["Name,City,Category,Address\nShop,Austin,Food,123 Main", "Unexpected header"],
+    ["Name,City,Category,Website\nShop,Austin,Food,https://example.test", "Unexpected header"],
     ["Name,City,Category\nShop,Austin,Food,123 Main", "extra values"],
     ["Name,City,Category\n,Austin,Food", "Name is required"],
     ["Name,City,Category\nShop,,Food", "City is required"],
@@ -100,6 +100,35 @@ describe("business spreadsheet parsing", () => {
     const result = await parseBusinessSpreadsheet(file("Name,City,Category,,\nShop,Austin,Food,,\n,,,,\n"));
     expect(result.issueCount).toBe(0);
     expect(result.rows).toHaveLength(1);
+  });
+
+  it("accepts optional contact columns and distinguishes omitted columns from explicit blanks", async () => {
+    const populated = await parseBusinessSpreadsheet(file('Name,City,Category,Phone,Email,Address\nShop,Austin,Food,+1 512 555 0100,contact@example.test,"123 Main St, Austin, TX 78701"'));
+    expect(populated.issueCount).toBe(0);
+    expect(populated.rows[0]).toMatchObject({ phone: "+1 512 555 0100", email: "contact@example.test", address: "123 Main St, Austin, TX 78701" });
+    const blank = await parseBusinessSpreadsheet(file("Name,City,Category,Phone,Email,Address\nShop,Austin,Food,,,"));
+    expect(blank.issueCount).toBe(0);
+    expect(blank.rows[0]).toMatchObject({ phone: "", email: "", address: "" });
+    const legacy = await parseBusinessSpreadsheet(file("Name,City,Category\nShop,Austin,Food"));
+    expect(legacy.rows[0]).not.toHaveProperty("phone");
+    expect(legacy.rows[0]).not.toHaveProperty("email");
+    expect(legacy.rows[0]).not.toHaveProperty("address");
+  });
+
+  it.each([["Phone", 50], ["Email", 254], ["Address", 500]])("bounds optional %s values and accepts the exact limit", async (header, limit) => {
+    const atLimit = await parseBusinessSpreadsheet(file(`Name,City,Category,${header}\nShop,Austin,Food,${"x".repeat(limit)}`));
+    expect(atLimit.issueCount).toBe(0);
+    const tooLong = await parseBusinessSpreadsheet(file(`Name,City,Category,${header}\nShop,Austin,Food,${"x".repeat(limit + 1)}`));
+    expect(tooLong.issues).toEqual([{ row: 2, field: header.toLowerCase(), message: `Use ${limit} characters or fewer.` }]);
+  });
+
+  it("rejects Excel formulas in optional contact fields", async () => {
+    const result = await parseBusinessSpreadsheet(await excelFile([
+      ["Name", "City", "Category", "Phone", "Email", "Address"],
+      ["Shop", "Austin", "Food", { formula: "1+1", result: 2 }, "", ""],
+    ]));
+    expect(result.issues).toContainEqual({ row: 2, field: "phone", message: "Formulas are not allowed. Paste the value as plain text." });
+    expect(result.rows).toHaveLength(0);
   });
 
   it("preserves potential duplicates for the database's canonical identity validation", async () => {
@@ -214,7 +243,7 @@ describe("business spreadsheet downloads", () => {
     expect(Buffer.isBuffer(buffer)).toBe(true);
     const result = await parseBusinessSpreadsheet(file(buffer, `businesses.${format}`));
     expect(result.issueCount).toBe(0);
-    expect(result.rows.map(({ row: _row, ...business }) => business)).toEqual(rows);
+    expect(result.rows.map(({ row: _row, ...business }) => business)).toEqual(rows.map((row) => ({ ...row, phone: "", email: "", address: "" })));
     if (format === "csv") {
       expect(buffer.subarray(0, 3)).toEqual(Buffer.from([0xef, 0xbb, 0xbf]));
       expect(buffer.toString("utf8")).toContain('"\'=SUM(1,1)"');
@@ -229,7 +258,7 @@ describe("business spreadsheet downloads", () => {
     const buffer = await createBusinessSpreadsheet({ format: "xlsx", cities, categories });
     const workbook = await new ExcelJS.Workbook().xlsx.load(buffer);
     const sheet = workbook.getWorksheet("Businesses");
-    expect(sheet.getRow(1).values.slice(1)).toEqual(["Name", "City", "Category"]);
+    expect(sheet.getRow(1).values.slice(1)).toEqual(["Name", "City", "Category", "Phone", "Email", "Address"]);
     expect(sheet.actualRowCount).toBe(1);
     expect(sheet.views[0]).toMatchObject({ state: "frozen", ySplit: 1 });
     expect(sheet.getColumn("A").width).toBeGreaterThanOrEqual(40);
@@ -246,7 +275,7 @@ describe("business spreadsheet downloads", () => {
 
   it("generates CSV headers with no example businesses", async () => {
     const buffer = await createBusinessSpreadsheet({ format: "csv", cities, categories });
-    expect(buffer.toString("utf8")).toBe('\ufeff"Name","City","Category"\r\n');
+    expect(buffer.toString("utf8")).toBe('\ufeff"Name","City","Category","Phone","Email","Address"\r\n');
   });
 
   it("exports and parses a full 10,000-business Excel master sheet within the upload limit", async () => {
@@ -256,6 +285,14 @@ describe("business spreadsheet downloads", () => {
     const result = await parseBusinessSpreadsheet(file(buffer, "full.xlsx"));
     expect(result.issueCount).toBe(0);
     expect(result.rows).toHaveLength(MAX_IMPORT_ROWS);
-    expect(result.rows.at(-1)).toEqual({ row: 10_001, ...businesses.at(-1) });
+    expect(result.rows.at(-1)).toEqual({ row: 10_001, ...businesses.at(-1), phone: "", email: "", address: "" });
+  });
+
+  it.each(["csv", "xlsx"])("round-trips %s contact fields, including international phones and quoted addresses", async (format) => {
+    const contacts = [{ name: "Plumber", city: "Austin", category: "Food & Drink", phone: "+1 512 555 0100 ext 2", email: "one@example.test; two@example.test", address: '123 Main St, Suite "A"\nAustin, TX 78701' }];
+    const buffer = await createBusinessSpreadsheet({ format, rows: contacts });
+    const result = await parseBusinessSpreadsheet(file(buffer, `contacts.${format}`));
+    expect(result.issueCount).toBe(0);
+    expect(result.rows.map(({ row: _row, ...contact }) => contact)).toEqual(contacts);
   });
 });

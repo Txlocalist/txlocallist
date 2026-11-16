@@ -116,7 +116,7 @@ jobs:
         run: npm run test:listings:db
 
       - name: Install browser for desktop and mobile component checks
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium webkit
 
       - name: Verify listing and recurrence browser behavior
         run: npm run test:listings:ui

@@ -356,6 +356,9 @@ model BusinessOffer {
 model ImportedBusiness {
   id         String   @id @default(cuid())
   name       String
+  phone      String?
+  email      String?
+  address    String?
   cityId     String
   city       City     @relation(fields: [cityId], references: [id])
   categoryId String

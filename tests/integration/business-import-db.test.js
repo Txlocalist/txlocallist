@@ -80,8 +80,8 @@ describe.skipIf(!db)("spreadsheet directory against PostgreSQL", () => {
     expect(changes.summary).toMatchObject({ added: 1, changed: 1, removed: 1, unchanged: 0 });
     await publishImportedBusinesses(changedFile, changes, harness.admin);
     expect(await exportImportedBusinesses()).toEqual([
-      { name: "Second", city: city.name, category: otherCategory.name },
-      { name: "Third", city: city.name, category: category.name },
+      { name: "Second", city: city.name, category: otherCategory.name, phone: "", email: "", address: "" },
+      { name: "Third", city: city.name, category: category.name, phone: "", email: "", address: "" },
     ]);
     expect(await getImportAdminState()).toMatchObject({ revision: 2, total: 2, lastFileName: "businesses.csv" });
     expect(await db.auditLog.count({ where: { actorId: harness.admin.id, action: "IMPORT_REPLACE" } })).toBe(2);
@@ -95,6 +95,40 @@ describe.skipIf(!db)("spreadsheet directory against PostgreSQL", () => {
     expect(preview.issues.map((issue) => issue.field)).toEqual(["Name", "City", "Category"]);
     await expect(publishImportedBusinesses(file, preview, harness.admin)).rejects.toMatchObject({ status: 400 });
     expect((await exportImportedBusinesses()).map((row) => row.name)).toEqual(["Keep"]);
+  });
+
+  it("persists and exports contacts, preserves omitted fields, previews changes and clears explicit blanks", async () => {
+    const file = new File([`Name,City,Category,Phone,Email,Address\nContact Shop,${city.name},${category.name},+1 512 555 0100,hello@example.test,"123 Main St, Austin, TX 78701"`], "contacts.csv");
+    const contact = { phone: "+1 512 555 0100", email: "hello@example.test", address: "123 Main St, Austin, TX 78701" };
+    const preview = await previewImportedBusinesses(file);
+    expect(preview.rows[0]).toMatchObject(contact);
+    expect(await db.importedBusiness.count()).toBe(0);
+    await publishImportedBusinesses(file, preview, harness.admin);
+    expect((await exportImportedBusinesses())[0]).toMatchObject(contact);
+    expect(await db.importedBusiness.findFirst()).toMatchObject(contact);
+    expect((await searchImportedBusinesses({ citySlug: city.slug })).results[0]).not.toHaveProperty("phone");
+    expect((await searchImportedBusinesses({ citySlug: city.slug })).results[0]).not.toHaveProperty("email");
+    expect((await searchImportedBusinesses({ citySlug: city.slug })).results[0]).not.toHaveProperty("address");
+
+    const legacy = sheet(["Contact Shop"]);
+    const legacyPreview = await previewImportedBusinesses(legacy);
+    expect(legacyPreview.summary).toMatchObject({ unchanged: 1, changed: 0 });
+    expect(legacyPreview.rows[0]).toMatchObject(contact);
+    await publishImportedBusinesses(legacy, legacyPreview, harness.admin);
+    expect((await exportImportedBusinesses())[0]).toMatchObject(contact);
+
+    const partial = new File([`Name,City,Category,Phone\nContact Shop,${city.name},${category.name},512-555-0101`], "phone.csv");
+    const changed = await previewImportedBusinesses(partial);
+    expect(changed.summary).toMatchObject({ changed: 1, added: 0, removed: 0 });
+    await publishImportedBusinesses(partial, changed, harness.admin);
+    expect((await exportImportedBusinesses())[0]).toMatchObject({ ...contact, phone: "512-555-0101" });
+
+    const cleared = new File([`Name,City,Category,Phone,Email,Address\nContact Shop,${city.name},${category.name},,,`], "clear.csv");
+    const clearing = await previewImportedBusinesses(cleared);
+    expect(clearing.summary.changed).toBe(1);
+    await publishImportedBusinesses(cleared, clearing, harness.admin);
+    expect((await exportImportedBusinesses())[0]).toMatchObject({ phone: "", email: "", address: "" });
+    expect(await db.importedBusiness.findFirst()).toMatchObject({ phone: null, email: null, address: null });
   });
 
   it("binds publication to the reviewed file and rejects stale revisions and double submissions", async () => {
